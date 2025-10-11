@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const WebSocket = require('ws');
+const path = require('path'); // <-- CORRECCIÓN 1: Necesitas el módulo 'path'
 
 const app = express();
 const server = http.createServer(app);
@@ -13,16 +14,23 @@ let tikfinitySocket;
 let participantes = [];
 let subastaActiva = false;
 
-// ✅ AGREGAR ESTA RUTA PARA MANTENER EL SERVIDOR VISIBLE A HERRAMIENTAS EXTERNAS
+// --- CONFIGURACIÓN DE EXPRESS PARA SERVIR LA PÁGINA WEB ---
+// 1. Servir la carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 2. CORRECCIÓN 2: La ruta principal debe enviar el index.html
 app.get('/', (req, res) => {
-  res.send('Servidor de subasta TikTok activo ✅');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+// ------------------------------------------------------------
+
 
 function connectToTikfinity() {
     if (tikfinitySocket && (tikfinitySocket.readyState === WebSocket.OPEN || tikfinitySocket.readyState === WebSocket.CONNECTING)) {
         io.emit('conexion_exitosa', 'Conectado a TikFinity');
         return;
     }
+    if (tikfinitySocket && tikfinitySocket.readyState === WebSocket.CONNECTING) return;
 
     console.log('Intentando conectar con el puente de TikFinity...');
     tikfinitySocket = new WebSocket(TIKFINITY_WEBSOCKET_URL);
@@ -69,9 +77,9 @@ io.on('connection', (socket) => {
 
     socket.on('iniciar_subasta', () => {
         console.log('RECIBIDA ORDEN DE INICIAR SUBASTA. Limpiando lista...');
-        participantes = []; 
+        participantes = [];
         subastaActiva = true;
-        io.emit('actualizar_lista', participantes); 
+        io.emit('actualizar_lista', participantes);
         connectToTikfinity();
     });
     
@@ -85,5 +93,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Servidor intermediario corriendo en el puerto ${PORT}`);
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
