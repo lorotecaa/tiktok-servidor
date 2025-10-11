@@ -11,7 +11,12 @@ const TIKFINITY_WEBSOCKET_URL = 'ws://localhost:21213/';
 let tikfinitySocket;
 
 let participantes = [];
-let subastaActiva = false; 
+let subastaActiva = false;
+
+// ✅ AGREGAR ESTA RUTA PARA MANTENER EL SERVIDOR VISIBLE A HERRAMIENTAS EXTERNAS
+app.get('/', (req, res) => {
+  res.send('Servidor de subasta TikTok activo ✅');
+});
 
 function connectToTikfinity() {
     if (tikfinitySocket && (tikfinitySocket.readyState === WebSocket.OPEN || tikfinitySocket.readyState === WebSocket.CONNECTING)) {
@@ -35,13 +40,8 @@ function connectToTikfinity() {
         if (message.event === 'gift') {
             const giftData = message.data;
 
-            // --- FILTRO DEFINITIVO ANTI-DOBLES ---
-            // Solo procesamos el evento final del regalo, no la animación inicial.
-            // La propiedad "repeatEnd" es 'true' solo para el evento final.
-            if (!giftData.repeatEnd) {
-                return; // Si no es el evento final, lo ignoramos y no hacemos nada.
-            }
-            // ------------------------------------
+            // --- FILTRO ANTI-DOBLES ---
+            if (!giftData.repeatEnd) return;
 
             const donacion = { usuario: giftData.nickname, cantidad: giftData.diamondCount * giftData.repeatCount };
             
@@ -83,7 +83,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => console.log(`Cliente desconectado: ${socket.id}`));
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Servidor intermediario corriendo en el puerto ${PORT}`);
 });
