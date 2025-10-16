@@ -40,7 +40,7 @@
             background: transparent;
             border-radius: 10px;
             overflow: hidden;
-            border: 2px solid #333; /* Borde exterior */
+            border: 2px solid #333; 
         }
 
         /* ESTILOS INTERNOS DEL WIDGET */
@@ -194,7 +194,7 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos AMBOS displays de tiempo
+                    // Actualizamos ambos displays de tiempo
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
                     if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 } else {
