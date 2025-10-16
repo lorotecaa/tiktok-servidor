@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Subasta en Vivo</title>
     <style>
-        /* ESTILOS BASE Y PANTALLA COMPLETA */
+        /* ESTILOS BASE DEL DASHBOARD */
         body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         h1 { margin:20px 0; }
         ul { list-style: none; padding: 0; }
@@ -17,29 +17,26 @@
         #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
         /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) */
-        #ganadores, #participantes, #controles, #tiempoBox { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
+        #ganadores, #participantes-dashboard, #controles, #tiempoBox { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
         #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
-        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
+        #participantes-dashboard { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; } /* Renombrado para no conflicto */
         #controles { background: #8e44ad; width: 300px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
 
-        /* WIDGET MODE (La Solución Final y Estilizada) */
-        .widget-mode body { background: transparent; min-height: 0; display: block; }
+        /* WIDGET MODE (SOLUCIÓN FINAL DE ALINEACIÓN) */
+        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
-        /* OCULTAR TODO LO QUE NO SEA EL WIDGET DE LISTA/TIEMPO */
+        /* OCULTAR TODO LO QUE NO SEA EL WIDGET (SOLO SE MUESTRA EL #widget-container) */
         .widget-mode #main-dashboard-content,
-        .widget-mode #ganadores, 
-        .widget-mode #controles, 
-        .widget-mode #logDonaciones,
-        .widget-mode h1 {
+        .widget-mode #logDonaciones {
             display: none !important;
         }
 
-        /* MOSTRAR SOLO EL CONTENEDOR DEL WIDGET (EL OVERLAY) */
+        /* ESTILOS DEL CONTENEDOR DEL WIDGET */
         .widget-mode #widget-container {
-            display: flex !important; /* Lo hacemos visible */
+            display: flex !important;
             flex-direction: column;
-            width: 350px; /* Tamaño del widget en pantalla */
+            width: 350px; /* Tamaño del widget */
             margin: 0;
             padding: 0;
             border-radius: 10px;
@@ -47,13 +44,13 @@
             background: transparent;
         }
         
-        /* ESTILOS INTERNOS DEL WIDGET */
-        .widget-mode #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; margin: 0; padding: 10px 0; }
+        /* Estilos de los elementos del widget */
+        .widget-mode #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; padding: 10px 0; }
         .widget-mode #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; }
         .widget-mode #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
 
-        .widget-mode #participantes-widget { background: #1c2b3e; width: 100%; height: auto; margin: 0; padding: 10px; border-radius: 0 0 10px 10px; }
-        .widget-mode #participantes-widget h2, .widget-mode #participantes-widget .totales { display: none; }
+        .widget-mode #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 10px 10px; }
+        .widget-mode #participantes-widget h2 { display: none; }
         .widget-mode #listaParticipantes-widget { padding: 0; margin: 0; }
         .widget-mode #listaParticipantes-widget li {
             display: flex; justify-content: space-between; align-items: center; background: #34495e; margin-bottom: 5px;
@@ -61,6 +58,7 @@
         }
         .widget-mode #listaParticipantes-widget li .rank { color: gold; margin-right: 5px; }
         .widget-mode #listaParticipantes-widget li .coins { color: #ffd700; }
+
     </style>
 </head>
 <body>
@@ -69,7 +67,7 @@
         <h1>⚡ Subasta en Vivo ⚡</h1>
         
         <div id="ganadores"><h2>🏆 Ganadores de Rondas</h2><ul id="listaGanadores"></ul></div>
-        <div id="participantes"><h2>👥 Participantes (Ronda Actual)</h2><ul id="listaParticipantes"></ul>
+        <div id="participantes-dashboard"><h2>👥 Participantes (Ronda Actual)</h2><ul id="listaParticipantes-dashboard"></ul>
             <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
             <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
         </div>
@@ -111,8 +109,8 @@
     <script>
         const socket = io(); 
 
-        // Variables de Elementos del DOM (Apuntan a los del dashboard)
-        const listaParticipantesEl = document.getElementById('listaParticipantes');
+        // Renombramos las variables para apuntar a los IDs correctos
+        const listaParticipantesDashboardEl = document.getElementById('listaParticipantes-dashboard'); 
         const listaGanadoresEl = document.getElementById('listaGanadores');
         const tiempoRestanteEl = document.getElementById('tiempoRestante');
         const logDonacionesEl = document.getElementById('logDonaciones');
@@ -134,42 +132,40 @@
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
-            // Determinar a qué <ul> vamos a escribir
-            const listaDashboardEl = document.querySelector('#main-dashboard-content #participantes ul');
-            const listaWidgetEl = document.querySelector('#widget-container #participantes-widget ul');
-
-            // Limpiamos y actualizamos ambas listas
+            // 1. Determinar a qué listas escribir (Dashboard y Widget)
+            const listaDashboardEl = document.querySelector('#participantes-dashboard ul');
+            const listaWidgetEl = document.querySelector('#listaParticipantes-widget'); 
+            
+            // Limpiamos ambas listas
             if (listaDashboardEl) listaDashboardEl.innerHTML = "";
             if (listaWidgetEl) listaWidgetEl.innerHTML = "";
             
             let totalDiamantes = 0;
-            
-            // Decidimos cuántos mostrar (5 para widget, todos para dashboard)
-            const topN = isWidgetMode ? participantes.slice(0, 5) : participantes; 
+            const topN = participantes.slice(0, 5); // Tomamos el Top 5 para ambos
 
-            topN.forEach((p, index) => {
+            participantes.forEach((p, index) => {
                 const liDashboard = document.createElement("li");
-                const liWidget = document.createElement("li");
-                const rango = index + 1;
-
-                // Formato de Widget
-                liWidget.innerHTML = `
-                    <div class="rank" style="font-size: 1.2em;">${rango}</div>
-                    <div style="flex-grow: 1; text-align: left; padding-left: 10px;">${p.usuario}</div>
-                    <span class="coins">${p.cantidad} 🪙</span>
-                `;
                 
-                // Formato de Dashboard
+                // Formato de Dashboard (se añade a la lista completa)
                 liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
-                
-                // Agregamos a los contenedores correctos
                 if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
-                if (listaWidgetEl) listaWidgetEl.appendChild(liWidget);
 
+                // Formato de Widget (se añade al top 5)
+                if (index < 5 && listaWidgetEl) {
+                    const liWidget = document.createElement("li");
+                    const rango = index + 1;
+                    liWidget.innerHTML = `
+                        <div class="rank" style="font-size: 1.2em;">${rango}</div>
+                        <div style="flex-grow: 1; text-align: left; padding-left: 10px;">${p.usuario}</div>
+                        <span class="coins">${p.cantidad} 🪙</span>
+                    `;
+                    listaWidgetEl.appendChild(liWidget);
+                }
+                
                 totalDiamantes += p.cantidad;
             });
             
-            // Solo actualizamos los totales si estamos en el dashboard normal
+            // Actualizamos los totales del Dashboard (solo si no es widget)
             if (!isWidgetMode) {
                  document.querySelector('#totalParticipantes').textContent = participantes.length;
                  document.querySelector('#totalDiamantes').textContent = totalDiamantes;
@@ -197,12 +193,9 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos ambos displays
-                    const tiempoDisplayNormal = document.querySelector('#main-dashboard-content #tiempoBox #tiempoRestante');
-                    const tiempoDisplayWidget = document.querySelector('#widget-container #tiempoBox-widget #tiempoRestante-widget');
-
-                    if (tiempoDisplayNormal) tiempoDisplayNormal.textContent = formattedTime;
-                    if (tiempoDisplayWidget) tiempoDisplayWidget.textContent = formattedTime;
+                    // Actualizamos AMBOS displays
+                    document.querySelector('#main-dashboard-content #tiempoBox #tiempoRestante').textContent = formattedTime;
+                    document.querySelector('#widget-container #tiempoBox-widget #tiempoRestante-widget').textContent = formattedTime;
                 } else {
                     terminarTiempo();
                 }
@@ -226,8 +219,7 @@
              terminarTiempo();
              tiempoActual = 0;
              document.querySelector('#main-dashboard-content #tiempoBox #tiempoRestante').textContent = formatTime(0);
-             if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
-             
+             document.querySelector('#widget-container #tiempoBox-widget #tiempoRestante-widget').textContent = formatTime(0);
              logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
              if (participantes.length > 0) {
                 const ganador = participantes[0];
@@ -246,7 +238,7 @@
             actualizarParticipantesUI();
             actualizarGanadoresUI();
             logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong>';
-            socket.emit("iniciar_subasta"); 
+            socket.emit("iniciar_subasta"); // Inicia una nueva ronda limpia
         }
 
         function pausar() {
@@ -257,17 +249,13 @@
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
-            // Mueve y hace visible el contenedor del widget
+            // Muestra solo el contenedor del widget y oculta el dashboard
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Esto reubica los elementos dentro del widget
-            document.querySelector('#widget-container').appendChild(document.querySelector('#main-dashboard-content #tiempoBox'));
-            document.querySelector('#widget-container').appendChild(document.querySelector('#main-dashboard-content #participantes'));
-
-
             // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
+            iniciarTimerLogic(); // Iniciamos el timer inmediatamente para el widget
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
