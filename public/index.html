@@ -24,7 +24,7 @@
         #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
 
-        /* WIDGET MODE (ESTILOS PARA EL OVERLAY) */
+        /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
@@ -40,7 +40,7 @@
             background: transparent;
             border-radius: 10px;
             overflow: hidden;
-            border: 2px solid #333; /* Borde exterior */
+            border: 2px solid #333; 
         }
 
         /* ESTILOS INTERNOS DEL WIDGET */
@@ -89,7 +89,7 @@
         <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
     </div> 
 
-    <div id="widget-container">
+    <div id="widget-container" style="display:none;">
         
         <div id="tiempoBox-widget">
             <div id="tiempoRestante-widget">00:00</div>
@@ -208,7 +208,7 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic();
+            iniciarTimerLogic(); // Inicia el timer en el dashboard y widget
         }
 
         function terminarTiempo() {
