@@ -22,15 +22,17 @@
         #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
         #controles { background: #8e44ad; width: 300px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
-        
+
         /* WIDGET MODE (Para TikTok Studio) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
+        
+        /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
         .widget-mode #main-dashboard-content { display: none !important; }
-        .widget-mode #logDonaciones { display: none !important; }
+        .widget-mode #logDonaciones { display: none !important; } 
 
-        /* Estilos del WIDGET (SOLO PARA LA VISTA REMOTA) */
-        .widget-mode #widget-container {
-            display: flex !important; 
+        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
+        #widget-container {
+            display: none; /* Por defecto oculto */
             flex-direction: column;
             width: 350px; 
             margin: 0;
@@ -39,12 +41,14 @@
             overflow: hidden;
             background: transparent;
         }
-        .widget-mode #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; margin: 0; padding: 10px 0; }
-        .widget-mode #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; }
-        .widget-mode #participantes-widget { background: #1c2b3e; width: 100%; height: auto; margin: 0; padding: 10px; border-radius: 0 0 10px 10px; }
-        .widget-mode #participantes-widget h2, .widget-mode #participantes-widget .totales { display: none; }
-        .widget-mode #listaParticipantes-widget li { display: flex; justify-content: space-between; align-items: center; background: #34495e; margin-bottom: 5px; padding: 8px 10px; border-radius: 6px; font-size: 16px; font-weight: bold; }
-        .widget-mode #listaParticipantes-widget li .coins { color: #ffd700; }
+
+        /* Estilos de los elementos del widget */
+        #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; margin: 0; padding: 10px 0; }
+        #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; }
+        #participantes-widget { background: #1c2b3e; width: 100%; height: auto; margin: 0; padding: 10px; border-radius: 0 0 10px 10px; }
+        #participantes-widget h2, #participantes-widget .totales { display: none; }
+        #listaParticipantes-widget li { display: flex; justify-content: space-between; align-items: center; background: #34495e; margin-bottom: 5px; padding: 8px 10px; border-radius: 6px; font-size: 16px; font-weight: bold; }
+        #listaParticipantes-widget li .coins { color: #ffd700; }
     </style>
 </head>
 <body>
@@ -95,7 +99,6 @@
     <script>
         const socket = io(); 
 
-        // Referencias a los elementos del DOM (APUNTANDO AL DASHBOARD)
         const listaParticipantesEl = document.getElementById('listaParticipantes');
         const listaGanadoresEl = document.getElementById('listaGanadores');
         const tiempoRestanteEl = document.getElementById('tiempoRestante');
@@ -118,23 +121,21 @@
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
-            // 1. Apuntamos a la lista correcta para rellenar
-            const listaDashboardEl = document.getElementById('listaParticipantes');
-            const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
+            // 1. Apuntamos a las listas correctas
+            const listaDashboardEl = document.querySelector('#participantes ul');
+            const listaWidgetEl = document.querySelector('#listaParticipantes-widget'); 
 
-            // 2. Limpiamos ambas listas (si existen)
+            // 2. Limpiamos ambas listas
             if (listaDashboardEl) listaDashboardEl.innerHTML = "";
             if (listaWidgetEl) listaWidgetEl.innerHTML = "";
             
             let totalDiamantes = 0;
-            
-            // Decidimos cuántos mostrar
-            const topN = isWidgetMode ? participantes.slice(0, 5) : participantes; 
+            const topN = participantes.slice(0, 5); 
 
             participantes.forEach((p, index) => {
                 const liDashboard = document.createElement("li");
                 
-                // Formato de Dashboard (se añade a la lista principal)
+                // Formato de Dashboard
                 liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
                 if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
 
@@ -159,7 +160,6 @@
                 totalDiamantes += p.cantidad;
             });
             
-            // Actualizamos los totales del Dashboard
             if (!isWidgetMode) {
                  document.querySelector('#totalParticipantes').textContent = participantes.length;
                  document.querySelector('#totalDiamantes').textContent = totalDiamantes;
@@ -167,6 +167,7 @@
         }
 
         function actualizarGanadoresUI() {
+            const listaGanadoresEl = document.getElementById('listaGanadores');
             listaGanadoresEl.innerHTML = "";
             ganadoresHistorial.forEach(g => {
                 const li = document.createElement('li');
@@ -175,6 +176,7 @@
             });
         }
         
+        // --- LÓGICA DEL TEMPORIZADOR ---
         function iniciarTimerLogic() {
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
@@ -186,7 +188,7 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos ambos displays de tiempo
+                    // Actualizamos AMBOS displays de tiempo
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
                     if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 } else {
@@ -199,6 +201,8 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
+            
+            // EL TIMER DEBE ARRANCAR AQUÍ
             iniciarTimerLogic(); 
         }
 
@@ -238,34 +242,18 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
         }
 
-        // --- EVENTOS DE COMUNICACIÓN Y WIDGET ---
-        socket.on('connect', () => logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ Conectado al servidor.</p>`);
-        
-        socket.on('conexion_exitosa', (mensaje) => {
-            logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ ${mensaje}</p>`;
-            participantes = [];
-            actualizarParticipantesUI();
-            if (!document.body.classList.contains('widget-mode')) {
-                iniciarTimerLogic();
-            }
-        });
-        socket.on('conexion_error', (error) => alert(error));
-        
-        socket.on('actualizar_lista', (nuevaListaParticipantes) => {
-            participantes = nuevaListaParticipantes;
-            actualizarParticipantesUI();
-        });
-
-
         // --- LÓGICA DE DETECCIÓN DE MODO WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
+            
+            // Aseguramos que el contenedor principal del dashboard esté oculto
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
             // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
+            iniciarTimerLogic(); // Iniciamos el timer inmediatamente
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
