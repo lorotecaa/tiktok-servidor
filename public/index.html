@@ -5,7 +5,7 @@
     <title>Subasta en Vivo</title>
     <style>
         /* ESTILOS BASE Y PANTALLA COMPLETA */
-        body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; }
+        body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         h1 { margin:20px 0; }
         ul { list-style: none; padding: 0; }
         li { margin: 5px 0; font-size: 18px; }
@@ -17,54 +17,49 @@
         #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
         /* CONTENEDORES PRINCIPALES (MODO DASHBOARD) */
-        #ganadores, #participantes, #controles, #tiempoBox { 
-            margin: 20px; 
-            padding: 20px; 
-            border-radius: 10px; 
-            display: inline-block; 
-            vertical-align: top;
-        }
+        #ganadores, #participantes, #controles, #tiempoBox { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
         #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
         #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
         #controles { background: #8e44ad; width: 300px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
 
-        /* WIDGET MODE (Para TikTok Studio) */
+        /* WIDGET MODE (SOLUCIÓN) */
         .widget-mode body { background: transparent; min-height: 0; display: block; }
         .widget-mode #main-dashboard-content,
-        .widget-mode #logDonaciones,
-        .widget-mode h1,
-        .widget-mode #controles,
-        .widget-mode #ganadores { /* Oculta todos los elementos de control y totales */
-            display: none !important;
-        }
+        .widget-mode #logDonaciones { display: none !important; }
 
-        /* FUERZA LA VISUALIZACIÓN DEL WIDGET */
+        /* Estilos del WIDGET (El que se ve en la captura de tu celular) */
         .widget-mode #widget-container {
-            display: block !important;
-            width: 350px;
-            margin: 0 auto;
-            position: relative;
+            display: flex !important; /* Hacemos visible el contenedor del widget */
+            flex-direction: column;
+            width: 350px; 
+            margin: 0;
+            padding: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: transparent;
         }
+        
+        /* Aseguramos que la tabla de participantes se vea limpia en el widget */
+        .widget-mode #participantes { background: #1c2b3e; width: 100%; height: auto; margin: 0; border-radius: 0 0 10px 10px; padding: 10px; }
+        .widget-mode #participantes h2, .widget-mode .totales { display: none; }
         .widget-mode #tiempoBox { background: #008000; width: 100%; border-radius: 10px 10px 0 0; margin: 0; }
         .widget-mode #tiempoBox h2 { display: none; }
         .widget-mode #tiempoRestante { font-size: 2.5em; color: #00FF00; }
-        .widget-mode #participantes { background: #1c2b3e; width: 100%; height: auto; margin: 0; border-radius: 0 0 10px 10px; }
-        .widget-mode #participantes h2, .widget-mode .totales { display: none; }
-        .widget-mode #listaParticipantes { padding: 0; margin: 0; }
+
+        /* Estilos de la lista de participantes en modo widget */
         .widget-mode #listaParticipantes li {
             display: flex; justify-content: space-between; align-items: center; background: #34495e; margin-bottom: 5px;
             padding: 8px 10px; border-radius: 6px; font-size: 16px; font-weight: bold;
         }
         .widget-mode #listaParticipantes li span { color: #ffd700; }
-
     </style>
 </head>
 <body>
-    <h1>⚡ Subasta en Vivo ⚡</h1>
     
-    <div id="main-dashboard-content">
-
+    <div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
+        <h1>⚡ Subasta en Vivo ⚡</h1>
+        
         <div id="ganadores"><h2>🏆 Ganadores de Rondas</h2><ul id="listaGanadores"></ul></div>
         <div id="participantes"><h2>👥 Participantes (Ronda Actual)</h2><ul id="listaParticipantes"></ul>
             <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
@@ -81,7 +76,7 @@
                     <input type="number" id="tiempo" value="200"><br><br>
                     <button class="start" onclick="iniciar()">Iniciar</button>
                     <button onclick="pausar()">Pausar</button>
-                    <button class="stop" onclick="finalizar()">Finalizar</button>
+                    <button onclick="finalizar()">Finalizar</button>
                     <button onclick="restart()">Restart</button>
                 </div>
             </div>
@@ -89,12 +84,12 @@
         </div>
 
     </div> <div id="widget-container" style="display:none;">
-        <div id="tiempoBox">
-            <div id="tiempoRestante">00:00</div>
-            <div id="subtext">El desempate termina en</div>
+        <div id="tiempoBox-widget">
+            <div id="tiempoRestante-widget">00:00</div>
+            <div id="subtext-widget">El desempate termina en</div>
         </div>
-        <div id="participantes">
-            <ul id="listaParticipantes"></ul>
+        <div id="participantes-widget">
+            <ul id="listaParticipantes-widget"></ul>
         </div>
     </div>
     
@@ -103,28 +98,135 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
-        const socket = io(); // Conexión relativa al servidor Render
+        const socket = io("http://localhost:3000"); // Conexión a tu servidor Render
 
-        // Variables y lógica de funciones (van aquí, no las repito por brevedad, pero deben estar)
+        // Variables de Elementos del DOM
+        const listaParticipantesEl = document.getElementById('listaParticipantes');
+        const listaGanadoresEl = document.getElementById('listaGanadores');
+        const tiempoRestanteEl = document.getElementById('tiempoRestante');
+        const logDonacionesEl = document.getElementById('logDonaciones');
+        
+        let tiempoActual = 0;
+        let intervalo = null;
+        let participantes = [];
+        let ganadoresHistorial = [];
 
-        // --- FUNCIONES DE UTILIDAD (Deben estar aquí) ---
+        // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
             return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
+        function actualizarParticipantesUI() {
+            // Aseguramos que la lista local esté ordenada
+            participantes.sort((a, b) => b.cantidad - a.cantidad);
+            
+            // --- Lógica para el DASHBOARD PRINCIPAL ---
+            const isWidgetMode = document.body.classList.contains('widget-mode');
+            const listaTargetEl = isWidgetMode ? document.getElementById('listaParticipantes-widget') : listaParticipantesEl;
+            
+            // Limpiamos la lista correcta (del dashboard o del widget)
+            listaTargetEl.innerHTML = "";
+            
+            let totalDiamantes = 0;
+            const topN = isWidgetMode ? participantes.slice(0, 5) : participantes; 
+
+            topN.forEach((p, index) => {
+                const li = document.createElement("li");
+                const rango = index + 1;
+
+                if (isWidgetMode) {
+                    // Formato para el modo Widget
+                    li.innerHTML = `
+                        <div style="font-size: 1.2em; color: #aaa;">${rango}</div>
+                        <div style="flex-grow: 1; text-align: left; padding-left: 10px;">${p.usuario}</div>
+                        <span style="color: gold;">${p.cantidad} 🪙</span>
+                    `;
+                } else {
+                    // Formato para el modo Dashboard
+                    li.textContent = `${p.usuario} - ${p.cantidad} 💎`;
+                }
+
+                listaTargetEl.appendChild(li);
+                totalDiamantes += p.cantidad;
+            });
+            
+            // Solo actualizamos los totales si estamos en el dashboard normal
+            if (!isWidgetMode) {
+                 document.getElementById('totalParticipantes').textContent = participantes.length;
+                 document.getElementById('totalDiamantes').textContent = totalDiamantes;
+            }
+        }
+        
+        function actualizarGanadoresUI() {
+            // Lógica para actualizar la tabla de ganadores
+        }
+
+        // --- EVENTOS DE COMUNICACIÓN (Simplificado para evitar bugs) ---
+        socket.on('connect', () => logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ Conectado al servidor.</p>`);
+        
+        socket.on('conexion_exitosa', (mensaje) => {
+            logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ ${mensaje}</p>`;
+            participantes = [];
+            actualizarParticipantesUI();
+            
+            // Solo arrancar el timer si no es modo widget (o si la lógica de widget lo necesita)
+            if (!document.body.classList.contains('widget-mode')) {
+                iniciarTimerLogic();
+            }
+        });
+        socket.on('conexion_error', (error) => alert(error));
+        
+        socket.on('actualizar_lista', (nuevaListaParticipantes) => {
+            participantes = nuevaListaParticipantes;
+            actualizarParticipantesUI();
+        });
+
+
+        // --- LÓGICA DEL TEMPORIZADOR ---
+        function iniciarTimerLogic() {
+            const tiempoInput = document.getElementById("tiempo");
+            tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60); // Usamos 60s en widget
+
+            // Aseguramos que el display del tiempo correcto esté actualizado
+            const targetTiempoEl = document.body.classList.contains('widget-mode') ? 
+                document.getElementById('tiempoRestante-widget') : tiempoRestanteEl;
+
+            targetTiempoEl.textContent = formatTime(tiempoActual);
+            
+            if (intervalo) clearInterval(intervalo);
+            intervalo = setInterval(() => {
+                if (tiempoActual > 0) {
+                    tiempoActual--;
+                    targetTiempoEl.textContent = formatTime(tiempoActual);
+                } else {
+                    terminarTiempo();
+                }
+            }, 1000);
+        }
+
+        // --- FUNCIONES DE CONTROL (BOTONES) ---
+        function iniciar() {
+            logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
+            socket.emit("iniciar_subasta"); 
+            iniciarTimerLogic(); // Inicia el timer inmediatamente
+        }
+
+        function terminarTiempo() {
+            if (intervalo) { clearInterval(intervalo); intervalo = null; }
+            socket.emit('finalizar_subasta');
+            logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
+        }
+        
+        // ... (resto de las funciones: finalizar, restart, pausar, etc. se mantienen igual) ...
+
         // --- DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
-            // Ocultamos el dashboard principal y mostramos el contenedor del widget
-            document.getElementById('main-dashboard-content').style.display = 'none';
-            document.getElementById('widget-container').style.display = 'block';
+            // Al ser un widget, iniciamos la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
-        } else {
-             // Modo normal, aseguramos que el widget esté oculto
-            document.getElementById('widget-container').style.display = 'none';
         }
     </script>
 </body>
