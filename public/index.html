@@ -23,32 +23,42 @@
         #controles { background: #8e44ad; width: 300px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
 
-        /* WIDGET MODE (ESTILOS PARA EL OVERLAY) */
-        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
-        
-        /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
+        /* MODIFICACIÓN PARA DEPURACIÓN: WIDGET VISIBLE */
         .widget-mode #main-dashboard-content { display: none !important; }
-        .widget-mode #logDonaciones { display: none !important; } 
-
-        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
+        
+        /* ESTILOS DEL CONTENEDOR DEL WIDGET (Diseño profesional) */
         #widget-container {
-            display: none; /* Por defecto oculto */
+            /* Hacemos el widget visible en MODO NORMAL */
+            display: flex !important; /* Lo hacemos visible */
             flex-direction: column;
-            width: 350px; 
-            margin: 0;
+            width: 350px; /* Tamaño del widget */
+            margin: 20px;
             padding: 0;
+            background: transparent;
             border-radius: 10px;
             overflow: hidden;
-            background: transparent;
+            border: 2px solid #333; /* Borde de depuración */
         }
 
-        /* ESTILOS DE LOS ELEMENTOS DENTRO DEL WIDGET */
-        #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; margin: 0; padding: 10px 0; }
-        #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; }
-        #participantes-widget { background: #1c2b3e; width: 100%; height: auto; margin: 0; padding: 10px; border-radius: 0 0 10px 10px; }
-        #participantes-widget h2, #participantes-widget .totales { display: none; }
-        #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #34495e; margin-bottom: 5px; padding: 8px 10px; border-radius: 6px; font-size: 16px; font-weight: bold; }
-        #listaParticipantes-widget li .coins { color: #ffd700; }
+        /* ESTILOS INTERNOS DEL WIDGET (para la vista de depuración) */
+        #tiempoBox-widget { background: #008000; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; }
+        #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,0,0.7); }
+        #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
+
+        #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px; }
+        #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
+        #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #2a3d5e; margin-bottom: 8px; padding: 10px 15px; border-radius: 12px; font-size: 16px; font-weight: bold; border: 2px solid #3d5a80; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
+        #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; }
+
+        /* OCULTA EL WIDGET cuando estamos en modo dashboard y viceversa */
+        .widget-mode #main-dashboard-content { display: none !important; }
+        .widget-mode #widget-container { display: flex !important; }
+
+        /* OCULTA EL DASHBOARD cuando estamos en modo widget */
+        #main-dashboard-content { display: flex; }
+        .widget-mode #main-dashboard-content { display: none !important; }
+
     </style>
 </head>
 <body>
@@ -82,7 +92,7 @@
         <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
     </div> 
 
-    <div id="widget-container" style="display:none;">
+    <div id="widget-container">
         
         <div id="tiempoBox-widget">
             <div id="tiempoRestante-widget">00:00</div>
@@ -188,7 +198,7 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos ambos displays de tiempo
+                    // Actualizamos AMBOS displays de tiempo
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
                     if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 } else {
@@ -201,7 +211,7 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic(); 
+            iniciarTimerLogic();
         }
 
         function terminarTiempo() {
@@ -240,7 +250,7 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
         }
 
-        // --- LÓGICA DE DETECCIÓN DE MODO WIDGET ---
+        // --- LÓGICA DE DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
