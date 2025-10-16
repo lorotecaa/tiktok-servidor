@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const WebSocket = require('ws');
-const path = require('path'); // <-- CORRECCIÓN 1: Necesitas el módulo 'path'
+const path = require('path'); 
 
 const app = express();
 const server = http.createServer(app);
@@ -15,10 +15,8 @@ let participantes = [];
 let subastaActiva = false;
 
 // --- CONFIGURACIÓN DE EXPRESS PARA SERVIR LA PÁGINA WEB ---
-// 1. Servir la carpeta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. CORRECCIÓN 2: La ruta principal debe enviar el index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -49,7 +47,7 @@ function connectToTikfinity() {
             const giftData = message.data;
 
             // --- FILTRO ANTI-DOBLES ---
-            if (!giftData.repeatEnd) return;
+            if (!giftData.repeatEnd) return; // Ignora los eventos de animación
 
             const donacion = { usuario: giftData.nickname, cantidad: giftData.diamondCount * giftData.repeatCount };
             
@@ -61,7 +59,7 @@ function connectToTikfinity() {
             }
         }
         
-        participantes.sort((a, b) => b.cantidad - a.cantidad);
+        participantes.sort((a, b) => b.cantidad - a.sort);
         io.emit('actualizar_lista', participantes);
     });
 
