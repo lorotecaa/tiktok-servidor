@@ -14,6 +14,15 @@ let tikfinitySocket;
 let participantes = [];
 let subastaActiva = false; 
 
+// --- CONFIGURACIÓN DE EXPRESS PARA SERVIR LA PÁGINA WEB ---
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+// ------------------------------------------------------------
+
+
 function connectToTikfinity() {
     if (tikfinitySocket && (tikfinitySocket.readyState === WebSocket.OPEN || tikfinitySocket.readyState === WebSocket.CONNECTING)) {
         io.emit('conexion_exitosa', 'Conectado a TikFinity');
@@ -21,9 +30,11 @@ function connectToTikfinity() {
     }
     if (tikfinitySocket && tikfinitySocket.readyState === WebSocket.CONNECTING) return;
 
+    console.log('Intentando conectar con el puente de TikFinity...');
     tikfinitySocket = new WebSocket(TIKFINITY_WEBSOCKET_URL);
 
     tikfinitySocket.on('open', () => {
+        console.log('✅ Conexión exitosa con la API de TikFinity.');
         io.emit('conexion_exitosa', 'Conectado a TikFinity');
     });
 
@@ -62,22 +73,23 @@ io.on('connection', (socket) => {
     console.log(`Cliente conectado: ${socket.id}`);
 
     socket.on('iniciar_subasta', () => {
+        console.log('RECIBIDA ORDEN DE INICIAR SUBASTA. Limpiando lista...');
         participantes = [];
         subastaActiva = true;
         io.emit('actualizar_lista', participantes);
         connectToTikfinity();
     });
     
-    // NUEVO: Escuchamos el tiempo de la ventana de control
+    // NUEVO: Escuchamos el tiempo del reloj maestro (Dashboard)
     socket.on('sync_time', (time) => {
         // Y se lo reenviamos a TODAS las ventanas conectadas
         io.emit('update_time', time); 
     });
 
     socket.on('finalizar_subasta', () => {
+        console.log('RECIBIDA ORDEN DE FINALIZAR SUBASTA');
         subastaActiva = false;
-        // El servidor le avisa a todas las ventanas que el tiempo se detuvo
-        io.emit('timer_stopped'); 
+        // El cliente principal se encarga de enviar el tiempo final (00:00)
     });
 
     socket.on('disconnect', () => console.log(`Cliente desconectado: ${socket.id}`));
