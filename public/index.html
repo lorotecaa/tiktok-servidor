@@ -16,14 +16,14 @@
         .stop { background: red; color: white; }
         #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
-        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) */
+        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD) */
         #ganadores, #participantes, #controles, #tiempoBox { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
         #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
         #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
         #controles { background: #8e44ad; width: 300px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
 
-        /* WIDGET MODE (Para TikTok Studio) */
+        /* WIDGET MODE (La Solución Final y Estilizada) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
@@ -32,23 +32,47 @@
 
         /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
         #widget-container {
-            display: none; /* Por defecto oculto */
+            display: none; 
             flex-direction: column;
             width: 350px; 
             margin: 0;
             padding: 0;
-            border-radius: 10px;
-            overflow: hidden;
             background: transparent;
         }
 
-        /* Estilos de los elementos del widget */
-        #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; margin: 0; padding: 10px 0; }
-        #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; }
-        #participantes-widget { background: #1c2b3e; width: 100%; height: auto; margin: 0; padding: 10px; border-radius: 0 0 10px 10px; }
+        /* ESTILOS DEL TEMPORIZADOR DEL WIDGET */
+        #tiempoBox-widget { background: transparent; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #tiempoRestante-widget { 
+            font-size: 2.5em; 
+            color: #00FFFF; /* Color Aqua */
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,255,255,0.7); /* Brillo */
+            background: #002233; /* Fondo muy oscuro */
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid #00FFFF;
+        }
+        #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
+
+        /* ESTILOS DE LA LISTA DE PARTICIPANTES DEL WIDGET */
+        #participantes-widget { background: transparent; width: 100%; height: auto; margin: 0; padding: 10px; border-radius: 0 0 10px 10px; }
         #participantes-widget h2, #participantes-widget .totales { display: none; }
-        #listaParticipantes-widget li { display: flex; justify-content: space-between; align-items: center; background: #34495e; margin-bottom: 5px; padding: 8px 10px; border-radius: 6px; font-size: 16px; font-weight: bold; }
-        #listaParticipantes-widget li .coins { color: #ffd700; }
+        #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
+        #listaParticipantes-widget li {
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #1a2333; 
+            margin-bottom: 8px; 
+            padding: 10px 15px; 
+            border-radius: 12px;
+            font-size: 16px; 
+            font-weight: bold;
+            border: 2px solid #3d5a80; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+        #listaParticipantes-widget li .rank-icon { width: 24px; height: 24px; border-radius: 50%; background: gold; color: #333; display: flex; align-items: center; justify-content: center; font-size: 0.9em; margin-right: 10px; }
+        #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
+        #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; }
+
     </style>
 </head>
 <body>
@@ -109,7 +133,7 @@
         let participantes = [];
         let ganadoresHistorial = [];
 
-        // --- FUNCIONES DE UTILIDAD Y CORE ---
+        // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
@@ -121,7 +145,7 @@
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
-            // 1. Apuntamos a las listas correctas
+            // 1. Apuntamos a las listas correctas para rellenar
             const listaDashboardEl = document.querySelector('#participantes ul');
             const listaWidgetEl = document.querySelector('#listaParticipantes-widget'); 
 
@@ -130,7 +154,9 @@
             if (listaWidgetEl) listaWidgetEl.innerHTML = "";
             
             let totalDiamantes = 0;
-            const topN = participantes.slice(0, 5); 
+
+            // Decidimos cuántos mostrar (5 para widget, todos para dashboard)
+            const topN = isWidgetMode ? participantes.slice(0, 5) : participantes; 
 
             participantes.forEach((p, index) => {
                 const liDashboard = document.createElement("li");
@@ -188,7 +214,7 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos AMBOS displays de tiempo
+                    // Actualizamos ambos displays de tiempo
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
                     if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 } else {
@@ -201,8 +227,6 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            
-            // EL TIMER DEBE ARRANCAR AQUÍ
             iniciarTimerLogic(); 
         }
 
@@ -242,18 +266,18 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
         }
 
-        // --- LÓGICA DE DETECCIÓN DE MODO WIDGET ---
+        // --- LÓGICA DE DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
             
-            // Aseguramos que el contenedor principal del dashboard esté oculto
+            // Ocultamos el dashboard principal y mostramos el contenedor del widget
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
             // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic(); // Iniciamos el timer inmediatamente
+            iniciarTimerLogic();
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
