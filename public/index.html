@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Subasta en Vivo</title>
     <style>
-        /* ESTILOS BASE DEL DASHBOARD */
+        /* ESTILOS BASE Y PANTALLA COMPLETA */
         body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         h1 { margin:20px 0; }
         ul { list-style: none; padding: 0; }
@@ -16,38 +16,51 @@
         .stop { background: red; color: white; }
         #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
-        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) */
-        #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
-        #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
-        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
-        #controles-group { width: 300px; padding: 0; margin: 20px 0 0 0; display: inline-block; vertical-align: top; }
-        #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
+        /* CONTENEDORES PRINCIPALES (NUEVO: FLEX HORIZONTAL) */
+        #main-dashboard-content { 
+            display: flex; 
+            flex-wrap: nowrap; /* Evita que las cajas salten a la siguiente fila */
+            justify-content: center; 
+            align-items: flex-start;
+            width: 100%; 
+            max-width: 1600px; /* Aumentamos el tamaño máximo para la fila */
+            padding: 20px 0;
+        }
 
+        /* TAMAÑOS REDUCIDOS Y ESTILOS */
+        #ganadores, #participantes, #controles-group { 
+            margin: 10px; /* Reducimos el margen */
+            padding: 15px; 
+            border-radius: 10px; 
+            vertical-align: top;
+            box-sizing: border-box;
+        }
+        #ganadores, #participantes { 
+            width: 280px; /* Reducimos el ancho para que quepa todo */
+            height: 350px; 
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #ganadores { background: #2c3e50; }
+        #participantes { background: #27ae60; }
+        
+        /* Controles y Tiempo deben ser un grupo vertical */
+        #controles-group { width: 280px; padding: 0; margin: 10px; }
+        #controles { background: #8e44ad; width: 100%; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        #tiempoBox { background: #e67e22; width: 100%; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
+        
         /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
-        
-        /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
         .widget-mode #main-dashboard-content { display: none !important; }
         .widget-mode #logDonaciones { display: none !important; } 
 
-        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
-        #widget-container {
-            display: none; 
-            flex-direction: column;
-            width: 350px; 
-            margin: 0 auto;
-            background: transparent;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid #333; 
-        }
-
-        /* ESTILOS INTERNOS DEL WIDGET */
+        /* ESTILOS DEL CONTENEDOR DEL WIDGET */
+        #widget-container { display: none; flex-direction: column; width: 350px; margin: 0 auto; background: transparent; border-radius: 10px; overflow: hidden; border: 2px solid #333; }
         #tiempoBox-widget { background: #008000; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; }
         #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,0,0.7); }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
-
         #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px; }
         #participantes-widget h2, #participantes-widget .totales { display: none; }
         #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
@@ -59,10 +72,11 @@
 </head>
 <body>
     
-    <div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
+    <div id="main-dashboard-content">
         <h1>⚡ Subasta en Vivo ⚡</h1>
         
         <div id="ganadores"><h2>🏆 Ganadores de Rondas</h2><ul id="listaGanadores"></ul></div>
+        
         <div id="participantes"><h2>👥 Participantes (Ronda Actual)</h2><ul id="listaParticipantes"></ul>
             <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
             <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
