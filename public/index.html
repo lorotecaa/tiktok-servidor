@@ -1,4 +1,108 @@
-<script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Subasta en Vivo</title>
+    <style>
+        /* ESTILOS BASE DEL DASHBOARD */
+        body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        h1 { margin:20px 0; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 5px 0; font-size: 18px; }
+        .totales { margin-top: 10px; font-weight: bold; font-size: 16px; }
+        h2 { background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 5px; display: inline-block; margin-bottom: 10px; font-size: 18px; }
+        button { margin: 5px; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .start { background: green; color: white; }
+        .stop { background: red; color: white; }
+        #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
+        
+        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) */
+        #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
+        #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
+        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
+        #controles-group { width: 300px; padding: 0; margin: 20px 0 0 0; display: inline-block; vertical-align: top; }
+        #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
+
+        /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) */
+        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
+        
+        /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
+        .widget-mode #main-dashboard-content { display: none !important; }
+        .widget-mode #logDonaciones { display: none !important; } 
+
+        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
+        #widget-container {
+            display: none; /* Por defecto oculto */
+            flex-direction: column;
+            width: 350px; /* Ancho fijo para el widget */
+            margin: 0 auto;
+            background: transparent;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #333; 
+        }
+
+        /* ESTILOS INTERNOS DEL WIDGET */
+        #tiempoBox-widget { background: #008000; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; }
+        #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,0,0.7); }
+        #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
+
+        #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px; }
+        #participantes-widget h2, #participantes-widget .totales { display: none; }
+        #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
+        #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #2a3d5e; margin-bottom: 8px; padding: 10px 15px; border-radius: 12px; font-size: 16px; font-weight: bold; border: 2px solid #3d5a80; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
+        #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+    
+    <div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
+        <h1>⚡ Subasta en Vivo ⚡</h1>
+        
+        <div id="ganadores"><h2>🏆 Ganadores de Rondas</h2><ul id="listaGanadores"></ul></div>
+        <div id="participantes"><h2>👥 Participantes (Ronda Actual)</h2><ul id="listaParticipantes"></ul>
+            <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
+            <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
+        </div>
+
+        <div id="controles-group">
+            <div id="controles">
+                <h2>🎮 Controles</h2>
+                <label for="tiktokUser">👤 TikTok User:</label><br>
+                <input type="text" id="tiktokUser" placeholder="@usuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
+                <div class="subcuadro">
+                    <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
+                    <input type="number" id="tiempo" value="200"><br><br>
+                    <button class="start" onclick="iniciar()">Iniciar</button>
+                    <button onclick="pausar()">Pausar</button>
+                    <button onclick="finalizar()">Finalizar</button>
+                    <button onclick="restart()">Restart</button>
+                </div>
+            </div>
+            <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
+        </div>
+
+        <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
+    </div> 
+
+    <div id="widget-container" style="display:none;">
+        
+        <div id="tiempoBox-widget">
+            <div id="tiempoRestante-widget">00:00</div>
+            <div id="subtext-widget">El sorteo/subasta termina en</div>
+        </div>
+        <div id="participantes-widget">
+            <ul id="listaParticipantes-widget"></ul>
+        </div>
+        
+    </div>
+    
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <script>
         const socket = io(); 
 
         const listaParticipantesEl = document.getElementById('listaParticipantes');
@@ -8,7 +112,6 @@
         
         let tiempoActual = 0;
         let intervalo = null;
-        let isPaused = false; // Nuevo estado para la pausa
         let participantes = [];
         let ganadoresHistorial = [];
 
@@ -20,7 +123,7 @@
         }
         
         function actualizarParticipantesUI() {
-            participantes.sort((a, b) => b.cantidad - a.sort);
+            participantes.sort((a, b) => b.cantidad - a.cantidad);
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
@@ -87,43 +190,38 @@
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
-                if (!isPaused && tiempoActual > 0) { // Solo cuenta si NO está pausado
+                if (tiempoActual > 0) {
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
                     // Actualizamos ambos displays de tiempo
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
                     if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
-                } else if (tiempoActual <= 0) {
+                } else {
                     terminarTiempo();
                 }
             }, 1000);
         }
 
-        function terminarTiempo() {
-            if (intervalo) { clearInterval(intervalo); intervalo = null; }
-            socket.emit('finalizar_subasta');
-            
-            // Ponemos ambos a 00:00 y detenemos la subasta
-            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-            if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
-
-            logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
-        }
-        
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            isPaused = false; // Aseguramos que no esté en pausa
             iniciarTimerLogic();
         }
 
+        function terminarTiempo() {
+            if (intervalo) { clearInterval(intervalo); intervalo = null; }
+            socket.emit('finalizar_subasta');
+            logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
+        }
+        
         function finalizar() {
              terminarTiempo();
              tiempoActual = 0;
+             if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
+             if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
              logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
-             
              if (participantes.length > 0) {
                 const ganador = participantes[0];
                 ganadoresHistorial.unshift(ganador);
@@ -132,16 +230,6 @@
              }
              participantes = [];
              actualizarParticipantesUI();
-        }
-
-        // FUNCIÓN CLAVE PARA PAUSA
-        function pausar() {
-            isPaused = !isPaused; // Invierte el estado (true/false)
-            if (isPaused) {
-                logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
-            } else {
-                logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
-            }
         }
         
         function restart() {
@@ -154,36 +242,25 @@
             socket.emit("iniciar_subasta"); 
         }
 
-        // --- EVENTOS DE COMUNICACIÓN Y WIDGET ---
-        socket.on('connect', () => logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ Conectado al servidor.</p>`);
-        socket.on('conexion_exitosa', (mensaje) => {
-            logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ ${mensaje}</p>`;
-            participantes = [];
-            actualizarParticipantesUI();
-            // Si es widget, el temporizador ya se inició
-            if (!document.body.classList.contains('widget-mode')) {
-                 iniciarTimerLogic();
-            }
-        });
-        socket.on('error', (err) => alert(err));
-        
-        socket.on('actualizar_lista', (nuevaListaParticipantes) => {
-            participantes = nuevaListaParticipantes;
-            actualizarParticipantesUI();
-        });
-
+        function pausar() {
+            if (intervalo) { clearInterval(intervalo); intervalo = null; }
+        }
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
+            
+            // Ocultamos el dashboard principal y mostramos el contenedor del widget
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // En modo widget, el timer y la subasta se inician al cargar
+            // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
             iniciarTimerLogic();
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
     </script>
+</body>
+</html>
