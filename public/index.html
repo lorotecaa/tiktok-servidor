@@ -17,48 +17,136 @@
         #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
         /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) */
-        #ganadores, #participantes-dashboard, #controles, #tiempoBox { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
+        #ganadores, #participantes-dashboard, #controles, #tiempoBox-dashboard { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
         #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
-        #participantes-dashboard { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; } /* Renombrado para no conflicto */
+        #participantes-dashboard { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
         #controles { background: #8e44ad; width: 300px; }
-        #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
+        #tiempoBox-dashboard { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; margin-left: 20px; }
 
-        /* WIDGET MODE (SOLUCIÓN FINAL DE ALINEACIÓN) */
+        /* WIDGET MODE (ESTILOS PARA EL OVERLAY DE TIKTOK STUDIO) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
-        /* OCULTAR TODO LO QUE NO SEA EL WIDGET (SOLO SE MUESTRA EL #widget-container) */
+        /* OCULTAR COMPLETAMENTE EL DASHBOARD CUANDO ESTAMOS EN MODO WIDGET */
         .widget-mode #main-dashboard-content,
         .widget-mode #logDonaciones {
             display: none !important;
         }
 
-        /* ESTILOS DEL CONTENEDOR DEL WIDGET */
-        .widget-mode #widget-container {
-            display: flex !important;
+        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
+        #widget-container {
+            display: none; /* Por defecto oculto, solo visible en modo widget */
             flex-direction: column;
-            width: 350px; /* Tamaño del widget */
+            width: 350px; /* Ancho deseado del widget */
             margin: 0;
             padding: 0;
             border-radius: 10px;
             overflow: hidden;
             background: transparent;
+            border: 2px solid #333; /* Borde oscuro para el widget */
+        }
+
+        /* ESTILOS DEL TEMPORIZADOR DEL WIDGET */
+        #tiempoBox-widget { 
+            background: #008000; 
+            width: 100%; 
+            border-radius: 8px 8px 0 0; /* Bordes superiores redondeados */
+            padding: 10px 0; 
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #tiempoRestante-widget { 
+            font-size: 2.5em; 
+            color: #00FF00; 
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0,255,0,0.7); /* Efecto de brillo */
+        }
+        #subtext-widget { 
+            font-size: 14px; 
+            color: #ccc; 
+            margin-top: 5px; 
+        }
+
+        /* ESTILOS DE LA LISTA DE PARTICIPANTES DEL WIDGET */
+        #participantes-widget { 
+            background: #1c2b3e; 
+            width: 100%; 
+            height: auto; 
+            min-height: 200px; 
+            padding: 10px; 
+            border-radius: 0 0 8px 8px; /* Bordes inferiores redondeados */
+            box-sizing: border-box;
+        }
+        #listaParticipantes-widget { 
+            padding: 0; 
+            margin: 0; 
+            list-style: none; /* Asegura que no haya viñetas */
+        }
+        #listaParticipantes-widget li {
+            display: flex; 
+            align-items: center; 
+            background: #2a3d5e; /* Color de fondo de cada ficha */
+            margin-bottom: 8px; /* Espacio entre fichas */
+            padding: 10px 15px; /* Relleno interno */
+            border-radius: 10px; /* Bordes redondeados de la ficha */
+            font-size: 16px; 
+            font-weight: bold;
+            border: 1px solid #4a6fa8; /* Borde sutil */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Sombra para profundidad */
+        }
+
+        /* ESTILOS ESPECÍFICOS DE LOS ELEMENTOS DENTRO DE CADA FICHA DEL WIDGET */
+        #listaParticipantes-widget li .rank-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: gold; /* Color para el fondo del número de ranking */
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        #listaParticipantes-widget li .user-info {
+            display: flex;
+            align-items: center;
+            flex-grow: 1; /* Para que el nombre de usuario ocupe el espacio restante */
+        }
+        #listaParticipantes-widget li .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #555; /* Color por defecto del avatar */
+            margin-right: 10px;
+            border: 2px solid #aaa; /* Borde del avatar */
+            overflow: hidden; /* Para imágenes de avatar */
+        }
+        #listaParticipantes-widget li .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #listaParticipantes-widget li .username {
+            font-size: 1.1em;
+            color: #fff;
+        }
+        #listaParticipantes-widget li .coins { 
+            color: #ffd700; /* Color dorado para las monedas */
+            font-size: 1.1em;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+        }
+        #listaParticipantes-widget li .coins::before {
+            content: '🪙'; /* Icono de moneda real */
+            margin-right: 5px;
+            font-size: 0.9em;
         }
         
-        /* Estilos de los elementos del widget */
-        .widget-mode #tiempoBox-widget { background: #008000; width: 100%; border-radius: 10px 10px 0 0; padding: 10px 0; }
-        .widget-mode #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; }
-        .widget-mode #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
-
-        .widget-mode #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 10px 10px; }
-        .widget-mode #participantes-widget h2 { display: none; }
-        .widget-mode #listaParticipantes-widget { padding: 0; margin: 0; }
-        .widget-mode #listaParticipantes-widget li {
-            display: flex; justify-content: space-between; align-items: center; background: #34495e; margin-bottom: 5px;
-            padding: 8px 10px; border-radius: 6px; font-size: 16px; font-weight: bold;
-        }
-        .widget-mode #listaParticipantes-widget li .rank { color: gold; margin-right: 5px; }
-        .widget-mode #listaParticipantes-widget li .coins { color: #ffd700; }
-
     </style>
 </head>
 <body>
@@ -86,13 +174,13 @@
                     <button onclick="restart()">Restart</button>
                 </div>
             </div>
-            <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
+            <div id="tiempoBox-dashboard"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante-dashboard" style="font-size: 2.5em;">0</div></div>
         </div>
 
         <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
     </div> 
 
-    <div id="widget-container" style="display:none;">
+    <div id="widget-container">
         
         <div id="tiempoBox-widget">
             <div id="tiempoRestante-widget">00:00</div>
@@ -107,14 +195,18 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
-        const socket = io(); 
+        const socket = io("http://localhost:3000"); 
 
-        // Renombramos las variables para apuntar a los IDs correctos
+        // Referencias a elementos del DASHBOARD
         const listaParticipantesDashboardEl = document.getElementById('listaParticipantes-dashboard'); 
         const listaGanadoresEl = document.getElementById('listaGanadores');
-        const tiempoRestanteEl = document.getElementById('tiempoRestante');
+        const tiempoRestanteDashboardEl = document.getElementById('tiempoRestante-dashboard');
         const logDonacionesEl = document.getElementById('logDonaciones');
         
+        // Referencias a elementos del WIDGET
+        const tiempoRestanteWidgetEl = document.getElementById('tiempoRestante-widget');
+        const listaParticipantesWidgetEl = document.getElementById('listaParticipantes-widget');
+
         let tiempoActual = 0;
         let intervalo = null;
         let participantes = [];
@@ -132,38 +224,41 @@
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
-            // 1. Determinar a qué listas escribir (Dashboard y Widget)
-            const listaDashboardEl = document.querySelector('#participantes-dashboard ul');
-            const listaWidgetEl = document.querySelector('#listaParticipantes-widget'); 
-            
-            // Limpiamos ambas listas
-            if (listaDashboardEl) listaDashboardEl.innerHTML = "";
-            if (listaWidgetEl) listaWidgetEl.innerHTML = "";
+            // Limpiamos las listas antes de rellenarlas
+            if (listaParticipantesDashboardEl) listaParticipantesDashboardEl.innerHTML = "";
+            if (listaParticipantesWidgetEl) listaParticipantesWidgetEl.innerHTML = "";
             
             let totalDiamantes = 0;
-            const topN = participantes.slice(0, 5); // Tomamos el Top 5 para ambos
 
-            participantes.forEach((p, index) => {
-                const liDashboard = document.createElement("li");
-                
-                // Formato de Dashboard (se añade a la lista completa)
-                liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
-                if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
+            // Iteramos sobre todos los participantes para el dashboard
+            if (listaParticipantesDashboardEl) {
+                participantes.forEach((p) => {
+                    const li = document.createElement("li");
+                    li.textContent = `${p.usuario} - ${p.cantidad} 💎`;
+                    listaParticipantesDashboardEl.appendChild(li);
+                });
+            }
 
-                // Formato de Widget (se añade al top 5)
-                if (index < 5 && listaWidgetEl) {
-                    const liWidget = document.createElement("li");
+            // Iteramos sobre el top 5 para el widget
+            if (listaParticipantesWidgetEl) {
+                participantes.slice(0, 5).forEach((p, index) => { // Solo los primeros 5
+                    const li = document.createElement("li");
                     const rango = index + 1;
-                    liWidget.innerHTML = `
-                        <div class="rank" style="font-size: 1.2em;">${rango}</div>
-                        <div style="flex-grow: 1; text-align: left; padding-left: 10px;">${p.usuario}</div>
-                        <span class="coins">${p.cantidad} 🪙</span>
+                    
+                    // Asumiendo que p.avatar_url existe (si lo recibes del servidor)
+                    const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30'; // Placeholder si no hay avatar
+
+                    li.innerHTML = `
+                        <div class="rank-icon">${rango}</div>
+                        <div class="user-info">
+                            <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
+                            <span class="username">${p.usuario}</span>
+                        </div>
+                        <span class="coins">${p.cantidad}</span>
                     `;
-                    listaWidgetEl.appendChild(liWidget);
-                }
-                
-                totalDiamantes += p.cantidad;
-            });
+                    listaParticipantesWidgetEl.appendChild(li);
+                });
+            }
             
             // Actualizamos los totales del Dashboard (solo si no es widget)
             if (!isWidgetMode) {
@@ -173,12 +268,14 @@
         }
 
         function actualizarGanadoresUI() {
-            listaGanadoresEl.innerHTML = "";
-            ganadoresHistorial.forEach(g => {
-                const li = document.createElement('li');
-                li.textContent = `🏆 ${g.usuario} - ${g.cantidad} 💎`;
-                listaGanadoresEl.appendChild(li);
-            });
+            if (listaGanadoresEl) { // Asegurarse de que el elemento existe
+                listaGanadoresEl.innerHTML = "";
+                ganadoresHistorial.forEach(g => {
+                    const li = document.createElement('li');
+                    li.textContent = `🏆 ${g.usuario} - ${g.cantidad} 💎`;
+                    listaGanadoresEl.appendChild(li);
+                });
+            }
         }
 
         // --- LÓGICA DEL TEMPORIZADOR ---
@@ -193,16 +290,16 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos AMBOS displays
-                    document.querySelector('#main-dashboard-content #tiempoBox #tiempoRestante').textContent = formattedTime;
-                    document.querySelector('#widget-container #tiempoBox-widget #tiempoRestante-widget').textContent = formattedTime;
+                    // Actualizamos AMBOS displays de tiempo
+                    if (tiempoRestanteDashboardEl) tiempoRestanteDashboardEl.textContent = formattedTime;
+                    if (tiempoRestanteWidgetEl) tiempoRestanteWidgetEl.textContent = formattedTime;
                 } else {
                     terminarTiempo();
                 }
             }, 1000);
         }
 
-        // --- FUNCIONES DE CONTROL ---
+        // --- FUNCIONES DE CONTROL (llamadas por los botones del dashboard) ---
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión y nueva subasta...</p>`;
             socket.emit("iniciar_subasta"); 
@@ -218,8 +315,9 @@
         function finalizar() {
              terminarTiempo();
              tiempoActual = 0;
-             document.querySelector('#main-dashboard-content #tiempoBox #tiempoRestante').textContent = formatTime(0);
-             document.querySelector('#widget-container #tiempoBox-widget #tiempoRestante-widget').textContent = formatTime(0);
+             if (tiempoRestanteDashboardEl) tiempoRestanteDashboardEl.textContent = formatTime(0);
+             if (tiempoRestanteWidgetEl) tiempoRestanteWidgetEl.textContent = formatTime(0);
+             
              logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
              if (participantes.length > 0) {
                 const ganador = participantes[0];
@@ -232,7 +330,7 @@
         }
         
         function restart() {
-            finalizar();
+            finalizar(); // Finaliza la ronda actual y guarda ganador si hay
             participantes = [];
             ganadoresHistorial = [];
             actualizarParticipantesUI();
@@ -245,19 +343,36 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
         }
 
-        // --- LÓGICA DE DETECCIÓN DE WIDGET ---
+        // --- EVENTOS DE COMUNICACIÓN (socket.io) ---
+        socket.on('connect', () => {
+            if (logDonacionesEl) logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ Conectado al servidor.</p>`;
+        });
+        
+        socket.on('conexion_exitosa', (mensaje) => {
+            if (logDonacionesEl) logDonacionesEl.innerHTML += `<p style="color: lightgreen;">✔️ ${mensaje}</p>`;
+            participantes = [];
+            actualizarParticipantesUI();
+            // El timer se inicia con el botón "Iniciar" en el dashboard, o al cargar en el widget
+            if (document.body.classList.contains('widget-mode')) {
+                iniciarTimerLogic();
+            }
+        });
+        socket.on('conexion_error', (error) => alert(error));
+        
+        socket.on('actualizar_lista', (nuevaListaParticipantes) => {
+            participantes = nuevaListaParticipantes;
+            actualizarParticipantesUI();
+        });
+
+        // --- LÓGICA DE DETECCIÓN DE MODO WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
             document.body.classList.add('widget-mode');
-            // Muestra solo el contenedor del widget y oculta el dashboard
-            document.getElementById('main-dashboard-content').style.display = 'none';
+            // Muestra solo el contenedor del widget
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, inicia la subasta inmediatamente al cargar
+            // Inicia la subasta automáticamente al cargar el widget
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic(); // Iniciamos el timer inmediatamente para el widget
-        } else {
-            document.getElementById('widget-container').style.display = 'none';
         }
     </script>
 </body>
