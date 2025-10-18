@@ -182,7 +182,7 @@
             });
         }
         
-        // --- LÓGICA DEL TEMPORIZADOR ---
+        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
         function iniciarTimerLogic() {
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
@@ -194,9 +194,12 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos AMBOS displays de tiempo
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    socket.emit('sync_time', tiempoActual); 
+                    
+                    // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
-                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+
                 } else {
                     terminarTiempo();
                 }
@@ -214,9 +217,8 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
             socket.emit('finalizar_subasta');
             
-            // Seteamos ambos displays a 00:00
-            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-            if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+            // Enviamos 0 al servidor para que el widget se detenga
+            socket.emit('sync_time', 0); 
             
             logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
         }
@@ -224,6 +226,8 @@
         function finalizar() {
              terminarTiempo();
              tiempoActual = 0;
+             if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
+             if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
              logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
              if (participantes.length > 0) {
                 const ganador = participantes[0];
@@ -249,6 +253,21 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
         }
 
+        // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
+        socket.on('update_time', (time) => {
+            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
+            if (document.body.classList.contains('widget-mode')) {
+                const formattedTime = formatTime(time);
+                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+                
+                // Si el tiempo es 0, detenemos cualquier cosa por si acaso
+                if (time <= 0) {
+                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+                }
+            }
+        });
+
+
         // --- LÓGICA DE DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
@@ -260,7 +279,6 @@
             
             // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic();
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
