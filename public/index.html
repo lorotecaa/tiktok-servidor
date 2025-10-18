@@ -182,7 +182,7 @@
             });
         }
         
-        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard de Electron) ---
+        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
         function iniciarTimerLogic() {
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
@@ -228,5 +228,60 @@
              tiempoActual = 0;
              if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
              if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
-             logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</pリューuser
-si funciona , ya esta funcionando y se sincroniza al mismo tiempo, el problema es que el boton pausar no funciona
+             logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+             if (participantes.length > 0) {
+                const ganador = participantes[0];
+                ganadoresHistorial.unshift(ganador);
+                logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+                actualizarGanadoresUI();
+             }
+             participantes = [];
+             actualizarParticipantesUI();
+        }
+        
+        function restart() {
+            finalizar();
+            participantes = [];
+            ganadoresHistorial = [];
+            actualizarParticipantesUI();
+            actualizarGanadoresUI();
+            logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong>';
+            socket.emit("iniciar_subasta"); 
+        }
+
+        function pausar() {
+            if (intervalo) { clearInterval(intervalo); intervalo = null; }
+        }
+
+        // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
+        socket.on('update_time', (time) => {
+            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
+            if (document.body.classList.contains('widget-mode')) {
+                const formattedTime = formatTime(time);
+                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+                
+                // Si el tiempo es 0, detenemos cualquier cosa por si acaso
+                if (time <= 0) {
+                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+                }
+            }
+        });
+
+
+        // --- LÓGICA DE DETECCIÓN DE WIDGET ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'widget') {
+            document.body.classList.add('widget-mode');
+            
+            // Ocultamos el dashboard principal y mostramos el contenedor del widget
+            document.getElementById('main-dashboard-content').style.display = 'none';
+            document.getElementById('widget-container').style.display = 'flex';
+            
+            // Al ser un widget, inicia la subasta inmediatamente al cargar
+            socket.emit("iniciar_subasta"); 
+        } else {
+            document.getElementById('widget-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
