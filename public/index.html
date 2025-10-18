@@ -184,9 +184,6 @@
         
         // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard de Electron) ---
         function iniciarTimerLogic() {
-            // Si es un widget (esclavo), no hace nada, espera la hora.
-            if (document.body.classList.contains('widget-mode')) return;
-
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
@@ -197,7 +194,7 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // 1. EL DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
                     socket.emit('sync_time', tiempoActual); 
                     
                     // 2. Actualizamos el display LOCAL del dashboard
@@ -219,7 +216,7 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
             socket.emit('finalizar_subasta');
             
-            // Enviamos un último mensaje de 00:00 para la sincronización
+            // Enviamos 0 al servidor para que el widget se detenga
             socket.emit('sync_time', 0); 
             
             logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
@@ -228,9 +225,8 @@
         function finalizar() {
              terminarTiempo();
              tiempoActual = 0;
-             // Seteamos el display local a 0 también
              if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-
+             if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
              logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
              if (participantes.length > 0) {
                 const ganador = participantes[0];
@@ -254,7 +250,6 @@
 
         function pausar() {
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
-            // Opcional: emitir un evento 'pausa' al servidor si se quiere un control total
         }
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
@@ -281,8 +276,9 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // El widget solo se conecta y espera la orden de inicio/tiempo del panel de control
+            // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
+            iniciarTimerLogic();
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
