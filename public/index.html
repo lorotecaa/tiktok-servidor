@@ -182,7 +182,7 @@
             });
         }
         
-        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard de Electron) ---
+        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
         function iniciarTimerLogic() {
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
@@ -194,13 +194,14 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos el display LOCAL del dashboard
-                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
-
-                    // ENVIAMOS LA HORA AL SERVIDOR para sincronizar el widget
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
                     if (!document.body.classList.contains('widget-mode')) {
                         socket.emit('sync_time', tiempoActual); 
                     }
+                    
+                    // 2. Actualizamos el display LOCAL del dashboard
+                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+
                 } else {
                     terminarTiempo();
                 }
@@ -218,7 +219,7 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
             socket.emit('finalizar_subasta');
             
-            // Enviamos un último mensaje de 00:00 para la sincronización
+            // Enviamos 0 al servidor para que el widget se detenga
             socket.emit('sync_time', 0); 
             
             logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
@@ -260,8 +261,14 @@
             if (document.body.classList.contains('widget-mode')) {
                 const formattedTime = formatTime(time);
                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+                
+                // Si el tiempo es 0, detenemos cualquier cosa por si acaso
+                if (time <= 0) {
+                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+                }
             }
         });
+
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -272,7 +279,7 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // El widget solo se conecta y espera la orden de inicio/tiempo del panel de control
+            // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
         } else {
             document.getElementById('widget-container').style.display = 'none';
