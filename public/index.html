@@ -114,6 +114,7 @@
         let intervalo = null;
         let participantes = [];
         let ganadoresHistorial = [];
+        let isMasterClock = false; // NUEVO: Determina si esta ventana es el reloj maestro
 
         // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
@@ -123,7 +124,7 @@
         }
         
         function actualizarParticipantesUI() {
-            participantes.sort((a, b) => b.cantidad - a.cantidad);
+            participantes.sort((a, b) => b.cantidad - a.sort);
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
@@ -182,11 +183,12 @@
             });
         }
         
-        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
-        function iniciarTimerLogic() {
+        // --- LÓGICA DEL TEMPORIZADOR MAESTRO/ESCLAVO ---
+        function startMasterClock() {
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
+            isMasterClock = true; // ESTA VENTANA ES EL MAESTRO
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
@@ -199,18 +201,25 @@
                     
                     // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
-
                 } else {
                     terminarTiempo();
                 }
             }, 1000);
         }
 
+        function updateTimeDisplay(time) {
+            const formattedTime = formatTime(time);
+            // Actualizamos ambos displays de tiempo
+            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+            if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+        }
+
+
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic(); // Inicia el reloj maestro
+            startMasterClock(); // Inicia el reloj maestro
         }
 
         function terminarTiempo() {
@@ -226,8 +235,7 @@
         function finalizar() {
              terminarTiempo();
              tiempoActual = 0;
-             if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-             if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+             updateTimeDisplay(0);
              logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
              if (participantes.length > 0) {
                 const ganador = participantes[0];
@@ -255,15 +263,9 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
-            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
+            // Si el widget recibe la hora, significa que la ventana de Electron es el maestro.
             if (document.body.classList.contains('widget-mode')) {
-                const formattedTime = formatTime(time);
-                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
-                
-                // Si el tiempo es 0, detenemos cualquier cosa por si acaso
-                if (time <= 0) {
-                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
-                }
+                updateTimeDisplay(time);
             }
         });
 
@@ -277,7 +279,7 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, inicia la subasta inmediatamente al cargar
+            // El widget solo se conecta y espera la orden de inicio/tiempo del panel de control
             socket.emit("iniciar_subasta"); 
         } else {
             document.getElementById('widget-container').style.display = 'none';
