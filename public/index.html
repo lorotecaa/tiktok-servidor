@@ -182,8 +182,13 @@
             });
         }
         
-        // --- LÓGICA DEL TEMPORIZADOR ---
+        // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
         function iniciarTimerLogic() {
+            // Si ya estamos en modo widget, no iniciamos el timer local, solo esperamos la hora
+            if (document.body.classList.contains('widget-mode')) {
+                 return; 
+            }
+            
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
@@ -194,9 +199,11 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // Actualizamos ambos displays de tiempo
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    socket.emit('sync_time', tiempoActual); 
+                    
+                    // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
-                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 } else {
                     terminarTiempo();
                 }
@@ -207,16 +214,19 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic();
+            
+            // Solo el dashboard inicia el reloj maestro
+            if (!document.body.classList.contains('widget-mode')) {
+                 iniciarTimerLogic();
+            }
         }
 
         function terminarTiempo() {
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
             socket.emit('finalizar_subasta');
             
-            // Seteamos ambos displays a 00:00
-            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-            if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+            // Enviamos 0 al servidor para que el widget se detenga
+            socket.emit('sync_time', 0); 
             
             logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
         }
@@ -251,6 +261,21 @@
             if (intervalo) { clearInterval(intervalo); intervalo = null; }
         }
 
+        // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
+        socket.on('update_time', (time) => {
+            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
+            if (document.body.classList.contains('widget-mode')) {
+                const formattedTime = formatTime(time);
+                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+                
+                // Si el tiempo es 0, detenemos cualquier cosa por si acaso
+                if (time <= 0) {
+                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+                }
+            }
+        });
+
+
         // --- LÓGICA DE DETECCIÓN DE WIDGET ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'widget') {
@@ -260,9 +285,8 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, inicia la subasta inmediatamente al cargar
+            // Al ser un widget, solo se conecta y espera la orden de inicio/tiempo del panel de control
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic();
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
