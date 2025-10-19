@@ -114,6 +114,7 @@
         let intervalo = null;
         let participantes = [];
         let ganadoresHistorial = [];
+        let isMasterClock = false; // Estado para saber qué ventana controla el reloj
 
         // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
@@ -184,14 +185,10 @@
         
         // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
         function iniciarTimerLogic() {
-            // Si ya estamos en modo widget, no iniciamos el timer local, solo esperamos la hora
-            if (document.body.classList.contains('widget-mode')) {
-                 return; 
-            }
-            
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
+            isMasterClock = true; // Declaramos esta ventana como MAESTRO
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
@@ -199,7 +196,7 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    // 1. EL MAESTRO EMITE LA HORA AL SERVIDOR
                     socket.emit('sync_time', tiempoActual); 
                     
                     // 2. Actualizamos el display LOCAL del dashboard
@@ -214,11 +211,7 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            
-            // Solo el dashboard inicia el reloj maestro
-            if (!document.body.classList.contains('widget-mode')) {
-                 iniciarTimerLogic();
-            }
+            iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
         }
 
         function terminarTiempo() {
@@ -263,8 +256,8 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
-            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
-            if (document.body.classList.contains('widget-mode')) {
+            // Si esta ventana NO es el maestro (es el widget), recibe la hora
+            if (!isMasterClock) { 
                 const formattedTime = formatTime(time);
                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 
@@ -285,7 +278,7 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, solo se conecta y espera la orden de inicio/tiempo del panel de control
+            // El widget solo se conecta y espera la orden de inicio/tiempo del panel de control
             socket.emit("iniciar_subasta"); 
         } else {
             document.getElementById('widget-container').style.display = 'none';
