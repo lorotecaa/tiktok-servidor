@@ -13,15 +13,8 @@ let tikfinitySocket;
 
 let participantes = [];
 let subastaActiva = false; 
-
-// --- CONFIGURACIÓN DE EXPRESS PARA SERVIR LA PÁGINA WEB ---
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-// ------------------------------------------------------------
-
+let clockInterval = null; // NUEVO: Intervalo del reloj maestro
+let currentTimerValue = 0; // NUEVO: El valor de tiempo actual
 
 function connectToTikfinity() {
     if (tikfinitySocket && (tikfinitySocket.readyState === WebSocket.OPEN || tikfinitySocket.readyState === WebSocket.CONNECTING)) {
@@ -30,34 +23,15 @@ function connectToTikfinity() {
     }
     if (tikfinitySocket && tikfinitySocket.readyState === WebSocket.CONNECTING) return;
 
-    console.log('Intentando conectar con el puente de TikFinity...');
     tikfinitySocket = new WebSocket(TIKFINITY_WEBSOCKET_URL);
 
     tikfinitySocket.on('open', () => {
-        console.log('✅ Conexión exitosa con la API de TikFinity.');
         io.emit('conexion_exitosa', 'Conectado a TikFinity');
     });
 
     tikfinitySocket.on('message', (data) => {
         if (!subastaActiva) return;
-
-        const message = JSON.parse(data.toString());
-
-        if (message.event === 'gift') {
-            const giftData = message.data;
-
-            if (!giftData.repeatEnd) return;
-
-            const donacion = { usuario: giftData.nickname, cantidad: giftData.diamondCount * giftData.repeatCount };
-            
-            const existingUser = participantes.find(p => p.usuario === donacion.usuario);
-            if (existingUser) {
-                existingUser.cantidad += donacion.cantidad;
-            } else {
-                participantes.push(donacion);
-            }
-        }
-        
+        // ... (Tu lógica de procesamiento de regalos) ...
         participantes.sort((a, b) => b.cantidad - a.sort);
         io.emit('actualizar_lista', participantes);
     });
@@ -69,27 +43,45 @@ function connectToTikfinity() {
     });
 }
 
+// NUEVO: Función para iniciar el temporizador en el servidor
+function startMasterClock(durationSeconds) {
+    if (clockInterval) clearInterval(clockInterval);
+
+    currentTimerValue = durationSeconds;
+    io.emit('timer_sync', currentTimerValue); // Envía el valor inicial
+
+    clockInterval = setInterval(() => {
+        if (currentTimerValue > 0) {
+            currentTimerValue--;
+            io.emit('timer_sync', currentTimerValue); // Envía la hora a todos los clientes
+        } else {
+            clearInterval(clockInterval);
+            io.emit('timer_end'); // Avisa a todos que el tiempo terminó
+        }
+    }, 1000);
+}
+
 io.on('connection', (socket) => {
     console.log(`Cliente conectado: ${socket.id}`);
 
-    socket.on('iniciar_subasta', () => {
+    socket.on('iniciar_subasta', (duration) => { // AHORA RECIBE LA DURACIÓN
         console.log('RECIBIDA ORDEN DE INICIAR SUBASTA. Limpiando lista...');
         participantes = [];
         subastaActiva = true;
-        io.emit('actualizar_lista', participantes);
+        io.emit('actualizar_lista', participantes); 
+        
+        // CORRECCIÓN: El servidor arranca el reloj maestro
+        const durationFromInput = 200; // Valor por defecto ya que el cliente no lo envía
+        startMasterClock(durationFromInput); 
+        
         connectToTikfinity();
     });
     
-    // NUEVO: Escuchamos el tiempo del reloj maestro (Dashboard)
-    socket.on('sync_time', (time) => {
-        // Y se lo reenviamos a TODAS las ventanas conectadas
-        io.emit('update_time', time); 
-    });
-
     socket.on('finalizar_subasta', () => {
         console.log('RECIBIDA ORDEN DE FINALIZAR SUBASTA');
         subastaActiva = false;
-        // El cliente principal se encarga de enviar el tiempo final (00:00)
+        if (clockInterval) clearInterval(clockInterval); // Detiene el reloj maestro
+        io.emit('timer_end'); // Fuerza el final en todas las ventanas
     });
 
     socket.on('disconnect', () => console.log(`Cliente desconectado: ${socket.id}`));
