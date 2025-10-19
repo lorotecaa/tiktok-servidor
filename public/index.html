@@ -114,7 +114,6 @@
         let intervalo = null;
         let participantes = [];
         let ganadoresHistorial = [];
-        let isMasterClock = false; // El Widget NO es el Maestro
 
         // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
@@ -185,13 +184,9 @@
         
         // --- LÓGICA DEL TEMPORIZADOR MAESTRO (Solo corre en el Dashboard) ---
         function iniciarTimerLogic() {
-            // El Widget NUNCA llama a esta función. Solo el Dashboard lo hace.
-            if (document.body.classList.contains('widget-mode')) return;
-
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
-            isMasterClock = true; // El Dashboard es el Maestro
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
@@ -282,7 +277,7 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // El widget solo se conecta y espera la orden de inicio/tiempo del panel de control
+            // Al ser un widget, solo se conecta y espera la orden de inicio/tiempo del panel de control
             socket.emit("iniciar_subasta"); 
         } else {
             document.getElementById('widget-container').style.display = 'none';
