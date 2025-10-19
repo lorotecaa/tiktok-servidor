@@ -195,11 +195,12 @@
                     const formattedTime = formatTime(tiempoActual);
                     
                     // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    socket.emit('sync_time', tiempoActual); 
+                    if (!document.body.classList.contains('widget-mode')) {
+                        socket.emit('sync_time', tiempoActual); 
+                    }
                     
                     // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
-
                 } else {
                     terminarTiempo();
                 }
@@ -210,7 +211,7 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
-            iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
+            iniciarTimerLogic(); // Inicia el reloj maestro
         }
 
         function terminarTiempo() {
@@ -277,8 +278,9 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, inicia la subasta inmediatamente al cargar
+            // Al ser un widget, iniciamos la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
+            iniciarTimerLogic();
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
