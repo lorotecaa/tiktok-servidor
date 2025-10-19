@@ -114,7 +114,6 @@
         let intervalo = null;
         let participantes = [];
         let ganadoresHistorial = [];
-        let isMasterClock = false; // Estado para saber qué ventana controla el reloj
 
         // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
@@ -188,7 +187,6 @@
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
-            isMasterClock = true; // Declaramos esta ventana como MAESTRO
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
@@ -196,11 +194,12 @@
                     tiempoActual--;
                     const formattedTime = formatTime(tiempoActual);
                     
-                    // 1. EL MAESTRO EMITE LA HORA AL SERVIDOR
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
                     socket.emit('sync_time', tiempoActual); 
                     
                     // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+
                 } else {
                     terminarTiempo();
                 }
@@ -256,8 +255,8 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
-            // Si esta ventana NO es el maestro (es el widget), recibe la hora
-            if (!isMasterClock) { 
+            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
+            if (document.body.classList.contains('widget-mode')) {
                 const formattedTime = formatTime(time);
                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 
@@ -278,7 +277,7 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // El widget solo se conecta y espera la orden de inicio/tiempo del panel de control
+            // Al ser un widget, solo se conecta y espera la orden de inicio/tiempo del panel de control
             socket.emit("iniciar_subasta"); 
         } else {
             document.getElementById('widget-container').style.display = 'none';
