@@ -195,11 +195,12 @@
                     const formattedTime = formatTime(tiempoActual);
                     
                     // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    socket.emit('sync_time', tiempoActual); 
+                    if (!document.body.classList.contains('widget-mode')) {
+                        socket.emit('sync_time', tiempoActual); 
+                    }
                     
                     // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
-
                 } else {
                     terminarTiempo();
                 }
@@ -277,7 +278,7 @@
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, solo se conecta y espera la orden de inicio/tiempo del panel de control
+            // Al ser un widget, inicia la subasta inmediatamente al cargar
             socket.emit("iniciar_subasta"); 
         } else {
             document.getElementById('widget-container').style.display = 'none';
