@@ -188,7 +188,6 @@
             let tiempoInput = document.getElementById("tiempo");
             tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
 
-            isMasterClock = true; // El Dashboard es el Maestro
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
@@ -211,6 +210,7 @@
         function iniciar() {
             logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
             socket.emit("iniciar_subasta"); 
+            isPaused = false; // Aseguramos que no esté en pausa
             iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
         }
 
