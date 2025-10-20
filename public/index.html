@@ -195,9 +195,7 @@
                     const formattedTime = formatTime(tiempoActual);
                     
                     // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    if (!document.body.classList.contains('widget-mode')) {
-                        socket.emit('sync_time', tiempoActual); 
-                    }
+                    socket.emit('sync_time', tiempoActual); 
                     
                     // 2. Actualizamos el display LOCAL del dashboard
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
