@@ -2,16 +2,21 @@
 // 📦 SERVIDOR PRINCIPAL TIKTOK
 // ===============================
 
-// Dependencias necesarias
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const cors = require("cors");
 
 // Crear aplicación Express y servidor HTTP
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
 // Puerto asignado por Render o localmente 10000
 const PORT = process.env.PORT || 10000;
@@ -19,11 +24,9 @@ const PORT = process.env.PORT || 10000;
 // ===============================
 // 🌐 CONFIGURACIÓN EXPRESS
 // ===============================
-
-// Servir archivos estáticos desde la carpeta "public"
+app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Ruta principal para renderizar index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -34,23 +37,24 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   console.log("🟢 Cliente conectado:", socket.id);
 
-  // Escucha cuando un usuario inicia la subasta
-  socket.on("iniciar-subasta", (data) => {
-    console.log("🚀 Subasta iniciada con datos:", data);
-    io.emit("subasta-iniciada", data); // Enviar a todos los clientes
+  // Cuando el panel (Electron) inicia la subasta
+  socket.on("iniciar_subasta", (data) => {
+    console.log("🚀 Subasta iniciada");
+    io.emit("subasta_iniciada", data);
   });
 
-  // Escucha actualizaciones del tiempo
-  socket.on("actualizar-tiempo", (tiempo) => {
-    io.emit("tiempo-actualizado", tiempo); // Reenviar tiempo a todos
+  // Cuando el panel actualiza el tiempo (dashboard emite)
+  socket.on("sync_time", (tiempoActual) => {
+    // Enviar a todos los widgets conectados
+    io.emit("update_time", tiempoActual);
   });
 
-  // Escucha cuando se finaliza la subasta
-  socket.on("finalizar-subasta", () => {
-    io.emit("subasta-finalizada"); // Avisar a todos
+  // Cuando el panel finaliza la subasta
+  socket.on("finalizar_subasta", () => {
+    console.log("🏁 Subasta finalizada");
+    io.emit("subasta_finalizada");
   });
 
-  // Escucha desconexión del cliente
   socket.on("disconnect", () => {
     console.log("🔴 Cliente desconectado:", socket.id);
   });
