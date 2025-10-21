@@ -5,7 +5,7 @@
     <title>Subasta en Vivo</title>
     <style>
         body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        h1 { margin:20px 0; }
+        h1 { margin:20px 0; width: 100%; }
         ul { list-style: none; padding: 0; }
         li { margin: 5px 0; font-size: 18px; }
         .totales { margin-top: 10px; font-weight: bold; font-size: 16px; }
@@ -27,7 +27,6 @@
         #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,0,0.7); }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
         #participantes-widget { background: #1c2b3e; width: 100%; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px; }
-        #participantes-widget h2, #participantes-widget .totales { display: none; }
         #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
         #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #2a3d5e; margin-bottom: 8px; padding: 10px 15px; border-radius: 12px; font-size: 16px; font-weight: bold; border: 2px solid #3d5a80; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
         #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
@@ -68,7 +67,7 @@
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
-const socket = io("https://tiktok-servidor.onrender.com"); // <-- cámbialo si usas otra URL
+const socket = io("https://tiktok-servidor.onrender.com"); // cambia si usas otra URL
 const log = (msg, color="white") => {
     const logEl = document.getElementById('logDonaciones');
     logEl.innerHTML += `<p style="color:${color}">${msg}</p>`;
@@ -94,7 +93,16 @@ function iniciarTimerLogic(){
         }else if(tiempoActual<=0){terminarTiempo();}
     },1000);
 }
-function iniciar(){socket.emit("iniciar_subasta");isPaused=false;iniciarTimerLogic();log("▶️ Subasta iniciada","yellow");}
+function iniciar(){
+    // 🔹 Reinicia participantes cada vez que comienza una nueva subasta
+    participantes = [];
+    actualizarParticipantesUI();
+    document.getElementById('logDonaciones').innerHTML = '<strong>📝 Historial:</strong>';
+    socket.emit("iniciar_subasta");
+    isPaused=false;
+    iniciarTimerLogic();
+    log("▶️ Subasta iniciada","yellow");
+}
 function pausar(){isPaused=!isPaused;if(isPaused){clearInterval(intervalo);log("⏸️ Pausa","orange");}else{iniciarTimerLogic();log("▶️ Reanuda","green");}}
 function finalizar(){
     clearInterval(intervalo);tiempoActual=0;
@@ -108,7 +116,12 @@ function finalizar(){
     }
     participantes=[];actualizarParticipantesUI();
 }
-function restart(){finalizar();ganadoresHistorial=[];document.getElementById('logDonaciones').innerHTML='<strong>📝 Historial:</strong>';}
+function restart(){
+    finalizar();
+    ganadoresHistorial=[];
+    document.getElementById('listaGanadores').innerHTML="";
+    document.getElementById('logDonaciones').innerHTML='<strong>📝 Historial:</strong>';
+}
 
 // === ACTUALIZAR UI ===
 function actualizarParticipantesUI(){
@@ -154,15 +167,13 @@ try{
     ws.onopen=()=>log("✅ Conectado a TikFinity","cyan");
     ws.onmessage=e=>{
         const msg=JSON.parse(e.data);
-        if(msg.event==="gift"){
+        if(msg.event==="gift" && msg.data.repeatEnd){
             const g=msg.data;
-            // 🔹 Si viene combo o repeatCount, solo tomamos los diamantes *exactos*
             const diamonds=parseInt(g.diamondCount)||0;
-            const cantidadReal=diamonds>0?diamonds:0;
             socket.emit("nuevo_regalo",{
                 username:g.uniqueId,
                 giftName:g.giftName,
-                diamondCount:cantidadReal
+                diamondCount:diamonds
             });
         }
     };
