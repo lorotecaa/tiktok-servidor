@@ -1,5 +1,5 @@
 // ===============================
-// 📦 SERVIDOR PRINCIPAL TIKTOK (Corregido)
+// 📦 SERVIDOR PRINCIPAL TIKTOK (CORREGIDO Y SIN ERRORES)
 // ===============================
 
 // Dependencias necesarias
@@ -13,7 +13,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Puerto asignado por Render o localmente 10000
+// Puerto asignado por Render o localmente (por defecto: 10000)
 const PORT = process.env.PORT || 10000;
 
 // ===============================
@@ -25,47 +25,42 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Ruta principal para renderizar index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // ===============================
 // ⚡ CONFIGURACIÓN SOCKET.IO
 // ===============================
 io.on("connection", (socket) => {
-  console.log("🟢 Cliente conectado:", socket.id);
+  console.log("🟢 Cliente conectado:", socket.id);
 
-  // CORREGIDO: (Antes 'iniciar-subasta')
- // Escucha cuando un usuario (Dashboard o Widget) se conecta e inicia
-  socket.on("iniciar_subasta", (data) => {
-    console.log("🚀 Cliente solicitando inicio de subasta.");
-    // Opcional: Reenviar si es necesario, aunque el cliente no escucha 'subasta_iniciada'
-    io.emit("subasta_iniciada", data); 
-  });
+  // Evento para iniciar la subasta (enviado desde el dashboard)
+  socket.on("iniciar_subasta", (data) => {
+    console.log("🚀 Cliente solicitando inicio de subasta.");
+    io.emit("subasta_iniciada", data);
+  });
 
-  // CORREGIDO: (Antes 'actualizar-tiempo')
- // Recibe la hora SÓLO del Dashboard Maestro
-  socket.on('sync_time', (time) => {
-    // CORREGIDO: (Antes 'tiempo-actualizado')
-    // Reenvía la hora a TODOS los clientes (incluyendo los Widgets Esclavos)
-    io.emit('update_time', time); 
-  });
+  // Evento de sincronización de tiempo desde el dashboard
+  socket.on("sync_time", (time) => {
+    // Reenviamos el tiempo a todos los widgets conectados
+    socket.broadcast.emit("update_time", time);
+  });
 
-  // CORREGIDO: (Antes 'finalizar-subasta')
- // Escucha cuando el Dashboard finaliza la subasta
-  socket.on("finalizar_subasta", () => {
-    // Avisa a todos (El cliente actual no usa este evento, pero es buena práctica)
-    io.emit("subasta_finalizada"); 
-  });
+  // Evento cuando se finaliza la subasta
+  socket.on("finalizar_subasta", () => {
+    console.log("⏹️ Subasta finalizada.");
+    io.emit("subasta_finalizada");
+  });
 
-  // Escucha desconexión del cliente
-  socket.on("disconnect", () => {
-    console.log("🔴 Cliente desconectado:", socket.id);
-  });
+  // Detectar desconexión
+  socket.on("disconnect", () => {
+    console.log("🔴 Cliente desconectado:", socket.id);
+  });
 });
 
 // ===============================
 // 🚀 INICIAR SERVIDOR
 // ===============================
 server.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
