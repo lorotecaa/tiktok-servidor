@@ -353,6 +353,33 @@ try {
 } catch (err) {
     console.error("Error al conectar con TikFinity:", err);
 }
+// ===============================
+// 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
+// ===============================
+socket.on("new_gift", (gift) => {
+    console.log("💎 Nuevo regalo recibido:", gift);
+
+    // Buscamos si el usuario ya existe
+    const existente = participantes.find(p => p.usuario === gift.usuario);
+
+    if (existente) {
+        existente.cantidad += gift.cantidad;
+    } else {
+        participantes.push({
+            usuario: gift.usuario,
+            cantidad: gift.cantidad,
+            regalo: gift.regalo
+        });
+    }
+
+    actualizarParticipantesUI();
+
+    // Solo mostrar en el dashboard (no en widget)
+    if (!document.body.classList.contains('widget-mode')) {
+        logDonacionesEl.innerHTML += `<p style="color: gold;">💎 ${gift.usuario} envió ${gift.cantidad} diamantes (${gift.regalo})</p>`;
+        logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+    }
+});
 
     </script>
 </body>
