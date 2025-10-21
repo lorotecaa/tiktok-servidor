@@ -293,6 +293,67 @@
         } else {
             document.getElementById('widget-container').style.display = 'none';
         }
+        // ===============================
+// 🎁 CONEXIÓN CON TIKFINITY EVENT API
+// ===============================
+try {
+    const tiktokWS = new WebSocket("ws://localhost:21213/");
+
+    tiktokWS.onopen = () => {
+        console.log("✅ Conectado a TikFinity Event API");
+        logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
+    };
+
+    tiktokWS.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
+            if (!msg.event) return;
+
+            switch (msg.event) {
+                case "gift":
+                    const gift = msg.data;
+                    logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${gift.diamondCount}💎)</p>`;
+                    
+                    // 🔹 Emitimos al servidor (para que actualice widget, ranking, etc.)
+                    socket.emit("nuevo_regalo", {
+                        usuario: gift.uniqueId,
+                        cantidad: gift.diamondCount,
+                        regalo: gift.giftName
+                    });
+                    break;
+
+                case "chat":
+                    const chat = msg.data;
+                    logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
+                    break;
+
+                case "like":
+                    const like = msg.data;
+                    logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
+                    break;
+
+                case "follow":
+                    const follow = msg.data;
+                    logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
+                    break;
+            }
+
+            // Mantenemos el log visible siempre abajo
+            logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+
+        } catch (e) {
+            console.error("Error al procesar mensaje TikFinity:", e);
+        }
+    };
+
+    tiktokWS.onclose = () => {
+        logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
+    };
+
+} catch (err) {
+    console.error("Error al conectar con TikFinity:", err);
+}
+
     </script>
 </body>
 </html>
