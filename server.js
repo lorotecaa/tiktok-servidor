@@ -1,5 +1,3 @@
-primero corrigamos el server.js y luego el html:
-enviamelo de nuevo corregido:
 // ===============================
 // 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS)
 // ===============================
@@ -71,3 +69,4 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
+
