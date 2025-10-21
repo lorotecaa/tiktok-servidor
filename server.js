@@ -1,5 +1,5 @@
 // ===============================
-// 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS)
+// 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS Y REINICIO DE SUBASTA)
 // ===============================
 
 // Dependencias necesarias
@@ -37,6 +37,11 @@ io.on("connection", (socket) => {
   // Evento para iniciar la subasta (enviado desde el dashboard)
   socket.on("iniciar_subasta", (data) => {
     console.log("🚀 Cliente solicitando inicio de subasta.");
+
+    // 1️⃣ Antes de iniciar, emitimos una señal de reinicio
+    io.emit("reiniciar_subasta");
+
+    // 2️⃣ Luego avisamos a todos que la nueva subasta inició
     io.emit("subasta_iniciada", data);
   });
 
@@ -51,23 +56,10 @@ io.on("connection", (socket) => {
     io.emit("subasta_finalizada");
   });
 
-  // 🆕 NUEVO: evento para reenviar regalos recibidos desde el dashboard
+  // 🆕 Evento para reenviar regalos recibidos desde el dashboard
   socket.on("nuevo_regalo", (giftData) => {
-    if (!giftData || !giftData.username || !giftData.giftName) {
-      console.log("⚠️ Evento de regalo inválido recibido, se ignora:", giftData);
-      return;
-    }
-
-    console.log(`🎁 nuevo_regalo recibido: ${giftData.username} envió ${giftData.giftName} (${giftData.diamondCount} monedas)`);
-
-    // Reenviar a todos los clientes conectados
-    io.emit("new_gift", {
-      username: giftData.username,
-      giftName: giftData.giftName,
-      giftId: giftData.giftId || null,
-      diamondCount: Number(giftData.diamondCount) || 0,
-      timestamp: Date.now()
-    });
+    console.log("🎁 nuevo_regalo recibido:", giftData);
+    io.emit("new_gift", giftData);
   });
 
   // Detectar desconexión
