@@ -53,8 +53,21 @@ io.on("connection", (socket) => {
 
   // 🆕 NUEVO: evento para reenviar regalos recibidos desde el dashboard
   socket.on("nuevo_regalo", (giftData) => {
-    console.log("🎁 nuevo_regalo recibido:", giftData);
-    io.emit("new_gift", giftData);
+    if (!giftData || !giftData.username || !giftData.giftName) {
+      console.log("⚠️ Evento de regalo inválido recibido, se ignora:", giftData);
+      return;
+    }
+
+    console.log(`🎁 nuevo_regalo recibido: ${giftData.username} envió ${giftData.giftName} (${giftData.diamondCount} monedas)`);
+
+    // Reenviar a todos los clientes conectados
+    io.emit("new_gift", {
+      username: giftData.username,
+      giftName: giftData.giftName,
+      giftId: giftData.giftId || null,
+      diamondCount: Number(giftData.diamondCount) || 0,
+      timestamp: Date.now()
+    });
   });
 
   // Detectar desconexión
