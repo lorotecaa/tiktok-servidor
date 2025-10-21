@@ -1,173 +1,84 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Subasta en Vivo</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        h1 { margin:20px 0; }
-        ul { list-style: none; padding: 0; }
-        li { margin: 5px 0; font-size: 18px; }
-        .totales { margin-top: 10px; font-weight: bold; font-size: 16px; }
-        h2 { background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 5px; display: inline-block; margin-bottom: 10px; font-size: 18px; }
-        button { margin: 5px; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .start { background: green; color: white; }
-        .stop { background: red; color: white; }
-        #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
-        #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
-        #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
-        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
-        #controles-group { width: 300px; padding: 0; margin: 20px 0 0 0; display: inline-block; vertical-align: top; }
-        #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
-        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
-        .widget-mode #main-dashboard-content, .widget-mode #logDonaciones { display: none !important; }
-        #widget-container { display: none; flex-direction: column; width: 350px; margin: 0 auto; background: transparent; border-radius: 10px; overflow: hidden; border: 2px solid #333; }
-        #tiempoBox-widget { background: #008000; width: 100%; padding: 10px 0; display: flex; flex-direction: column; align-items: center; border-radius: 8px 8px 0 0; }
-        #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,0,0.7); }
-        #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
-        #participantes-widget { background: #1c2b3e; width: 100%; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px; }
-        #participantes-widget h2, #participantes-widget .totales { display: none; }
-        #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
-        #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #2a3d5e; margin-bottom: 8px; padding: 10px 15px; border-radius: 12px; font-size: 16px; font-weight: bold; border: 2px solid #3d5a80; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
-        #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
-        #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; }
-    </style>
-</head>
-<body>
+// ===============================
+// 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS)
+// ===============================
 
-<div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
-    <h1>⚡ Subasta en Vivo ⚡</h1>
-    <div id="ganadores"><h2>🏆 Ganadores</h2><ul id="listaGanadores"></ul></div>
-    <div id="participantes"><h2>👥 Participantes</h2><ul id="listaParticipantes"></ul>
-        <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
-        <div class="totales">Diamantes totales: <span id="totalDiamantes">0</span></div>
-    </div>
-    <div id="controles-group">
-        <div id="controles">
-            <h2>🎮 Controles</h2>
-            <label for="tiempo">⏱ Tiempo (seg):</label><br>
-            <input type="number" id="tiempo" value="200"><br><br>
-            <button class="start" onclick="iniciar()">Iniciar</button>
-            <button onclick="pausar()">Pausar</button>
-            <button onclick="finalizar()">Finalizar</button>
-            <button onclick="restart()">Restart</button>
-        </div>
-        <div id="tiempoBox"><h2>⏳ Tiempo</h2><div id="tiempoRestante">00:00</div></div>
-    </div>
-    <div id="logDonaciones"><strong>📝 Historial:</strong></div>
-</div>
+// Dependencias necesarias
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
 
-<div id="widget-container">
-    <div id="tiempoBox-widget">
-        <div id="tiempoRestante-widget">00:00</div>
-        <div id="subtext-widget">La subasta termina en</div>
-    </div>
-    <div id="participantes-widget"><ul id="listaParticipantes-widget"></ul></div>
-</div>
+// Crear aplicación Express y servidor HTTP
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-const socket = io("https://tiktok-servidor.onrender.com"); // <-- cámbialo si usas otra URL
-const log = (msg, color="white") => {
-    const logEl = document.getElementById('logDonaciones');
-    logEl.innerHTML += `<p style="color:${color}">${msg}</p>`;
-    logEl.scrollTop = logEl.scrollHeight;
-};
+// Puerto asignado por Render o localmente (por defecto: 10000)
+const PORT = process.env.PORT || 10000;
 
-let participantes = [];
-let ganadoresHistorial = [];
-let tiempoActual = 0;
-let intervalo = null;
-let isPaused = false;
+// ===============================
+// 🌐 CONFIGURACIÓN EXPRESS
+// ===============================
 
-// === FUNCIONES DE TIEMPO ===
-function formatTime(t){const m=Math.floor(t/60),s=t%60;return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
-function iniciarTimerLogic(){
-    tiempoActual=parseInt(document.getElementById("tiempo").value||60);
-    if(intervalo)clearInterval(intervalo);
-    intervalo=setInterval(()=>{
-        if(!isPaused&&tiempoActual>0){
-            tiempoActual--;
-            if(!document.body.classList.contains("widget-mode")) socket.emit("sync_time",tiempoActual);
-            document.getElementById("tiempoRestante").textContent=formatTime(tiempoActual);
-        }else if(tiempoActual<=0){terminarTiempo();}
-    },1000);
-}
-function iniciar(){socket.emit("iniciar_subasta");isPaused=false;iniciarTimerLogic();log("▶️ Subasta iniciada","yellow");}
-function pausar(){isPaused=!isPaused;if(isPaused){clearInterval(intervalo);log("⏸️ Pausa","orange");}else{iniciarTimerLogic();log("▶️ Reanuda","green");}}
-function finalizar(){
-    clearInterval(intervalo);tiempoActual=0;
-    document.getElementById("tiempoRestante").textContent="00:00";
-    socket.emit("finalizar_subasta");
-    if(participantes.length>0){
-        const ganador=participantes[0];
-        ganadoresHistorial.unshift(ganador);
-        log(`🏆 Ganador: ${ganador.username} (${ganador.diamondCount}💎)`,"gold");
-        actualizarGanadoresUI();
+// Servir archivos estáticos desde la carpeta "public"
+app.use(express.static(path.join(__dirname, "public")));
+
+// Ruta principal para renderizar index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// ===============================
+// ⚡ CONFIGURACIÓN SOCKET.IO
+// ===============================
+io.on("connection", (socket) => {
+  console.log("🟢 Cliente conectado:", socket.id);
+
+  // Evento para iniciar la subasta (enviado desde el dashboard)
+  socket.on("iniciar_subasta", (data) => {
+    console.log("🚀 Cliente solicitando inicio de subasta.");
+    io.emit("subasta_iniciada", data);
+  });
+
+  // Evento de sincronización de tiempo desde el dashboard
+  socket.on("sync_time", (time) => {
+    socket.broadcast.emit("update_time", time);
+  });
+
+  // Evento cuando se finaliza la subasta
+  socket.on("finalizar_subasta", () => {
+    console.log("⏹️ Subasta finalizada.");
+    io.emit("subasta_finalizada");
+  });
+
+  // 🆕 NUEVO: evento para reenviar regalos recibidos desde el dashboard
+  socket.on("nuevo_regalo", (giftData) => {
+    if (!giftData || !giftData.username || !giftData.giftName) {
+      console.log("⚠️ Evento de regalo inválido recibido, se ignora:", giftData);
+      return;
     }
-    participantes=[];actualizarParticipantesUI();
-}
-function restart(){finalizar();ganadoresHistorial=[];document.getElementById('logDonaciones').innerHTML='<strong>📝 Historial:</strong>';}
 
-// === ACTUALIZAR UI ===
-function actualizarParticipantesUI(){
-    participantes.sort((a,b)=>b.diamondCount-a.diamondCount);
-    const lista=document.getElementById("listaParticipantes");lista.innerHTML="";
-    const listaW=document.getElementById("listaParticipantes-widget");listaW.innerHTML="";
-    let total=0;
-    participantes.forEach((p,i)=>{
-        const li=document.createElement("li");li.textContent=`${p.username} - ${p.diamondCount} 💎`;lista.appendChild(li);
-        total+=p.diamondCount;
-        if(i<5){listaW.innerHTML+=`<li><span>${p.username}</span><span class="coins">${p.diamondCount}</span></li>`;}
+    console.log(`🎁 nuevo_regalo recibido: ${giftData.username} envió ${giftData.giftName} (${giftData.diamondCount} monedas)`);
+
+    // Reenviar a todos los clientes conectados
+    io.emit("new_gift", {
+      username: giftData.username,
+      giftName: giftData.giftName,
+      giftId: giftData.giftId || null,
+      diamondCount: Number(giftData.diamondCount) || 0,
+      timestamp: Date.now()
     });
-    document.getElementById("totalParticipantes").textContent=participantes.length;
-    document.getElementById("totalDiamantes").textContent=total;
-}
-function actualizarGanadoresUI(){
-    const ul=document.getElementById("listaGanadores");
-    ul.innerHTML=ganadoresHistorial.map(g=>`<li>🏆 ${g.username} - ${g.diamondCount} 💎</li>`).join("");
-}
+  });
 
-// === ACTUALIZAR TIEMPO DESDE SERVER ===
-socket.on("update_time",time=>{
-    if(document.body.classList.contains("widget-mode")){
-        document.getElementById("tiempoRestante-widget").textContent=formatTime(time);
-    }
+  // Detectar desconexión
+  socket.on("disconnect", () => {
+    console.log("🔴 Cliente desconectado:", socket.id);
+  });
 });
 
-// === MANEJAR REGALOS ===
-socket.on("new_gift",gift=>{
-    if(!gift.username)return;
-    gift.diamondCount=parseInt(gift.diamondCount)||0;
-    const existe=participantes.find(p=>p.username===gift.username);
-    if(existe){existe.diamondCount+=gift.diamondCount;}
-    else{participantes.push({username:gift.username,diamondCount:gift.diamondCount,giftName:gift.giftName});}
-    actualizarParticipantesUI();
-    if(!document.body.classList.contains("widget-mode"))
-        log(`💎 ${gift.username} envió ${gift.giftName} (${gift.diamondCount}💎)`,"gold");
+// ===============================
+// 🚀 INICIAR SERVIDOR
+// ===============================
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
-
-// === CONEXIÓN TIKFINITY ===
-try{
-    const ws=new WebSocket("ws://localhost:21213/");
-    ws.onopen=()=>log("✅ Conectado a TikFinity","cyan");
-    ws.onmessage=e=>{
-        const msg=JSON.parse(e.data);
-        if(msg.event==="gift"){
-            const g=msg.data;
-            // 🔹 Si viene combo o repeatCount, solo tomamos los diamantes *exactos*
-            const diamonds=parseInt(g.diamondCount)||0;
-            const cantidadReal=diamonds>0?diamonds:0;
-            socket.emit("nuevo_regalo",{
-                username:g.uniqueId,
-                giftName:g.giftName,
-                diamondCount:cantidadReal
-            });
-        }
-    };
-    ws.onclose=()=>log("❌ Desconectado de TikFinity","red");
-}catch(e){console.error(e);}
-</script>
-</body>
-</html>
