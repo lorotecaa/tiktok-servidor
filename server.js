@@ -1,5 +1,5 @@
 // ===============================
-// 📦 SERVIDOR PRINCIPAL TIKTOK (CORREGIDO Y SIN ERRORES)
+// 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS)
 // ===============================
 
 // Dependencias necesarias
@@ -42,7 +42,6 @@ io.on("connection", (socket) => {
 
   // Evento de sincronización de tiempo desde el dashboard
   socket.on("sync_time", (time) => {
-    // Reenviamos el tiempo a todos los widgets conectados
     socket.broadcast.emit("update_time", time);
   });
 
@@ -50,6 +49,12 @@ io.on("connection", (socket) => {
   socket.on("finalizar_subasta", () => {
     console.log("⏹️ Subasta finalizada.");
     io.emit("subasta_finalizada");
+  });
+
+  // 🆕 NUEVO: evento para reenviar regalos recibidos desde el dashboard
+  socket.on("nuevo_regalo", (giftData) => {
+    console.log("🎁 nuevo_regalo recibido:", giftData);
+    io.emit("new_gift", giftData);
   });
 
   // Detectar desconexión
@@ -64,5 +69,3 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
-
-
