@@ -462,7 +462,11 @@
             //     logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
             // }
         });
-
+        socket.on("limpiar_listas_clientes", () => {
+            console.log("🧹 Recibido comando para limpiar lista local.");
+            participantes = []; // Limpia el array local
+            actualizarParticipantesUI(); // Actualiza la UI para mostrar la lista vacía
+        });
     </script>
 </body>
 </html>
