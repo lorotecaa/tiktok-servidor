@@ -90,8 +90,7 @@
                     <input type="number" id="tiempo" value="200"><br><br>
                     <button class="start" onclick="iniciar()">Iniciar</button>
                     <button onclick="pausar()">Pausar</button>
-                    <button class="stop" onclick="finalizar()">Finalizar</button> 
-                    <button onclick="restart()">Restart</button>
+                    <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
                 </div>
             </div>
             <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
@@ -367,19 +366,16 @@
                              case "gift":
                                  const gift = msg.data;
                                  
-                                 // 🟢 INICIO CORRECCIÓN: Filtro Anti-Duplicados de TikFinity
-                                 // Asumimos que el evento real/confirmado tiene 'giftType: 1'.
-                                 // Ignoramos cualquier otro evento 'gift' (animaciones, rachas, etc.)
-                                 if (gift.giftType !== 1) { 
-                                     console.log(`Ignorando evento gift no confirmado o duplicado (tipo ${gift.giftType}, ID: ${gift.giftId})`);
-                                     break; // Detiene el procesamiento para ESTE evento 'gift'
-                                 }
-                                 // 🟢 FIN CORRECCIÓN
+                                  // ❗️ Filtro Básico Anti-Duplicados (si TikFinity usa giftType)
+                                 // Ajusta 'gift.giftType !== 1' si tu conector usa otra propiedad
+                                 // if (gift.giftType !== undefined && gift.giftType !== 1) {
+                                 //     console.log(`Ignorando evento gift duplicado (tipo ${gift.giftType})`);
+                                 //     break; 
+                                 // }
 
-                                 // Si llegamos aquí, es el evento 'giftType: 1' (el real)
                                  logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${gift.diamondCount}💎)</p>`;
                                  
-                                 // 🔹 Emitimos al servidor SOLO el regalo real desde el Dashboard
+                                 // 🔹 Emitimos al servidor SOLO desde el Dashboard
                                  socket.emit("nuevo_regalo", {
                                      usuario: gift.uniqueId,
                                      cantidad: gift.diamondCount,
@@ -387,7 +383,7 @@
                                      // Puedes añadir más datos si los necesitas (ej: avatar)
                                      // avatar_url: gift.profilePictureUrl 
                                  });
-                                 break; // Fin del case "gift"
+                                 break;
 
                              case "chat":
                                  const chat = msg.data;
@@ -403,7 +399,7 @@
                                  const follow = msg.data;
                                  logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
                                  break;
-                         } // Fin del switch
+                         }
 
                          // Mantenemos el log visible siempre abajo
                          logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
@@ -412,7 +408,7 @@
                          console.error("Error al procesar mensaje TikFinity:", e);
                          logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
                      }
-                 }; // Fin de onmessage
+                 };
 
                  tiktokWS.onclose = () => {
                       // Asegurarse de que logDonacionesEl exista antes de usarlo
