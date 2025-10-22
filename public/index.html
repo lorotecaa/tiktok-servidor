@@ -365,13 +365,18 @@
                          switch (msg.event) {
                              case "gift":
                                  const gift = msg.data;
-                                 
-                                  // ❗️ Filtro Básico Anti-Duplicados (si TikFinity usa giftType)
-                                 // Ajusta 'gift.giftType !== 1' si tu conector usa otra propiedad
-                                 // if (gift.giftType !== undefined && gift.giftType !== 1) {
-                                 //     console.log(`Ignorando evento gift duplicado (tipo ${gift.giftType})`);
-                                 //     break; 
-                                 // }
+                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2)); // <--- LÍNEA AÑADIDA
+
+                                 // 🟢 INICIO CORRECCIÓN: Filtro Anti-Duplicados de TikFinity
+                                 // Asumimos que el evento real/confirmado tiene 'giftType: 1'.
+                                 // Ignoramos cualquier otro evento 'gift'. Ajusta si es necesario.
+                                 if (gift.giftType !== 1) {
+                                     console.log(`Ignorando evento gift no confirmado (tipo ${gift.giftType}, ID: ${gift.giftId})`);
+                                     break; // Detiene el procesamiento para ESTE evento 'gift'
+                                 }
+                                 // 🟢 FIN CORRECCIÓN
+
+                                 // ... resto del código ...
 
                                  logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${gift.diamondCount}💎)</p>`;
                                  
