@@ -61,6 +61,12 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("🔴 Cliente desconectado:", socket.id);
   });
+  // 👇 AÑADE ESTE BLOQUE NUEVO 👇
+    socket.on("limpiar_listas", () => {
+        console.log("🧹 Solicitud para limpiar listas recibida desde el Dashboard.");
+        io.emit("limpiar_listas_clientes"); // Avisa a TODOS los clientes que limpien
+    });
+    // 👆 FIN DEL BLOQUE NUEVO 👆
 });
 
 // ===============================
@@ -69,4 +75,5 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
+
 
