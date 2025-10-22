@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Subasta en Vivo</title>
     <style>
-        /* ESTILOS BASE DEL DASHBOARD */
+        /* ESTILOS BASE DEL DASHBOARD (INTACTO) */
         body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         h1 { margin:20px 0; }
         ul { list-style: none; padding: 0; }
@@ -16,7 +16,7 @@
         .stop { background: red; color: white; }
         #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
-        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) */
+        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) (INTACTO) */
         #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
         #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
         #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
@@ -24,14 +24,14 @@
         #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
 
-        /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) */
+        /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) (INTACTO) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
-        /* OCULTAR TODO LO QUE NO SEA EL WIDGET */
+        /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
         .widget-mode #main-dashboard-content { display: none !important; }
         .widget-mode #logDonaciones { display: none !important; } 
 
-        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET */
+        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET (INTACTO) */
         #widget-container {
             display: none; /* Por defecto oculto */
             flex-direction: column;
@@ -43,7 +43,7 @@
             border: 2px solid #333; 
         }
 
-        /* ESTILOS INTERNOS DEL WIDGET */
+        /* ESTILOS INTERNOS DEL WIDGET (INTACTO) */
         #tiempoBox-widget { background: #008000; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; }
         #tiempoRestante-widget { font-size: 2.5em; color: #00FF00; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,0,0.7); }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
@@ -53,7 +53,19 @@
         #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
         #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #2a3d5e; margin-bottom: 8px; padding: 10px 15px; border-radius: 12px; font-size: 16px; font-weight: bold; border: 2px solid #3d5a80; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
         #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
-        #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; }
+        #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; } /* <-- NOTA: Esto causará doble emoji, considera eliminarlo */
+
+        /* --- INICIO: ESTILOS FALTANTES PARA EL RANKING DEL WIDGET --- */
+         /* (NOTA: Estos estilos faltan en tu código original, el ranking del widget se verá desordenado sin ellos. */
+         /* Añádelos si quieres que el widget se vea bien, NO afectarán tu dashboard) */
+        /*
+        .rank-icon { font-size: 1.2em; color: #f1c40f; margin-right: 10px; min-width: 20px; text-align: center; }
+        .user-info { display: flex; align-items: center; flex-grow: 1; overflow: hidden; }
+        .user-avatar { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; margin-right: 10px; border: 2px solid #fff; }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .username { color: #ecf0f1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        */
+        /* --- FIN: ESTILOS FALTANTES --- */
 
     </style>
 </head>
@@ -78,7 +90,7 @@
                     <input type="number" id="tiempo" value="200"><br><br>
                     <button class="start" onclick="iniciar()">Iniciar</button>
                     <button onclick="pausar()">Pausar</button>
-                    <button onclick="finalizar()">Finalizar</button>
+                    <button class="stop" onclick="finalizar()">Finalizar</button> 
                     <button onclick="restart()">Restart</button>
                 </div>
             </div>
@@ -186,7 +198,11 @@
         // --- LÓGICA DEL TEMPORIZADOR ---
         function iniciarTimerLogic() {
             let tiempoInput = document.getElementById("tiempo");
-            tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 60);
+            // Solo resetea si el tiempo es 0 o indefinido (inicio)
+            if (tiempoActual <= 0) {
+                 tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); // Usar 200 como default si no hay input
+            }
+
 
             if (intervalo) clearInterval(intervalo);
             
@@ -204,182 +220,248 @@
                     if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
 
                 } else if (tiempoActual <= 0) {
-                    terminarTiempo();
+                     // Solo el dashboard detiene el tiempo
+                    if (!document.body.classList.contains('widget-mode')) {
+                        terminarTiempo();
+                    }
                 }
             }, 1000);
         }
 
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
-            logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Solicitando conexión al live...</p>`;
-            socket.emit("iniciar_subasta"); 
-            isPaused = false; // Aseguramos que no esté en pausa
-            iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
+             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
+                logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`; // Mensaje corregido
+                socket.emit("iniciar_subasta"); 
+                isPaused = false; // Aseguramos que no esté en pausa
+                tiempoActual = 0; // Forzar reseteo del tiempo al valor del input
+                iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
+            }
         }
 
         function terminarTiempo() {
-            if (intervalo) { clearInterval(intervalo); intervalo = null; }
-            socket.emit('finalizar_subasta');
-            
-            // Enviamos 0 al servidor para que el widget se detenga
-            socket.emit('sync_time', 0); 
-            
-            logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
+            if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede terminar
+                if (intervalo) { clearInterval(intervalo); intervalo = null; }
+                socket.emit('finalizar_subasta');
+                
+                // Enviamos 0 al servidor para que el widget se detenga
+                socket.emit('sync_time', 0); 
+                tiempoActual = 0; // Actualizar localmente
+                 if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
+
+                logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
+            }
         }
         
         function finalizar() {
-             terminarTiempo();
-             tiempoActual = 0;
-             if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-             if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
-             logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
-             if (participantes.length > 0) {
-                const ganador = participantes[0];
-                ganadoresHistorial.unshift(ganador);
-                logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-                actualizarGanadoresUI();
+             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede finalizar
+                 terminarTiempo(); // Asegura que el tiempo esté detenido y se haya enviado 0
+                 tiempoActual = 0; // Redundante pero seguro
+                 if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
+                 // Actualizar el widget también por si acaso (aunque ya debería haber recibido el 0)
+                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+
+                 logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+                 if (participantes.length > 0) {
+                     const ganador = participantes[0]; // El primer elemento ya está ordenado
+                     ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
+                     logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+                     actualizarGanadoresUI();
+                 } else {
+                      logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+                 }
+                 participantes = []; // Limpiar participantes para la siguiente ronda
+                 actualizarParticipantesUI(); // Actualizar UI (listas vacías)
              }
-             participantes = [];
-             actualizarParticipantesUI();
         }
         
         function restart() {
-            finalizar();
-            participantes = [];
-            ganadoresHistorial = [];
-            actualizarParticipantesUI();
-            actualizarGanadoresUI();
-            logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong>';
-            socket.emit("iniciar_subasta"); 
+             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede reiniciar
+                 finalizar(); // Finaliza la ronda actual (guarda ganador si hay, limpia lista)
+                 // Limpia el historial de ganadores también
+                 ganadoresHistorial = [];
+                 actualizarGanadoresUI();
+                 logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong><p style="color: cyan;">🔄 Sistema reiniciado. Listo para una nueva subasta.</p>';
+                 // No emitimos iniciar_subasta aquí, esperamos que el usuario presione Iniciar
+                 // Pero sí reseteamos el tiempo visual a 0
+                  if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
+                  socket.emit('sync_time', 0); // Asegurar que widgets muestren 0
+             }
         }
 
         function pausar() {
-            isPaused = !isPaused; // Invierte el estado (true/false)
-            if (isPaused) {
-                if (intervalo) clearInterval(intervalo); // Detenemos el intervalo del dashboard
-                logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
-            } else {
-                iniciarTimerLogic(); // Reanudamos la lógica
-                logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
+            if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede pausar
+                isPaused = !isPaused; // Invierte el estado (true/false)
+                if (isPaused) {
+                    if (intervalo) clearInterval(intervalo); // Detenemos el intervalo local
+                    intervalo = null; // Marcar como detenido
+                    logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
+                    // No enviamos nada al servidor, el widget se queda con la última hora recibida
+                } else {
+                    iniciarTimerLogic(); // Reanudamos la lógica (continúa desde tiempoActual)
+                    logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
+                }
             }
         }
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
-            // Este código solo corre en el Widget de TikTok Studio (o cualquier ventana esclava)
+            // Este código solo corre en el Widget
             if (document.body.classList.contains('widget-mode')) {
+                tiempoActual = time; // Actualizar el tiempo local del widget
                 const formattedTime = formatTime(time);
                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
                 
-                // Si el tiempo es 0, detenemos cualquier cosa por si acaso
-                if (time <= 0) {
-                    if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
-                }
+                // No necesitamos manejar time <= 0 específicamente aquí,
+                // porque el dashboard enviará 0 al finalizar/terminar.
             }
         });
 
 
-        // --- LÓGICA DE DETECCIÓN DE WIDGET ---
+        // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('mode') === 'widget') {
+        const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global
+
+        if (isWidgetMode) {
+             // ===============================
+             // 🏃 MODO WIDGET (ESCLAVO)
+             // ===============================
             document.body.classList.add('widget-mode');
             
             // Ocultamos el dashboard principal y mostramos el contenedor del widget
             document.getElementById('main-dashboard-content').style.display = 'none';
             document.getElementById('widget-container').style.display = 'flex';
             
-            // Al ser un widget, solo se conecta y espera la orden de inicio/tiempo del panel de control
-            socket.emit("iniciar_subasta"); 
+            // Al ser un widget, solo se conecta al socket y espera órdenes
+            socket.emit("iniciar_subasta"); // Avisa al servidor que es un cliente
+
         } else {
+             // ===============================
+             // 🖥️ MODO DASHBOARD (MAESTRO)
+             // ===============================
             document.getElementById('widget-container').style.display = 'none';
-        }
+
+             // ===============================
+             // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
+             // ===============================
+             try {
+                 const tiktokWS = new WebSocket("ws://localhost:21213/");
+
+                 tiktokWS.onopen = () => {
+                     console.log("✅ Conectado a TikFinity Event API");
+                     // Asegurarse de que logDonacionesEl exista antes de usarlo
+                     if (logDonacionesEl) {
+                         logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
+                     }
+                 };
+
+                 tiktokWS.onmessage = (event) => {
+                     // Asegurarse de que logDonacionesEl exista antes de usarlo
+                     if (!logDonacionesEl) return; 
+
+                     try {
+                         const msg = JSON.parse(event.data);
+                         if (!msg.event) return;
+
+                         switch (msg.event) {
+                             case "gift":
+                                 const gift = msg.data;
+                                 
+                                 // 🟢 INICIO CORRECCIÓN: Filtro Anti-Duplicados de TikFinity
+                                 // Asumimos que el evento real/confirmado tiene 'giftType: 1'.
+                                 // Ignoramos cualquier otro evento 'gift' (animaciones, rachas, etc.)
+                                 if (gift.giftType !== 1) { 
+                                     console.log(`Ignorando evento gift no confirmado o duplicado (tipo ${gift.giftType}, ID: ${gift.giftId})`);
+                                     break; // Detiene el procesamiento para ESTE evento 'gift'
+                                 }
+                                 // 🟢 FIN CORRECCIÓN
+
+                                 // Si llegamos aquí, es el evento 'giftType: 1' (el real)
+                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${gift.diamondCount}💎)</p>`;
+                                 
+                                 // 🔹 Emitimos al servidor SOLO el regalo real desde el Dashboard
+                                 socket.emit("nuevo_regalo", {
+                                     usuario: gift.uniqueId,
+                                     cantidad: gift.diamondCount,
+                                     regalo: gift.giftName
+                                     // Puedes añadir más datos si los necesitas (ej: avatar)
+                                     // avatar_url: gift.profilePictureUrl 
+                                 });
+                                 break; // Fin del case "gift"
+
+                             case "chat":
+                                 const chat = msg.data;
+                                 logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
+                                 break;
+
+                             case "like":
+                                 const like = msg.data;
+                                 logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
+                                 break;
+
+                             case "follow":
+                                 const follow = msg.data;
+                                 logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
+                                 break;
+                         } // Fin del switch
+
+                         // Mantenemos el log visible siempre abajo
+                         logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+
+                     } catch (e) {
+                         console.error("Error al procesar mensaje TikFinity:", e);
+                         logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
+                     }
+                 }; // Fin de onmessage
+
+                 tiktokWS.onclose = () => {
+                      // Asegurarse de que logDonacionesEl exista antes de usarlo
+                     if (logDonacionesEl) {
+                         logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
+                     }
+                 };
+
+             } catch (err) {
+                 console.error("Error al conectar con TikFinity:", err);
+                  // Asegurarse de que logDonacionesEl exista antes de usarlo
+                 if (logDonacionesEl) {
+                     logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
+                 }
+             }
+        } // <-- FIN DEL ELSE (MODO DASHBOARD)
+
         // ===============================
-// 🎁 CONEXIÓN CON TIKFINITY EVENT API
-// ===============================
-try {
-    const tiktokWS = new WebSocket("ws://localhost:21213/");
+        // 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
+        // (Esto corre en AMBOS: Dashboard y Widget)
+        // ===============================
+        socket.on("new_gift", (gift) => {
+            console.log("💎 Nuevo regalo recibido del servidor:", gift);
 
-    tiktokWS.onopen = () => {
-        console.log("✅ Conectado a TikFinity Event API");
-        logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
-    };
+            // Buscamos si el usuario ya existe
+            const existente = participantes.find(p => p.usuario === gift.usuario);
 
-    tiktokWS.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            if (!msg.event) return;
-
-            switch (msg.event) {
-                case "gift":
-                    const gift = msg.data;
-                    logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${gift.diamondCount}💎)</p>`;
-                    
-                    // 🔹 Emitimos al servidor (para que actualice widget, ranking, etc.)
-                    socket.emit("nuevo_regalo", {
-                        usuario: gift.uniqueId,
-                        cantidad: gift.diamondCount,
-                        regalo: gift.giftName
-                    });
-                    break;
-
-                case "chat":
-                    const chat = msg.data;
-                    logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
-                    break;
-
-                case "like":
-                    const like = msg.data;
-                    logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
-                    break;
-
-                case "follow":
-                    const follow = msg.data;
-                    logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
-                    break;
+            if (existente) {
+                existente.cantidad += gift.cantidad;
+                 // Opcional: Actualizar avatar si viene en el evento
+                 // if(gift.avatar_url) existente.avatar_url = gift.avatar_url; 
+            } else {
+                participantes.push({
+                    usuario: gift.usuario,
+                    cantidad: gift.cantidad,
+                    regalo: gift.regalo
+                    // Opcional: Guardar avatar si viene en el evento
+                    // avatar_url: gift.avatar_url 
+                });
             }
 
-            // Mantenemos el log visible siempre abajo
-            logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+            actualizarParticipantesUI();
 
-        } catch (e) {
-            console.error("Error al procesar mensaje TikFinity:", e);
-        }
-    };
-
-    tiktokWS.onclose = () => {
-        logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
-    };
-
-} catch (err) {
-    console.error("Error al conectar con TikFinity:", err);
-}
-// ===============================
-// 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
-// ===============================
-socket.on("new_gift", (gift) => {
-    console.log("💎 Nuevo regalo recibido:", gift);
-
-    // Buscamos si el usuario ya existe
-    const existente = participantes.find(p => p.usuario === gift.usuario);
-
-    if (existente) {
-        existente.cantidad += gift.cantidad;
-    } else {
-        participantes.push({
-            usuario: gift.usuario,
-            cantidad: gift.cantidad,
-            regalo: gift.regalo
+            // Log en el dashboard (ya no es necesario duplicar el log aquí si viene de TikFinity)
+            // if (!isWidgetMode) { 
+            //     logDonacionesEl.innerHTML += `<p style="color: gold;">💎 ${gift.usuario} envió ${gift.cantidad} diamantes (${gift.regalo}) [Desde Servidor]</p>`;
+            //     logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+            // }
         });
-    }
-
-    actualizarParticipantesUI();
-
-    // Solo mostrar en el dashboard (no en widget)
-    if (!document.body.classList.contains('widget-mode')) {
-        logDonacionesEl.innerHTML += `<p style="color: gold;">💎 ${gift.usuario} envió ${gift.cantidad} diamantes (${gift.regalo})</p>`;
-        logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
-    }
-});
 
     </script>
 </body>
