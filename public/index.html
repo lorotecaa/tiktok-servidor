@@ -271,6 +271,8 @@
                  }
                  participantes = []; // Limpiar participantes para la siguiente ronda
                  actualizarParticipantesUI(); // Actualizar UI (listas vacías)
+                 // 👇 AÑADE ESTA LÍNEA AQUÍ 👇
+                 socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
              }
         }
         
