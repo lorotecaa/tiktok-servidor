@@ -367,26 +367,25 @@
                          switch (msg.event) {
                              case "gift":
                                  const gift = msg.data;
-                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2)); 
+                                console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));
 
-                                 // 🟢 INICIO CORRECCIÓN DEFINITIVA: Filtrar por repeatEnd
-                                 // Solo procesamos el evento que marca el final del regalo o racha.
-                                 if (gift.repeatEnd !== true) { 
-                                     console.log(`Ignorando evento gift intermedio o no final (repeatEnd: ${gift.repeatEnd}, ID: ${gift.giftId})`);
-                                     break; // Detiene el procesamiento para ESTE evento 'gift'
-                                 }
+                                // 🔹 Procesar SI ES EL FINAL DE UNA RACHA, O SI ES UN REGALO SIN REPETICIONES
+                                 if (gift.repeatEnd === true || gift.repeatCount === 1) { 
+                                     const total = gift.diamondCount * (gift.repeatCount || 1);
+                                     logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${total}💎)</p>`;
                                  // 🟢 FIN CORRECCIÓN
-
                                  // Si llegamos aquí, es el evento con repeatEnd: true (el final)
-                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${gift.diamondCount}💎) [Final]</p>`; // Añadido [Final] para claridad
                                  
                                  // 🔹 Emitimos al servidor SOLO el regalo final desde el Dashboard
                                  socket.emit("nuevo_regalo", {
                                      usuario: gift.uniqueId,
                                      // IMPORTANTE: Usar repeatCount aquí si quieres el total de la racha
-                                     cantidad: gift.diamondCount * gift.repeatCount, 
+                                     cantidad: total, 
                                      regalo: gift.giftName
                                  });
+                             } else {
+                                 console.log(`⏳ Ignorando regalo parcial (repeatEnd: ${gift.repeatEnd}, repeatCount: ${gift.repeatCount})`);
+                                 }
                                  break; // Fin del case "gift"
 
                              case "chat":
