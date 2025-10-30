@@ -127,6 +127,14 @@
         let ganadoresHistorial = [];
         let isPaused = false; // Estado para la función pausar
 
+        // 👇 INICIO: AÑADIDO BLOQUE (PROTECCIÓN ANTI-DUPLICADOS) 👇
+        const processedGiftIds = new Set();
+        setInterval(() => {
+          processedGiftIds.clear();
+          console.log("Limpiando caché de IDs de regalos procesados.");
+        }, 60000); // Limpia los IDs cada 60 segundos
+        // 👆 FIN: AÑADIDO BLOQUE 👆
+
         // --- FUNCIONES DE UTILIDAD ---
         function formatTime(totalSeconds) {
             const minutes = Math.floor(totalSeconds / 60);
@@ -260,7 +268,7 @@
                  // Actualizar el widget también por si acaso (aunque ya debería haber recibido el 0)
                  if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
 
-                 logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+                 logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manually.</p>`;
                  if (participantes.length > 0) {
                      const ganador = participantes[0]; // El primer elemento ya está ordenado
                      ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
@@ -271,7 +279,7 @@
                  }
                  participantes = []; // Limpiar participantes para la siguiente ronda
                  actualizarParticipantesUI(); // Actualizar UI (listas vacías)
-                 // 👇 AÑADE ESTA LÍNEA AQUÍ 👇
+                 // 👇 ESTA LÍNEA ESTÁ CORRECTA 👇
                  socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
              }
         }
@@ -365,28 +373,40 @@
                          if (!msg.event) return;
 
                          switch (msg.event) {
-                             case "gift":
+                             case "gift": { // 🌟 INICIO DE LA CORRECCIÓN 🌟
                                  const gift = msg.data;
-                                console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));
+                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2)); 
 
-                                // 🔹 Procesar SI ES EL FINAL DE UNA RACHA, O SI ES UN REGALO SIN REPETICIONES
-                                 if (gift.repeatEnd === true || gift.repeatCount === 1) { 
-                                     const total = gift.diamondCount * (gift.repeatCount || 1);
-                                     logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${total}💎)</p>`;
-                                 // 🟢 FIN CORRECCIÓN
-                                 // Si llegamos aquí, es el evento con repeatEnd: true (el final)
+                                 // 1) ID ÚNICO: Usamos 'msgId' que vimos en tus logs
+                                 const giftEventId = gift.msgId; 
+
+                                 // 2) FILTRO PRINCIPAL: Ignorar eventos intermedios/falsos
+                                 if (gift.repeatEnd !== true) { 
+                                     console.log(`Ignorando evento gift intermedio (repeatEnd: false), ID: ${giftEventId}`);
+                                     break; // Detiene el procesamiento
+                                 }
+
+                                 // 3) FILTRO EXTRA (DEDUPE): Ignorar si ya procesamos este ID final
+                                 if (processedGiftIds.has(giftEventId)) {
+                                     console.log(`Regalo ya procesado (duplicado detectado): ${giftEventId} — ignorando.`);
+                                     break;
+                                 }
+                                 // Si es nuevo, lo marcamos como procesado
+                                 processedGiftIds.add(giftEventId);
+
+                                 // 4) CÁLCULO: Usamos el total de la racha
+                                 const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+
+                                 // 5) LOG Y EMISIÓN (SOLO 1 VEZ)
+                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎) [Final]</p>`;
                                  
-                                 // 🔹 Emitimos al servidor SOLO el regalo final desde el Dashboard
                                  socket.emit("nuevo_regalo", {
                                      usuario: gift.uniqueId,
-                                     // IMPORTANTE: Usar repeatCount aquí si quieres el total de la racha
-                                     cantidad: total, 
+                                     cantidad: totalDiamonds, 
                                      regalo: gift.giftName
                                  });
-                             } else {
-                                 console.log(`⏳ Ignorando regalo parcial (repeatEnd: ${gift.repeatEnd}, repeatCount: ${gift.repeatCount})`);
-                                 }
                                  break; // Fin del case "gift"
+                             } // 🌟 FIN DE LA CORRECCIÓN 🌟
 
                              case "chat":
                                  const chat = msg.data;
@@ -461,6 +481,8 @@
             //     logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
             // }
         });
+
+        // Esta línea está correcta y en el lugar correcto
         socket.on("limpiar_listas_clientes", () => {
             console.log("🧹 Recibido comando para limpiar lista local.");
             participantes = []; // Limpia el array local
