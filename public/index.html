@@ -373,40 +373,56 @@
                          if (!msg.event) return;
 
                          switch (msg.event) {
-                             case "gift": { // 🌟 INICIO DE LA CORRECCIÓN 🌟
+                             case "gift": { // 🌟 INICIO DE LA CORRECCIÓN FINAL 🌟
                                  const gift = msg.data;
-                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2)); 
+                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
 
-                                 // 1) ID ÚNICO: Usamos 'msgId' que vimos en tus logs
-                                 const giftEventId = gift.msgId; 
-
-                                 // 2) FILTRO PRINCIPAL: Ignorar eventos intermedios/falsos
-                                 if (gift.repeatEnd !== true) { 
-                                     console.log(`Ignorando evento gift intermedio (repeatEnd: false), ID: ${giftEventId}`);
-                                     break; // Detiene el procesamiento
+                                 // 1️⃣ ID ÚNICO del evento
+                                 const giftEventId = gift.msgId;   
+                                 if (!giftEventId) {
+                                     console.log("Ignorando evento gift sin msgId");
+                                     break; // No podemos procesar sin ID de evento
                                  }
 
-                                 // 3) FILTRO EXTRA (DEDUPE): Ignorar si ya procesamos este ID final
+                                 // 2️⃣ Ignorar duplicados (por seguridad)
                                  if (processedGiftIds.has(giftEventId)) {
-                                     console.log(`Regalo ya procesado (duplicado detectado): ${giftEventId} — ignorando.`);
+                                     console.log(`Regalo ya procesado: ${giftEventId}`);
                                      break;
                                  }
-                                 // Si es nuevo, lo marcamos como procesado
+
+                                 // 3️⃣ Filtro inteligente:
+                                 // - Si tiene repeatEnd: procesamos solo el final
+                                 // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
+                                 if (gift.repeatEnd === false) { 
+                                     console.log(`Ignorando evento intermedio (repeatEnd: false)`);
+                                     break;
+                                 }
+                                 
+                                 // (Si repeatEnd es 'true' o 'undefined', el código continúa)
+
+                                 // 4️⃣ Marcamos el ID como procesado
                                  processedGiftIds.add(giftEventId);
 
-                                 // 4) CÁLCULO: Usamos el total de la racha
+                                 // 5️⃣ Calculamos el total de diamantes correctamente
                                  const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+                                 
+                                 // 5.1 No procesar regalos sin valor (por si acaso)
+                                 if (totalDiamonds === 0) {
+                                     console.log("Ignorando regalo con 0 diamantes.");
+                                     break;
+                                 }
 
-                                 // 5) LOG Y EMISIÓN (SOLO 1 VEZ)
-                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎) [Final]</p>`;
+                                 // 6️⃣ Mostramos en pantalla y enviamos al servidor
+                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
                                  
                                  socket.emit("nuevo_regalo", {
                                      usuario: gift.uniqueId,
                                      cantidad: totalDiamonds, 
                                      regalo: gift.giftName
                                  });
-                                 break; // Fin del case "gift"
-                             } // 🌟 FIN DE LA CORRECCIÓN 🌟
+
+                                 break; // ✅ Fin del case
+                             } // 🌟 FIN DE LA CORRECCIÓN FINAL 🌟
 
                              case "chat":
                                  const chat = msg.data;
