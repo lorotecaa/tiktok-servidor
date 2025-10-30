@@ -460,7 +460,7 @@
             const existente = participantes.find(p => p.usuario === gift.usuario);
 
             if (existente) {
-                existente.cantidad += gift.cantidad;
+                existente.cantidad = gift.cantidad; // <--- CORRECTO (REEMPLAZA)
                  // Opcional: Actualizar avatar si viene en el evento
                  // if(gift.avatar_url) existente.avatar_url = gift.avatar_url; 
             } else {
