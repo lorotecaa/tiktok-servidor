@@ -393,8 +393,8 @@
                                  // 3️⃣ Filtro inteligente:
                                  // - Si tiene repeatEnd: procesamos solo el final
                                  // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
-                                 if (gift.repeatEnd === false) { 
-                                     console.log(`Ignorando evento intermedio (repeatEnd: false)`);
+                                 if (gift.repeatEnd === false && gift.repeatCount > 1) { 
+                                     console.log(`Ignorando evento intermedio de racha (repeatEnd: false, repeatCount: ${gift.repeatCount})`);
                                      break;
                                  }
                                  
