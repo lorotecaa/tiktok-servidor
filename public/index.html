@@ -367,6 +367,7 @@
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) { 
+        socket.emit("restaurar_widget");
 
         // 2. Detiene el reloj
         if (intervalo) { 
@@ -813,31 +814,36 @@ function abrirWidget() {
 socket.on("anunciar_ganador", (ganador) => {
     console.log("🏆 Ganador recibido:", ganador);
 
-    // Contenedor del ranking del widget
-    const rankingList = document.getElementById("rankingList");
-    if (!rankingList) return;
+    // Obtener el contenedor correcto del widget
+    const rankingList = document.getElementById("listaParticipantes-widget");
+    if (!rankingList) {
+        console.warn("❌ No se encontró 'listaParticipantes-widget'");
+        return;
+    }
 
     // 🔹 Limpiar todos los jugadores anteriores
     rankingList.innerHTML = "";
 
-    // 🔹 Crear la fila del ganador
-    const item = document.createElement("div");
-    item.classList.add("ranking-item");
+    // 🔹 Crear una sola fila (<li>) para el ganador
+    const item = document.createElement("li");
     item.innerHTML = `
-        <span class="rank-icon">🥇</span>
-        <div class="user-info">
-            <div class="user-avatar"><img src="${ganador.avatar_url || "https://via.placeholder.com/50/000/fff?text=?"}" alt=""></div>
-            <div class="username">${ganador.usuario || "Desconocido"}</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.2em;">🥇</span>
+            <img src="${ganador.avatar_url || "https://via.placeholder.com/40/000/fff?text=?"}" 
+                 alt="avatar" 
+                 style="width:40px; height:40px; border-radius:50%;">
+            <span>${ganador.usuario || "Desconocido"}</span>
         </div>
-        <div class="user-score">${ganador.cantidad || 0} <span>💎</span></div>
+        <div class="coins">${ganador.cantidad || 0} 💎</div>
     `;
     rankingList.appendChild(item);
 
-    // 🔹 Cambiar color del encabezado del widget para resaltar ganador
-    const header = document.getElementById("tiempoBox");
+    // 🔹 Cambiar color del encabezado del widget
+    const header = document.getElementById("tiempoBox-widget");
     if (header) {
         header.style.background = "#FFD700"; // dorado
-        header.querySelector("#tiempoRestante-widget").style.color = "#000";
+        const tiempoTxt = header.querySelector("#tiempoRestante-widget");
+        if (tiempoTxt) tiempoTxt.style.color = "#000";
     }
 
     // 🔹 Cambiar texto secundario
@@ -846,6 +852,8 @@ socket.on("anunciar_ganador", (ganador) => {
 
     console.log("✅ Solo el ganador quedó en el widget");
 });
+
+
 
 // Animación simple
 const style = document.createElement("style");
