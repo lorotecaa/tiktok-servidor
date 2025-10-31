@@ -287,73 +287,107 @@
         }
 
         function terminarTiempo() {
-    if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede terminar
+    // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
+    if (!document.body.classList.contains('widget-mode')) { 
+
+        // 2. Detiene el reloj
         if (intervalo) { 
             clearInterval(intervalo); 
             intervalo = null; 
         }
 
-        socket.emit('finalizar_subasta');
-        
-        // Enviamos 0 al servidor para que el widget se detenga
-        socket.emit('sync_time', 0); 
-        tiempoActual = 0; // Actualizar localmente
-
+        // 3. Avisa a todos que el tiempo (y la subasta) se acabó
+        socket.emit('finalizar_subasta'); // Avisa al servidor que no acepte más regalos
+        socket.emit('sync_time', 0); // Envía '0' a los widgets
+        tiempoActual = 0; 
         if (document.getElementById('tiempoRestante')) {
             document.getElementById('tiempoRestante').textContent = formatTime(0);
         }
 
-        logDonacionesEl.innerHTML += `<p style="color: orange;">⏱️ ¡Tiempo terminado! Presiona 'Finalizar' para declarar al ganador.</p>`;
-
-        // 🔥 INICIO AUTOMÁTICO DEL MODO SNIPE (solo 1 vez)
-        const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 15;
+        // 4. Revisa si hay que activar el SNIPE
+        // (Nota: cambié el default de 15 a 0 para más seguridad)
+        const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
 
         if (!snipeActivado && tiempoSnipe > 0) {
-            snipeActivado = true; // marcamos que ya se activó (evita repeticiones)
+            // A) AÚN QUEDA EL SNIPE
+            snipeActivado = true; // Marcamos que el snipe ya se usó
+            logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
 
-            setTimeout(() => {
-                logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
+            // Avisamos a los widgets del nuevo tiempo
+            socket.emit("iniciar_snipe_cliente", tiempoSnipe);
 
-                // Avisamos a los widgets/clientes del nuevo tiempo de snipe
-                socket.emit("iniciar_snipe_cliente", tiempoSnipe);
+            // Reiniciamos el temporizador local solo con el tiempo de snipe
+            tiempoActual = tiempoSnipe;
+            iniciarTimerLogic();
 
-                // Reiniciamos el temporizador local
-                tiempoActual = tiempoSnipe;
-                iniciarTimerLogic();
-            }, 1000); // 1 segundo de espera antes de iniciar
-        } 
-        else if (snipeActivado) {
-            console.log("⚠️ Snipe ya fue activado antes, no se repite.");
         } 
         else {
-            logDonacionesEl.innerHTML += `<p style="color: gray;">Sin tiempo de snipe configurado.</p>`;
+            // B) NO HAY SNIPE (o el snipe ya terminó)
+            // ¡Aquí es donde ocurre la finalización automática!
+
+            if (snipeActivado) {
+                logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada automáticamente (post-snipe).</p>`;
+            } else {
+                logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada automáticamente (sin snipe).</p>`;
+            }
+
+            // --- INICIO DE LA LÓGICA MOVIDA DESDE 'FINALIZAR' ---
+            if (participantes.length > 0) {
+                const ganador = participantes[0]; // El primer elemento ya está ordenado
+                ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
+                logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+                actualizarGanadoresUI();
+            } else {
+                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+            }
+            
+            participantes = []; // Limpiar participantes para la siguiente ronda
+            actualizarParticipantesUI(); // Actualizar UI (listas vacías)
+            socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
+            // --- FIN DE LA LÓGICA MOVIDA ---
         }
     }
 }
         
         function finalizar() {
-             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede finalizar
-                 terminarTiempo(); // Asegura que el tiempo esté detenido y se haya enviado 0
-                 tiempoActual = 0; // Redundante pero seguro
-                 if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formatTime(0);
-                 // Actualizar el widget también por si acaso (aunque ya debería haber recibido el 0)
-                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formatTime(0);
+    // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
+    if (!document.body.classList.contains('widget-mode')) {
 
-                 logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manually.</p>`;
-                 if (participantes.length > 0) {
-                     const ganador = participantes[0]; // El primer elemento ya está ordenado
-                     ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
-                     logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-                     actualizarGanadoresUI();
-                 } else {
-                      logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-                 }
-                 participantes = []; // Limpiar participantes para la siguiente ronda
-                 actualizarParticipantesUI(); // Actualizar UI (listas vacías)
-                 // 👇 ESTA LÍNEA ESTÁ CORRECTA 👇
-                 socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
-             }
+        // 2. Detener CUALQUIER temporizador que esté activo
+        if (intervalo) { 
+            clearInterval(intervalo); 
+            intervalo = null; 
         }
+        
+        // 3. Sincronizar el tiempo a 0 en todos lados
+        tiempoActual = 0;
+        socket.emit('sync_time', 0); // Envía '0' a los widgets
+        if (document.getElementById('tiempoRestante')) {
+            document.getElementById('tiempoRestante').textContent = formatTime(0);
+        }
+        
+        // 4. Avisar al servidor que la subasta se detenga INMEDIATAMENTE
+        socket.emit('finalizar_subasta'); // Avisa al servidor que no acepte más regalos
+
+        // 5. Loggear que fue manual
+        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+
+        // 6. Procesar al ganador (la misma lógica que tenías antes)
+        if (participantes.length > 0) {
+            const ganador = participantes[0]; // El primer elemento ya está ordenado
+            ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
+            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+            actualizarGanadoresUI();
+        } else {
+             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+        }
+        
+        // 7. Limpiar todo para la siguiente ronda
+        participantes = []; 
+        actualizarParticipantesUI(); 
+        socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
+    }
+}
         
         function restart() {
     if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede reiniciar
