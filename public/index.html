@@ -165,6 +165,7 @@
         let ganadoresHistorial = [];
         let isPaused = false; // Estado para la función pausar
         let snipeActivado = false; // <-- AÑADE ESTA LÍNEA
+        let subastaActiva = false;
 
         // 👇 INICIO: AÑADIDO BLOQUE (PROTECCIÓN ANTI-DUPLICADOS) 👇
         const processedGiftIds = new Set();
@@ -278,7 +279,8 @@
         function iniciar() {
              if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
                 snipeActivado = false; // reiniciamos la bandera al empezar una nueva ronda
-                logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`; // Mensaje corregido
+                subastaActiva = true; // <-- AÑADE ESTA LÍNEA (¡Encendemos el interruptor!)
+                logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
                 socket.emit("iniciar_subasta"); 
                 isPaused = false; // Aseguramos que no esté en pausa
                 tiempoActual = 0; // Forzar reseteo del tiempo al valor del input
@@ -344,6 +346,7 @@
             participantes = []; // Limpiar participantes para la siguiente ronda
             actualizarParticipantesUI(); // Actualizar UI (listas vacías)
             socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
+            subastaActiva = false; // <-- AÑADE ESTA LÍNEA (¡Apagamos el interruptor!)
             // --- FIN DE LA LÓGICA MOVIDA ---
         }
     }
@@ -386,7 +389,8 @@
         participantes = []; 
         actualizarParticipantesUI(); 
         socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
-    }
+        subastaActiva = false; // <-- AÑADE ESTA LÍNEA (¡Apagamos el interruptor!)
+  }
 }
         
         function restart() {
@@ -620,10 +624,18 @@
         // (Esto corre en AMBOS: Dashboard y Widget)
         // ===============================
         socket.on("new_gift", (gift) => {
-            console.log("💎 Nuevo regalo recibido del servidor:", gift);
 
-            // Buscamos si el usuario ya existe
-            const existente = participantes.find(p => p.usuario === gift.usuario);
+            // --- INICIO: NUEVO GUARDIA DE SEGURIDAD ---
+            if (!subastaActiva) {
+                console.log("Regalo ignorado, la subasta está CERRADA.");
+                return; // SALIR de la función, no hacer nada.
+            }
+            // --- FIN: NUEVO GUARDIA DE SEGURIDAD ---
+
+            console.log("💎 Nuevo regalo recibido del servidor:", gift);
+
+            // Buscamos si el usuario ya existe
+            const existente = participantes.find(p => p.usuario === gift.usuario);
 
             if (existente) {
                 existente.cantidad = gift.cantidad; // <--- CORRECTO (REEMPLAZA)
