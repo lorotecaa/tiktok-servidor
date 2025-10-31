@@ -418,47 +418,51 @@
                 socket.emit("anunciar_ganador", ganador);
             } else {
                  logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-                socket.emit("limpiar_listas"); // <-- AÑADE ESTA LÍNEA AQUÍ
             }
-    }
+    }
 }
-}  
+} 
         function finalizar() {
-    // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
-    if (!document.body.classList.contains('widget-mode')) {
+    // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
+    if (!document.body.classList.contains('widget-mode')) {
 
-        // 2. Detener CUALQUIER temporizador que esté activo
-        if (intervalo) { 
-            clearInterval(intervalo); 
-            intervalo = null; 
-        }
-        
-        // 3. Sincronizar el tiempo a 0 en todos lados
-        tiempoActual = 0;
-        socket.emit('sync_time', 0); // Envía '0' a los widgets
-        if (document.getElementById('tiempoRestante')) {
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        }
-        
-        // 4. Avisar al servidor que la subasta se detenga INMEDIATAMENTE
-        socket.emit('finalizar_subasta'); // Avisa al servidor que no acepte más regalos
-
-        // 5. Loggear que fue manual
-        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
-
-        // 6. Procesar al ganador (la misma lógica que tenías antes)
-        if (participantes.length > 0) {
-            const ganador = participantes[0]; // El primer elemento ya está ordenado
-            ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
-            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-            actualizarGanadoresUI();
-            socket.emit("anunciar_ganador", ganador);
-        } else {
-             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-            socket.emit("limpiar_listas"); // <-- AÑADE ESTA LÍNEA AQUÍ
+        // 2. Detener CUALQUIER temporizador que esté activo
+        if (intervalo) { 
+            clearInterval(intervalo); 
+            intervalo = null; 
         }
-}
-}        
+        
+        // 3. Sincronizar el tiempo a 0 en todos lados
+        tiempoActual = 0;
+        socket.emit('sync_time', 0); // Envía '0' a los widgets
+        if (document.getElementById('tiempoRestante')) {
+            document.getElementById('tiempoRestante').textContent = formatTime(0);
+        }
+        
+        // 4. Avisar al servidor que la subasta se detenga INMEDIATAMENTE
+        socket.emit('finalizar_subasta'); // Avisa al servidor que no acepte más regalos
+
+        // 5. Loggear que fue manual
+        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+
+        // 6. Procesar al ganador (si existe)
+        if (participantes.length > 0) {
+            const ganador = participantes[0]; 
+            ganadoresHistorial.unshift(ganador); 
+            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+            actualizarGanadoresUI();
+            socket.emit("anunciar_ganador", ganador);
+        } else {
+             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+        }
+
+        // --- 👇 ¡AQUÍ ESTÁ EL ARREGLO! 👇 ---
+        // Manda la orden de limpiar SIEMPRE, 
+        // sin importar si hubo ganador o no.
+        socket.emit("limpiar_listas");
+        // --- 👆 FIN DEL ARREGLO 👆 ---
+    }
+}      
         function restart() {
     if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede reiniciar
         finalizar(); // Finaliza la ronda actual (guarda ganador si hay, limpia lista)
@@ -805,7 +809,52 @@ function abrirWidget() {
     // Envía una orden al proceso principal de Electron para abrir el widget
     window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
 }
+// --- 👑 LÓGICA PARA MOSTRAR SOLO EL GANADOR EN EL WIDGET ---
+socket.on("anunciar_ganador", (ganador) => {
+    console.log("🏆 Ganador recibido:", ganador);
 
+    // Contenedor del ranking del widget
+    const rankingList = document.getElementById("rankingList");
+    if (!rankingList) return;
+
+    // 🔹 Limpiar todos los jugadores anteriores
+    rankingList.innerHTML = "";
+
+    // 🔹 Crear la fila del ganador
+    const item = document.createElement("div");
+    item.classList.add("ranking-item");
+    item.innerHTML = `
+        <span class="rank-icon">🥇</span>
+        <div class="user-info">
+            <div class="user-avatar"><img src="${ganador.avatar_url || "https://via.placeholder.com/50/000/fff?text=?"}" alt=""></div>
+            <div class="username">${ganador.usuario || "Desconocido"}</div>
+        </div>
+        <div class="user-score">${ganador.cantidad || 0} <span>💎</span></div>
+    `;
+    rankingList.appendChild(item);
+
+    // 🔹 Cambiar color del encabezado del widget para resaltar ganador
+    const header = document.getElementById("tiempoBox");
+    if (header) {
+        header.style.background = "#FFD700"; // dorado
+        header.querySelector("#tiempoRestante-widget").style.color = "#000";
+    }
+
+    // 🔹 Cambiar texto secundario
+    const subtext = document.getElementById("subtext-widget");
+    if (subtext) subtext.textContent = "🏆 Ganador de la Subasta 🏆";
+
+    console.log("✅ Solo el ganador quedó en el widget");
+});
+
+// Animación simple
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}`;
+document.head.appendChild(style);
     </script>
 </body>
 </html>
