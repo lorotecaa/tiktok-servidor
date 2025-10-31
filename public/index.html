@@ -100,7 +100,75 @@
     max-width: 150px; 
 }
 /* --- FIN: ESTILOS CORRECTOS --- */
+#winner-popup {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Overlay que cubre todo */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
+    z-index: 100;
+    /* Usamos flex para centrar el contenido */
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    /* Para la animación de entrada/salida */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
 
+#winner-content {
+    background: linear-gradient(145deg, #1f2a3a, #1a2330);
+    border: 4px solid #FFD700; /* Borde Dorado */
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.7); /* Brillo Dorado */
+    /* Animación "pop" de entrada */
+    transform: scale(0.7);
+    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+#winner-content h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #eee;
+}
+
+#winner-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid #FFD700;
+    margin: 20px auto;
+    overflow: hidden;
+}
+#winner-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+#winner-name {
+    font-size: 48px;
+    color: #FFD700;
+    margin: 10px 0;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+#winner-content p {
+    font-size: 20px;
+    color: #ccc;
+    margin: 10px 0;
+}
+#winner-content p span {
+    color: #fff;
+    font-weight: bold;
+}
+
+.felicidades {
+    font-size: 28px !important;
+    font-weight: bold;
+    color: #FFD700 !important;
+}
     </style>
 </head>
 <body>
@@ -148,7 +216,16 @@
         </div>
         
     </div>
-    
+    <div id="winner-popup" style="display: none;">
+    <div id="winner-content">
+        <h2>¡Ganador de la Ronda!</h2>
+        <div id="winner-avatar"><img></div>
+        <h1 id="winner-name">@username</h1>
+        <p>Donó un total de <span id="winner-amount">0</span> 💎</p>
+        <p class="felicidades">¡Felicidades! 🏆</p>
+    </div>
+</div>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
@@ -339,6 +416,7 @@
                 ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
                 logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
                 actualizarGanadoresUI();
+                socket.emit("anunciar_ganador", ganador);
             } else {
                  logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
             }
@@ -381,6 +459,7 @@
             ganadoresHistorial.unshift(ganador); // Añadir al principio del historial
             logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
             actualizarGanadoresUI();
+            socket.emit("anunciar_ganador", ganador);
         } else {
              logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
         }
@@ -676,6 +755,56 @@
           iniciarTimerLogic();
     }
 });
+/* ================================================== */
+/* 👇 PASO 4: PEGA ESTE BLOQUE DE CÓDIGO NUEVO AQUÍ 👇 */
+/* ================================================== */
+socket.on("anunciar_ganador", (ganador) => {
+
+    // 1. Verificamos si hay un ganador
+    if (!ganador || !ganador.usuario) {
+        console.log("Se finalizó la ronda sin ganador.");
+        return;
+    }
+
+    console.log("🏆 Mostrando ganador:", ganador.usuario);
+
+    // 2. Apuntamos a los elementos del popup que creamos en el Paso 1
+    const popup = document.getElementById('winner-popup');
+    const nameEl = document.getElementById('winner-name');
+    const amountEl = document.getElementById('winner-amount');
+    const avatarImgEl = document.getElementById('winner-avatar').querySelector('img');
+    const contentEl = document.getElementById('winner-content');
+
+    // 3. Llenamos los datos del ganador
+    nameEl.textContent = ganador.usuario;
+    amountEl.textContent = ganador.cantidad;
+    avatarImgEl.src = ganador.avatar_url || 'https://via.placeholder.com/100/555/FFFFFF?text=A';
+    // 4. Mostramos el popup con animaciones
+    requestAnimationFrame(() => {
+        popup.style.display = 'flex'; // Primero lo hacemos visible
+
+        requestAnimationFrame(() => {
+            popup.style.opacity = '1'; // Luego el fade-in
+            contentEl.style.transform = 'scale(1)'; // Y el "pop"
+        });
+    });
+
+    // 5. Ocultamos el popup después de 10 segundos
+    setTimeout(() => {
+        // Inicia la animación de salida
+        popup.style.opacity = '0';
+        contentEl.style.transform = 'scale(0.7)';
+
+        // Esperamos que la animación de salida termine (0.5s) para ocultarlo
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 500); // 500ms = 0.5s
+
+    }, 10000); // 10000ms = 10 segundos
+});
+/* ================================== */
+/* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
+/* ================================== */
 function abrirWidget() {
     // Envía una orden al proceso principal de Electron para abrir el widget
     window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
