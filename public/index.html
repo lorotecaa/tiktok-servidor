@@ -658,13 +658,17 @@
 
             actualizarParticipantesUI();
         });
-
         // Esta línea está correcta y en el lugar correcto
-        socket.on("limpiar_listas_clientes", () => {
-            console.log("🧹 Recibido comando para limpiar lista local.");
-            participantes = []; // Limpia el array local
-            actualizarParticipantesUI(); // Actualiza la UI para mostrar la lista vacía
-    });
+        socket.on("limpiar_listas_clientes", () => {
+            console.log("🧹 Recibido comando para limpiar lista local.");
+            participantes = []; // Limpia el array local
+            actualizarParticipantesUI(); // Actualiza la UI para mostrar la lista vacía
+            
+            // --- 👇 INICIO: CAMBIO AÑADIDO ---
+            subastaActiva = false; // ¡Apaga el interruptor en TODOS los clientes!
+            console.log("CLIENTE: Interruptor APAGADO.");
+            // --- 👆 FIN: CAMBIO AÑADIDO ---
+        });
             
         socket.on("iniciar_snipe_cliente", (tiempoSnipe) => {
          if (document.body.classList.contains('widget-mode')) {
