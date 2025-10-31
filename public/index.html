@@ -225,7 +225,6 @@
         <p class="felicidades">¡Felicidades! 🏆</p>
     </div>
 </div>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
@@ -418,18 +417,12 @@
                 actualizarGanadoresUI();
                 socket.emit("anunciar_ganador", ganador);
             } else {
-                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-            }
-            
-            participantes = []; // Limpiar participantes para la siguiente ronda
-            actualizarParticipantesUI(); // Actualizar UI (listas vacías)
-            socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
-            subastaActiva = false; // <-- AÑADE ESTA LÍNEA (¡Apagamos el interruptor!)
-            // --- FIN DE LA LÓGICA MOVIDA ---
-        }
+                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+                socket.emit("limpiar_listas"); // <-- AÑADE ESTA LÍNEA AQUÍ
+            }
     }
 }
-        
+}  
         function finalizar() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) {
@@ -461,17 +454,11 @@
             actualizarGanadoresUI();
             socket.emit("anunciar_ganador", ganador);
         } else {
-             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-        }
-        
-        // 7. Limpiar todo para la siguiente ronda
-        participantes = []; 
-        actualizarParticipantesUI(); 
-        socket.emit("limpiar_listas"); // Avisa al servidor para limpiar en todos los clientes
-        subastaActiva = false; // <-- AÑADE ESTA LÍNEA (¡Apagamos el interruptor!)
-  }
+             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+            socket.emit("limpiar_listas"); // <-- AÑADE ESTA LÍNEA AQUÍ
+        }
 }
-        
+}        
         function restart() {
     if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede reiniciar
         finalizar(); // Finaliza la ronda actual (guarda ganador si hay, limpia lista)
@@ -791,16 +778,25 @@ socket.on("anunciar_ganador", (ganador) => {
 
     // 5. Ocultamos el popup después de 10 segundos
     setTimeout(() => {
-        // Inicia la animación de salida
-        popup.style.opacity = '0';
-        contentEl.style.transform = 'scale(0.7)';
+        // Inicia la animación de salida
+        popup.style.opacity = '0';
+        contentEl.style.transform = 'scale(0.7)';
 
-        // Esperamos que la animación de salida termine (0.5s) para ocultarlo
-        setTimeout(() => {
-            popup.style.display = 'none';
-        }, 500); // 500ms = 0.5s
+        // Esperamos que la animación de salida termine (0.5s)
+        setTimeout(() => {
+            popup.style.display = 'none';
 
-    }, 10000); // 10000ms = 10 segundos
+            // --- 👇 ¡AQUÍ ESTÁ LA MAGIA! 👇 ---
+            // Solo el Dashboard (maestro) envía la orden de limpiar
+            if (!document.body.classList.contains('widget-mode')) {
+                console.log("Enviando orden de limpiar listas POST-anuncio.");
+                socket.emit("limpiar_listas");
+            }
+            // --- 👆 FIN DE LA MAGIA 👆 ---
+
+        }, 500); // 500ms = 0.5s
+
+    }, 10000); // 10000ms = 10 segundos
 });
 /* ================================== */
 /* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
