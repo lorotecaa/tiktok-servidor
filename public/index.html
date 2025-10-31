@@ -128,6 +128,7 @@
                     <button onclick="pausar()">Pausar</button>
                     <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
                     <button style="background:#2ecc71; color:white;" onclick="abrirWidget()">Ver Widget</button>
+                    <button onclick="simularRegalo()" style="background-color: #007bff; color: white; margin-top: 5px;">Simular Regalo</button>
                 </div>
             </div>
             <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
@@ -390,6 +391,42 @@
                 }
             }
         }
+        // 👇 AÑADE ESTA FUNCIÓN COMPLETA 👇
+        function simularRegalo() {
+            // Solo el dashboard (maestro) puede simular
+            if (document.body.classList.contains('widget-mode')) return;
+
+            // 1. Nombres y montos aleatorios
+            const nombres = ["GatitoVeloz", "LoboEstelar", "ZorroGamer", "PandaNinja", "DragonRojo"];
+            const randomUser = nombres[Math.floor(Math.random() * nombres.length)] + Math.floor(Math.random() * 500);
+            const randomAmount = Math.floor(Math.random() * 100) + 1; // Simular donación de 1 a 100
+            const giftName = "Simulación";
+
+            // 2. Obtener el total anterior (si el usuario ya existe)
+            const existente = participantes.find(p => p.usuario === randomUser);
+            let nuevoTotal;
+
+            if (existente) {
+                nuevoTotal = existente.cantidad + randomAmount; // Sumamos la nueva donación al total
+            } else {
+                nuevoTotal = randomAmount; // Es un usuario nuevo
+            }
+            
+            // 3. Mostrar en el log del dashboard
+            logDonacionesEl.innerHTML += `<p style="color: gray;">[SIM] ${randomUser} envió +${randomAmount}💎 (Nuevo Total: ${nuevoTotal})</p>`;
+            logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+
+            // 4. Emitir al servidor el *NUEVO TOTAL*
+            // (El servidor lo retransmitirá, y socket.on("new_gift") lo reemplazará)
+            socket.emit("nuevo_regalo", {
+                usuario: randomUser,
+                cantidad: nuevoTotal,
+                regalo: giftName,
+                // 👇 AÑADE ESTA LÍNEA 👇
+                avatar_url: `https://via.placeholder.com/30/555/FFFFFF?text=${randomUser.charAt(0)}`
+            });
+        }
+        // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
@@ -403,7 +440,6 @@
                 // porque el dashboard enviará 0 al finalizar/terminar.
             }
         });
-
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -496,11 +532,13 @@
                                  socket.emit("nuevo_regalo", {
                                      usuario: gift.uniqueId,
                                      cantidad: totalDiamonds, 
-                                     regalo: gift.giftName
+                                     regalo: gift.giftName,
+                                     // 👇 AÑADE ESTA LÍNEA 👇
+                                     avatar_url: gift.profilePictureUrl 
                                  });
 
                                  break; // ✅ Fin del case
-                             } // 🌟 FIN DE LA CORRECCIÓN FINAL 🌟
+                             }
 
                              case "chat":
                                  const chat = msg.data;
@@ -561,19 +599,12 @@
                 participantes.push({
                     usuario: gift.usuario,
                     cantidad: gift.cantidad,
-                    regalo: gift.regalo
-                    // Opcional: Guardar avatar si viene en el evento
-                    // avatar_url: gift.avatar_url 
+                    regalo: gift.regalo,
+                    avatar_url: gift.avatar_url // 👈 Y AÑADIDO AQUÍ
                 });
             }
 
             actualizarParticipantesUI();
-
-            // Log en el dashboard (ya no es necesario duplicar el log aquí si viene de TikFinity)
-            // if (!isWidgetMode) { 
-            //     logDonacionesEl.innerHTML += `<p style="color: gold;">💎 ${gift.usuario} envió ${gift.cantidad} diamantes (${gift.regalo}) [Desde Servidor]</p>`;
-            //     logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
-            // }
         });
 
         // Esta línea está correcta y en el lugar correcto
@@ -593,6 +624,7 @@ function abrirWidget() {
     // Envía una orden al proceso principal de Electron para abrir el widget
     window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
 }
+
     </script>
 </body>
 </html>
