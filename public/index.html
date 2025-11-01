@@ -259,7 +259,7 @@
         }
         
         function actualizarParticipantesUI() {
-            participantes.sort((a, b) => b.cantidad - a.cantidad);
+            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
             
             const isWidgetMode = document.body.classList.contains('widget-mode');
             
@@ -715,34 +715,33 @@
 // (Esto corre en AMBOS: Dashboard y Widget)
 // ===============================
 socket.on("new_gift", (gift) => {
-    // --- INICIO: NUEVO GUARDIA DE SEGURIDAD ---
-    if (!subastaActiva) {
-        console.log("Regalo ignorado, la subasta está CERRADA.");
-        return; // SALIR de la función, no hacer nada.
-    }
-    // --- FIN: NUEVO GUARDIA DE SEGURIDAD ---
+            console.log("💎 Nuevo regalo recibido del servidor:", gift);
 
-    console.log("🪙 Nuevo regalo recibido del servidor:", gift);
+            const existente = participantes.find(p => p.usuario === gift.usuario);
 
-    // Buscamos si el usuario ya existe
-    const existente = participantes.find(p => p.usuario === gift.usuario);
+            if (existente) {
+                existente.cantidad = gift.cantidad;
+                existente.avatar_url = gift.avatar_url;
+            } else {
+                participantes.push({
+                    usuario: gift.usuario,
+                    cantidad: gift.cantidad,
+                    regalo: gift.regalo,
+                    avatar_url: gift.avatar_url
+                });
+            }
 
-    if (existente) {
-        // 🔹 Si ya existe, SUMAMOS su nueva cantidad
-        existente.cantidad += gift.cantidad;
-    } else {
-        // 🔹 Si no existe, lo agregamos
-        participantes.push({
-            usuario: gift.usuario,
-            cantidad: gift.cantidad,
-            regalo: gift.regalo,
-            avatar_url: gift.avatar_url
+            // 👇 AÑADE ESTA LÍNEA AQUÍ 👇
+            // Ordena la lista CADA VEZ que llegue un regalo, ANTES de dibujar.
+            participantes.sort((a, b) => b.cantidad - a.cantidad);
+
+            // Ahora sí, actualiza la UI con la lista ya ordenada
+            actualizarParticipantesUI();
         });
-    }
+    
 
     // 🔹 Ordenar y refrescar la interfaz
     actualizarParticipantesUI();
-});
 
 
 // ===============================
