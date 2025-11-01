@@ -429,49 +429,50 @@
 }
 } 
         function finalizar() {
-    // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
-    if (!document.body.classList.contains('widget-mode')) {
+    // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
+    if (!document.body.classList.contains('widget-mode')) {
 
-        // 2. Detener CUALQUIER temporizador que esté activo
-        if (intervalo) { 
-            clearInterval(intervalo); 
-            intervalo = null; 
-        }
-        
-        // 3. Sincronizar el tiempo a 0 en todos lados
-        tiempoActual = 0;
-        socket.emit('sync_time', 0); // Envía '0' a los widgets
-        if (document.getElementById('tiempoRestante')) {
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        }
-        
-        // 4. Avisar al servidor que la subasta se detenga INMEDIATAMENTE
-        socket.emit('finalizar_subasta'); // Avisa al servidor que no acepte más regalos
+        // 2. Detener CUALQUIER temporizador que esté activo
+        if (intervalo) { 
+            clearInterval(intervalo); 
+            intervalo = null; 
+        }
+        
+        // 3. Sincronizar el tiempo a 0 en todos lados
+        tiempoActual = 0;
+        socket.emit('sync_time', 0); // Envía '0' a los widgets
+        if (document.getElementById('tiempoRestante')) {
+            document.getElementById('tiempoRestante').textContent = formatTime(0);
+        }
+        
+        // 4. Avisar al servidor que la subasta se detenga INMEDIATAMENTE
+        socket.emit('finalizar_subasta'); 
 
-        // 5. Loggear que fue manual
-        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+        // 5. Loggear que fue manual
+        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
 
-        // 6. Procesar al ganador (si existe)
-        if (participantes.length > 0) {
-                     
-                     // 👇 AÑADE ESTA LÍNEA AQUÍ 👇
-                     participantes.sort((a, b) => b.cantidad - a.cantidad); // Ordena de mayor a menor
+        // 6. Procesar al ganador (si existe)
+        if (participantes.length > 0) {
+                        
+            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad)); // Ordena de mayor a menor (con parseInt)
 
-                     const ganador = participantes[0]; // Ahora sí, el [0] es el que más donó
-                     ganadoresHistorial.unshift(ganador); 
-                     logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-                     actualizarGanadoresUI();
-                     socket.emit("anunciar_ganador", ganador); // Envía al ganador correcto
-                 } else {
-                      logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-                 }
-
-                 participantes = []; 
-                 actualizarParticipantesUI(); 
-                 socket.emit("limpiar_listas"); 
-             }
+            const ganador = participantes[0]; // Ahora sí, el [0] es el que más donó
+            ganadoresHistorial.unshift(ganador); 
+            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+            actualizarGanadoresUI();
+            socket.emit("anunciar_ganador", ganador); // Envía al ganador correcto
+        
+        } else {
+             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
         }
 
+        // 7. APAGAR EL INTERRUPTOR Y LIMPIAR (SIEMPRE)
+        subastaActiva = false; // <--- LUGAR CORRECTO (Fuera del if/else del ganador)
+        participantes = []; 
+        actualizarParticipantesUI(); 
+        socket.emit("limpiar_listas"); // (Esta es la única llamada que debe estar)
+    }
+}
         // --- 👇 ¡AQUÍ ESTÁ EL ARREGLO! 👇 ---
         // Manda la orden de limpiar SIEMPRE, 
         // sin importar si hubo ganador o no.
@@ -610,6 +611,9 @@
                  tiktokWS.onmessage = (event) => {
                      // Asegurarse de que logDonacionesEl exista antes de usarlo
                      if (!logDonacionesEl) return; 
+                     if (!subastaActiva) {
+                        return; // Ignora todo si la subasta no está activa
+         }
 
                      try {
                          const msg = JSON.parse(event.data);
@@ -906,3 +910,4 @@ document.head.appendChild(style);
     </script>
 </body>
 </html>
+
