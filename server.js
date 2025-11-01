@@ -56,7 +56,16 @@ io.on("connection", (socket) => {
     console.log("🎁 nuevo_regalo recibido:", giftData);
     io.emit("new_gift", giftData);
   });
-
+// 👑 NUEVO → cuando el Dashboard elija un ganador
+  socket.on("anunciar_ganador", (ganador) => {
+    console.log("🏆 Anunciando ganador:", ganador);
+    io.emit("anunciar_ganador", ganador); // 🔹 lo envía a todos los clientes (incluyendo el widget)
+  });
+  // 🧹 Limpiar listas
+  socket.on("limpiar_listas", () => {
+    console.log("🧹 Solicitud para limpiar listas recibida desde el Dashboard.");
+    io.emit("limpiar_listas_clientes");
+  });
   // Detectar desconexión
   socket.on("disconnect", () => {
     console.log("🔴 Cliente desconectado:", socket.id);
