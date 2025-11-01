@@ -307,6 +307,11 @@
                  document.querySelector('#totalDiamantes').textContent = totalDiamantes;
             }
         }
+        function obtenerGanador() {
+    if (participantes.length === 0) return null;
+    return participantes.reduce((max, p) => (p.coins > max.coins ? p : max));
+}
+
 
         function actualizarGanadoresUI() {
             const listaGanadoresEl = document.getElementById('listaGanadores');
@@ -697,163 +702,161 @@
         } // <-- FIN DEL ELSE (MODO DASHBOARD)
 
         // ===============================
-        // 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
-        // (Esto corre en AMBOS: Dashboard y Widget)
-        // ===============================
-        socket.on("new_gift", (gift) => {
-
-            // --- INICIO: NUEVO GUARDIA DE SEGURIDAD ---
-            if (!subastaActiva) {
-                console.log("Regalo ignorado, la subasta está CERRADA.");
-                return; // SALIR de la función, no hacer nada.
-            }
-            // --- FIN: NUEVO GUARDIA DE SEGURIDAD ---
-
-            console.log("💎 Nuevo regalo recibido del servidor:", gift);
-
-            // Buscamos si el usuario ya existe
-            const existente = participantes.find(p => p.usuario === gift.usuario);
-
-            if (existente) {
-                existente.cantidad = gift.cantidad; // <--- CORRECTO (REEMPLAZA)
-                 // Opcional: Actualizar avatar si viene en el evento
-                 // if(gift.avatar_url) existente.avatar_url = gift.avatar_url; 
-            } else {
-                participantes.push({
-                    usuario: gift.usuario,
-                    cantidad: gift.cantidad,
-                    regalo: gift.regalo,
-                    avatar_url: gift.avatar_url // 👈 Y AÑADIDO AQUÍ
-                });
-            }
-
-            actualizarParticipantesUI();
-        });
-        // Esta línea está correcta y en el lugar correcto
-        socket.on("limpiar_listas_clientes", () => {
-            console.log("🧹 Recibido comando para limpiar lista local.");
-            participantes = []; // Limpia el array local
-            actualizarParticipantesUI(); // Actualiza la UI para mostrar la lista vacía
-            
-            // --- 👇 INICIO: CAMBIO AÑADIDO ---
-            subastaActiva = false; // ¡Apaga el interruptor en TODOS los clientes!
-            console.log("CLIENTE: Interruptor APAGADO.");
-            // --- 👆 FIN: CAMBIO AÑADIDO ---
-        });
-            
-        socket.on("iniciar_snipe_cliente", (tiempoSnipe) => {
-         if (document.body.classList.contains('widget-mode')) {
-          tiempoActual = tiempoSnipe;
-          iniciarTimerLogic();
+// 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
+// (Esto corre en AMBOS: Dashboard y Widget)
+// ===============================
+socket.on("new_gift", (gift) => {
+    // --- INICIO: NUEVO GUARDIA DE SEGURIDAD ---
+    if (!subastaActiva) {
+        console.log("Regalo ignorado, la subasta está CERRADA.");
+        return; // SALIR de la función, no hacer nada.
     }
+    // --- FIN: NUEVO GUARDIA DE SEGURIDAD ---
+
+    console.log("💎 Nuevo regalo recibido del servidor:", gift);
+
+    // Buscamos si el usuario ya existe
+    const existente = participantes.find(p => p.usuario === gift.usuario);
+
+    if (existente) {
+        existente.cantidad = gift.cantidad; // Reemplaza cantidad
+    } else {
+        participantes.push({
+            usuario: gift.usuario,
+            cantidad: gift.cantidad,
+            regalo: gift.regalo,
+            avatar_url: gift.avatar_url
+        });
+    }
+
+    actualizarParticipantesUI();
 });
-/* ================================================== */
-/* 👇 PASO 4: PEGA ESTE BLOQUE DE CÓDIGO NUEVO AQUÍ 👇 */
-/* ================================================== */
-socket.on("anunciar_ganador", (ganador) => {
 
-    // 1. Verificamos si hay un ganador
-    if (!ganador || !ganador.usuario) {
-        console.log("Se finalizó la ronda sin ganador.");
-        return;
-    }
+// ===============================
+// 🧹 Limpiar listas cuando el servidor lo indique
+// ===============================
+socket.on("limpiar_listas_clientes", () => {
+    console.log("🧹 Recibido comando para limpiar lista local.");
+    participantes = [];
+    actualizarParticipantesUI();
+    subastaActiva = false;
+    console.log("CLIENTE: Interruptor APAGADO.");
+});
 
-    console.log("🏆 Mostrando ganador:", ganador.usuario);
+// ===============================
+// 🧭 Función para actualizar la UI (debe ir FUERA de socket.on)
+// ===============================
+function actualizarParticipantesUI() {
+    const listaDashboard = document.getElementById("listaParticipantes");
+    const listaWidget = document.getElementById("listaParticipantes-widget");
+    if (listaDashboard) listaDashboard.innerHTML = "";
+    if (listaWidget) listaWidget.innerHTML = "";
 
-    // 2. Apuntamos a los elementos del popup que creamos en el Paso 1
-    const popup = document.getElementById('winner-popup');
-    const nameEl = document.getElementById('winner-name');
-    const amountEl = document.getElementById('winner-amount');
-    const avatarImgEl = document.getElementById('winner-avatar').querySelector('img');
-    const contentEl = document.getElementById('winner-content');
+    participantes.forEach((p, index) => {
+        const itemHTML = `
+            <li>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span>${index + 1}.</span>
+                    <img src="${p.avatar_url || 'https://via.placeholder.com/40/000/fff?text=?'}"
+                         alt="avatar"
+                         style="width:40px; height:40px; border-radius:50%;">
+                    <span>${p.usuario}</span>
+                </div>
+                <div class="coins">${p.cantidad} 💎</div>
+            </li>
+        `;
 
-    // 3. Llenamos los datos del ganador
-    nameEl.textContent = ganador.usuario;
-    amountEl.textContent = ganador.cantidad;
-    avatarImgEl.src = ganador.avatar_url || 'https://via.placeholder.com/100/555/FFFFFF?text=A';
-    // 4. Mostramos el popup con animaciones
-    requestAnimationFrame(() => {
-        popup.style.display = 'flex'; // Primero lo hacemos visible
+        if (listaDashboard && !document.body.classList.contains('widget-mode')) {
+            listaDashboard.innerHTML += itemHTML;
+        }
 
-        requestAnimationFrame(() => {
-            popup.style.opacity = '1'; // Luego el fade-in
-            contentEl.style.transform = 'scale(1)'; // Y el "pop"
-        });
+        if (listaWidget && document.body.classList.contains('widget-mode')) {
+            listaWidget.innerHTML += itemHTML;
+        }
     });
+}
 
-    // 5. Ocultamos el popup después de 10 segundos
-    setTimeout(() => {
-        // Inicia la animación de salida
-        popup.style.opacity = '0';
-        contentEl.style.transform = 'scale(0.7)';
-
-        // Esperamos que la animación de salida termine (0.5s)
-        setTimeout(() => {
-            popup.style.display = 'none';
-
-            // --- 👇 ¡AQUÍ ESTÁ LA MAGIA! 👇 ---
-            // Solo el Dashboard (maestro) envía la orden de limpiar
-            if (!document.body.classList.contains('widget-mode')) {
-                console.log("Enviando orden de limpiar listas POST-anuncio.");
-                socket.emit("limpiar_listas");
-            }
-            // --- 👆 FIN DE LA MAGIA 👆 ---
-
-        }, 500); // 500ms = 0.5s
-
-    }, 10000); // 10000ms = 10 segundos
-});
 /* ================================== */
 /* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
 /* ================================== */
 function abrirWidget() {
-    // Envía una orden al proceso principal de Electron para abrir el widget
     window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
 }
-// --- 👑 LÓGICA PARA MOSTRAR SOLO EL GANADOR EN EL WIDGET ---
-socket.on("anunciar_ganador", (ganador) => {
-    console.log("🏆 Ganador recibido:", ganador);
 
-    // Obtener el contenedor correcto del widget
-    const rankingList = document.getElementById("listaParticipantes-widget");
-    if (!rankingList) {
-        console.warn("❌ No se encontró 'listaParticipantes-widget'");
+/* ================================================== */
+/* 👑 BLOQUE ÚNICO PARA MOSTRAR GANADOR (Dashboard + Widget) 👑 */
+/* ================================================== */
+socket.on("anunciar_ganador", (ganador) => {
+    if (!ganador || !ganador.usuario) {
+        console.log("⚠️ No hubo ganador en esta ronda.");
         return;
     }
 
-    // 🔹 Limpiar todos los jugadores anteriores
-    rankingList.innerHTML = "";
+    if (!document.body.classList.contains('widget-mode')) {
+        console.log("🎬 Mostrando popup de ganador en el Dashboard:", ganador.usuario);
 
-    // 🔹 Crear una sola fila (<li>) para el ganador
-    const item = document.createElement("li");
-    item.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.2em;">🥇</span>
-            <img src="${ganador.avatar_url || "https://via.placeholder.com/40/000/fff?text=?"}" 
-                 alt="avatar" 
-                 style="width:40px; height:40px; border-radius:50%;">
-            <span>${ganador.usuario || "Desconocido"}</span>
-        </div>
-        <div class="coins">${ganador.cantidad || 0} 💎</div>
-    `;
-    rankingList.appendChild(item);
+        const popup = document.getElementById('winner-popup');
+        const nameEl = document.getElementById('winner-name');
+        const amountEl = document.getElementById('winner-amount');
+        const avatarImgEl = document.getElementById('winner-avatar').querySelector('img');
+        const contentEl = document.getElementById('winner-content');
 
-    // 🔹 Cambiar color del encabezado del widget
-    const header = document.getElementById("tiempoBox-widget");
-    if (header) {
-        header.style.background = "#FFD700"; // dorado
-        const tiempoTxt = header.querySelector("#tiempoRestante-widget");
-        if (tiempoTxt) tiempoTxt.style.color = "#000";
+        nameEl.textContent = ganador.usuario;
+        amountEl.textContent = ganador.cantidad;
+        avatarImgEl.src = ganador.avatar_url || 'https://via.placeholder.com/100/555/FFFFFF?text=A';
+
+        requestAnimationFrame(() => {
+            popup.style.display = 'flex';
+            requestAnimationFrame(() => {
+                popup.style.opacity = '1';
+                contentEl.style.transform = 'scale(1)';
+            });
+        });
+
+        setTimeout(() => {
+            popup.style.opacity = '0';
+            contentEl.style.transform = 'scale(0.7)';
+            setTimeout(() => {
+                popup.style.display = 'none';
+                socket.emit("limpiar_listas");
+            }, 500);
+        }, 10000);
+    } else {
+        console.log("👑 Mostrando ganador en el widget:", ganador.usuario);
+
+        const rankingList = document.getElementById("listaParticipantes-widget");
+        if (!rankingList) {
+            console.warn("❌ No se encontró 'listaParticipantes-widget'");
+            return;
+        }
+
+        rankingList.innerHTML = "";
+        participantes = [];
+
+        const item = document.createElement("li");
+        item.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.2em;">🥇</span>
+                <img src="${ganador.avatar_url || 'https://via.placeholder.com/40/000/fff?text=?'}"
+                     alt="avatar"
+                     style="width:40px; height:40px; border-radius:50%;">
+                <span>${ganador.usuario}</span>
+            </div>
+            <div class="coins">${ganador.cantidad} 💎</div>
+        `;
+        rankingList.appendChild(item);
+
+        const header = document.getElementById("tiempoBox-widget");
+        if (header) {
+            header.style.background = "#FFD700";
+            const tiempoTxt = header.querySelector("#tiempoRestante-widget");
+            if (tiempoTxt) tiempoTxt.style.color = "#000";
+        }
+
+        const subtext = document.getElementById("subtext-widget");
+        if (subtext) subtext.textContent = "🏆 Ganador de la Subasta 🏆";
     }
-
-    // 🔹 Cambiar texto secundario
-    const subtext = document.getElementById("subtext-widget");
-    if (subtext) subtext.textContent = "🏆 Ganador de la Subasta 🏆";
-
-    console.log("✅ Solo el ganador quedó en el widget");
 });
-
-
 
 // Animación simple
 const style = document.createElement("style");
