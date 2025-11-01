@@ -527,7 +527,7 @@
             }
             
             // 3. Mostrar en el log del dashboard
-            logDonacionesEl.innerHTML += `<p style="color: gray;">[SIM] ${randomUser} envió +${randomAmount}💎 (Nuevo Total: ${nuevoTotal})</p>`;
+            logDonacionesEl.innerHTML += `<p style="color: gray;">[SIM] ${randomUser} envió +${randomAmount}🪙 (Nuevo Total: ${nuevoTotal})</p>`;
             logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
 
             // 4. Emitir al servidor el *NUEVO TOTAL*
@@ -713,14 +713,16 @@ socket.on("new_gift", (gift) => {
     }
     // --- FIN: NUEVO GUARDIA DE SEGURIDAD ---
 
-    console.log("💎 Nuevo regalo recibido del servidor:", gift);
+    console.log("🪙 Nuevo regalo recibido del servidor:", gift);
 
     // Buscamos si el usuario ya existe
     const existente = participantes.find(p => p.usuario === gift.usuario);
 
     if (existente) {
-        existente.cantidad = gift.cantidad; // Reemplaza cantidad
+        // 🔹 Si ya existe, SUMAMOS su nueva cantidad
+        existente.cantidad += gift.cantidad;
     } else {
+        // 🔹 Si no existe, lo agregamos
         participantes.push({
             usuario: gift.usuario,
             cantidad: gift.cantidad,
@@ -729,8 +731,10 @@ socket.on("new_gift", (gift) => {
         });
     }
 
+    // 🔹 Ordenar y refrescar la interfaz
     actualizarParticipantesUI();
 });
+
 
 // ===============================
 // 🧹 Limpiar listas cuando el servidor lo indique
@@ -792,7 +796,12 @@ socket.on("anunciar_ganador", (ganador) => {
         return;
     }
 
-    if (!document.body.classList.contains('widget-mode')) {
+    const isWidget = document.body.classList.contains('widget-mode');
+
+    if (!isWidget) {
+        // ===========================
+        // 🖥️ MOSTRAR EN DASHBOARD
+        // ===========================
         console.log("🎬 Mostrando popup de ganador en el Dashboard:", ganador.usuario);
 
         const popup = document.getElementById('winner-popup');
@@ -802,7 +811,7 @@ socket.on("anunciar_ganador", (ganador) => {
         const contentEl = document.getElementById('winner-content');
 
         nameEl.textContent = ganador.usuario;
-        amountEl.textContent = ganador.cantidad;
+        amountEl.textContent = ganador.cantidad + " 🪙";
         avatarImgEl.src = ganador.avatar_url || 'https://via.placeholder.com/100/555/FFFFFF?text=A';
 
         requestAnimationFrame(() => {
@@ -821,44 +830,63 @@ socket.on("anunciar_ganador", (ganador) => {
                 socket.emit("limpiar_listas");
             }, 500);
         }, 10000);
+
     } else {
+        // ===========================
+        // 📺 MOSTRAR EN WIDGET (TIKTOK STUDIO)
+        // ===========================
         console.log("👑 Mostrando ganador en el widget:", ganador.usuario);
 
+        // 1️⃣ Limpiar el ranking
         const rankingList = document.getElementById("listaParticipantes-widget");
-        if (!rankingList) {
-            console.warn("❌ No se encontró 'listaParticipantes-widget'");
-            return;
-        }
-
-        rankingList.innerHTML = "";
+        if (rankingList) rankingList.innerHTML = "";
         participantes = [];
 
-        const item = document.createElement("li");
-        item.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:1.2em;">🥇</span>
-                <img src="${ganador.avatar_url || 'https://via.placeholder.com/40/000/fff?text=?'}"
-                     alt="avatar"
-                     style="width:40px; height:40px; border-radius:50%;">
-                <span>${ganador.usuario}</span>
+        // 2️⃣ Crear un banner flotante encima del widget
+        const container = document.createElement("div");
+        container.id = "widget-winner-popup";
+        container.style.position = "fixed";
+        container.style.top = "10%";
+        container.style.left = "50%";
+        container.style.transform = "translateX(-50%)";
+        container.style.zIndex = "9999";
+        container.style.background = "rgba(0,0,0,0.85)";
+        container.style.color = "#fff";
+        container.style.padding = "25px 50px";
+        container.style.borderRadius = "20px";
+        container.style.textAlign = "center";
+        container.style.fontSize = "1.6em";
+        container.style.backdropFilter = "blur(6px)";
+        container.style.boxShadow = "0 0 20px rgba(255, 215, 0, 0.8)";
+        container.style.animation = "popIn 0.4s ease";
+
+        container.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:center; gap:15px;">
+                <img src="${ganador.avatar_url || 'https://via.placeholder.com/60/000/fff?text=?'}"
+                     style="width:60px; height:60px; border-radius:50%; border:3px solid gold;">
+                <div>
+                    <div style="font-weight:bold; color:#FFD700;">🏆 ¡GANADOR DE LA SUBASTA! 🏆</div>
+                    <div>${ganador.usuario}</div>
+                    <div style="font-size:1.2em;">${ganador.cantidad} 🪙</div>
+                </div>
             </div>
-            <div class="coins">${ganador.cantidad} 💎</div>
         `;
-        rankingList.appendChild(item);
 
-        const header = document.getElementById("tiempoBox-widget");
-        if (header) {
-            header.style.background = "#FFD700";
-            const tiempoTxt = header.querySelector("#tiempoRestante-widget");
-            if (tiempoTxt) tiempoTxt.style.color = "#000";
-        }
+        document.body.appendChild(container);
 
-        const subtext = document.getElementById("subtext-widget");
-        if (subtext) subtext.textContent = "🏆 Ganador de la Subasta 🏆";
+        // 3️⃣ Quitar banner después de 10 segundos
+        setTimeout(() => {
+            container.style.transition = "opacity 0.5s ease";
+            container.style.opacity = "0";
+            setTimeout(() => {
+                container.remove();
+                socket.emit("limpiar_listas");
+            }, 500);
+        }, 10000);
     }
 });
 
-// Animación simple
+/* Animación del popup */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes popIn {
@@ -866,6 +894,7 @@ style.innerHTML = `
   100% { transform: scale(1); opacity: 1; }
 }`;
 document.head.appendChild(style);
+
     </script>
 </body>
 </html>
