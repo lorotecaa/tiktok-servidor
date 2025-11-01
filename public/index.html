@@ -453,22 +453,31 @@
 
         // 6. Procesar al ganador (si existe)
         if (participantes.length > 0) {
-            const ganador = participantes[0]; 
-            ganadoresHistorial.unshift(ganador); 
-            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-            actualizarGanadoresUI();
-            socket.emit("anunciar_ganador", ganador);
-        } else {
-             logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-        }
+                     
+                     // 👇 AÑADE ESTA LÍNEA AQUÍ 👇
+                     participantes.sort((a, b) => b.cantidad - a.cantidad); // Ordena de mayor a menor
+
+                     const ganador = participantes[0]; // Ahora sí, el [0] es el que más donó
+                     ganadoresHistorial.unshift(ganador); 
+                     logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+                     actualizarGanadoresUI();
+                     socket.emit("anunciar_ganador", ganador); // Envía al ganador correcto
+                 } else {
+                      logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+                 }
+
+                 participantes = []; 
+                 actualizarParticipantesUI(); 
+                 socket.emit("limpiar_listas"); 
+             }
+        }
 
         // --- 👇 ¡AQUÍ ESTÁ EL ARREGLO! 👇 ---
         // Manda la orden de limpiar SIEMPRE, 
         // sin importar si hubo ganador o no.
         socket.emit("limpiar_listas");
         // --- 👆 FIN DEL ARREGLO 👆 ---
-    }
-}      
+          
         function restart() {
     if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede reiniciar
         finalizar(); // Finaliza la ronda actual (guarda ganador si hay, limpia lista)
