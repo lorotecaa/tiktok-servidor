@@ -586,20 +586,28 @@
     // Este código solo corre en el Widget
     if (document.body.classList.contains('widget-mode')) {
         
-        // El elemento del widget es 'tiempoRestante-widget'
         const timerElement = document.getElementById('tiempoRestante-widget'); 
+        const subtextElement = document.getElementById('subtext-widget'); // ¡Necesitamos el subtexto!
         
-        if (timerElement) {
+        if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
             
-            // 🚨 LÓGICA DE ANIMACIÓN APLICADA AL WIDGET 🚨
-            if (time <= 5 && time > 0) {
-                // Aplica la clase .snipe-active
-                timerElement.classList.add('snipe-active'); 
-            } else {
-                // Remueve la clase para el tiempo normal
-                timerElement.classList.remove('snipe-active');
+            // 🚨 LÓGICA DE ALERTA DE 5 SEGUNDOS (tiempo normal) 🚨
+            // SOLO si el subtexto NO tiene la clase 'snipe-active' (Modo Snipe REAL)
+            if (!subtextElement.classList.contains('snipe-active')) {
+                
+                if (time <= 5 && time > 0) {
+                    // Alerta visual: Aplica la clase .snipe-active SOLO al número
+                    timerElement.classList.add('snipe-active'); 
+                    // El texto se mantiene "El sorteo/subasta termina en"
+                    
+                } else {
+                    // Remueve la clase para el tiempo normal
+                    timerElement.classList.remove('snipe-active');
+                }
             }
+            // NOTA: Si el subtext tiene 'snipe-active', los estilos se mantienen
+            // y el texto ya fue cambiado por el evento 'snipe_start'.
         }
 
         // Si el tiempo es > 0, la subasta está activa
