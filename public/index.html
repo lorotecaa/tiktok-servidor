@@ -356,19 +356,15 @@
             
             intervalo = setInterval(() => {
                 if (!isPaused && tiempoActual > 0) {
-                    tiempoActual--;
-                    const formattedTime = formatTime(tiempoActual);
-                    
-                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    if (!document.body.classList.contains('widget-mode')) {
-                        socket.emit('sync_time', tiempoActual); 
-                    }
-                    
+// ...
                     // 2. Actualizamos el display LOCAL del dashboard
                     const dashTimeEl = document.getElementById('tiempoRestante');
                     if (dashTimeEl) {
                         dashTimeEl.textContent = formattedTime;
-                        // 🚨 LÓGICA DE ANIMACIÓN AÑADIDA AQUÍ 🚨
+                        
+                        // 🚨 CORRECCIÓN: SOLO APLICAR ANIMACIÓN si estamos cerca de terminar
+                        // Nota: El dashboard NO necesita la lógica completa de snipe aquí, 
+                        // solo el efecto visual de 'Alerta'.
                         if (tiempoActual <= 5) {
                             dashTimeEl.classList.add('snipe-active');
                         } else {
@@ -582,42 +578,57 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time) => {
+        socket.on('update_time', (data) => {
+    // Si el servidor envía un objeto, lo desestructuramos:
+    const time = data.time || 0;
+    // 🚨 Usamos el estado del snipe enviado por el servidor 🚨
+    const snipeIsActive = data.snipeIsActive || false; 
+
     // Este código solo corre en el Widget
     if (document.body.classList.contains('widget-mode')) {
         
+        const snipeDuration = window.SNIPE_THRESHOLD || 5; 
+        
         const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget'); // <-- Referencia al subtexto
+        const subtextElement = document.getElementById('subtext-widget');
         
         if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time);
             
-            // 🚨 LÓGICA DE ANIMACIÓN Y TEXTO (NUEVA) 🚨
-            if (time <= 5 && time > 0) {
-                // Aplica la animación al tiempo
+            // 🚨 CORRECCIÓN CLAVE 🚨: Solo activamos el modo SNIPE
+            // 1) Si la variable snipeIsActive es TRUE (lo que significa que la ronda normal ya terminó)
+            // 2) O si el tiempo normal baja a 5s o menos (para la alerta final)
+            
+            if (snipeIsActive && time > 0) {
+                // Modo SNIPE Real: Siempre activo durante el tiempo de snipe
                 timerElement.classList.add('snipe-active'); 
-                
-                // ➡️ CAMBIO DE TEXTO SECUNDARIO
                 subtextElement.textContent = 'MOMENTO DE SNIPE'; 
-                // ➡️ Aplicar la misma animación al texto secundario para resaltarlo
                 subtextElement.classList.add('snipe-active');
-            } else {
-                // Remueve la animación del tiempo
-                timerElement.classList.remove('snipe-active');
                 
-                // ➡️ RESTAURA EL TEXTO Y LA ANIMACIÓN
+            } else if (time <= 5 && time > 0) {
+                // 🛑 Alerta Roja en los últimos 5 segundos del tiempo NORMAL (solo visual)
+                // Usamos una clase temporal para la alerta
+                timerElement.classList.add('alerta-final'); 
+                subtextElement.classList.add('alerta-final');
+                subtextElement.textContent = '¡ALERTA DE FINALIZACIÓN!';
+            
+            } else {
+                // Estado normal
+                timerElement.classList.remove('snipe-active', 'alerta-final');
+                subtextElement.classList.remove('snipe-active', 'alerta-final');
                 subtextElement.textContent = 'El sorteo/subasta termina en'; 
-                subtextElement.classList.remove('snipe-active');
             }
         }
+        
+        // ... (resto del código) ...
+    }
+});
 
         // Si el tiempo es > 0, la subasta está activa
         if (time > 0 && !subastaActiva) {
             subastaActiva = true;
             console.log("WIDGET: Interruptor ENCENDIDO");
         }
-    }
-});
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
