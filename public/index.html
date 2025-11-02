@@ -587,27 +587,35 @@
     if (document.body.classList.contains('widget-mode')) {
         
         const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget'); // ¡Necesitamos el subtexto!
+        const subtextElement = document.getElementById('subtext-widget');
         
         if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
             
-            // 🚨 LÓGICA DE ALERTA DE 5 SEGUNDOS (tiempo normal) 🚨
-            // SOLO si el subtexto NO tiene la clase 'snipe-active' (Modo Snipe REAL)
-            if (!subtextElement.classList.contains('snipe-active')) {
+            // 1. 🚀 CHEQUEO DE MODO SNIPE ACTIVO 🚀
+            if (subtextElement.classList.contains('snipe-active')) {
+                
+                // Si la clase ya fue puesta por 'iniciar_snipe_cliente', MANTENEMOS el texto de snipe
+                subtextElement.textContent = 'MOMENTO DE SNIPE'; 
+                // Y nos aseguramos de que el número mantenga los estilos de animación
+                timerElement.classList.add('snipe-active');
+            }
+            
+            // 2. 🚨 LÓGICA DE ALERTA DE 5 SEGUNDOS (Tiempo Normal) 🚨
+            else { 
+                // No estamos en Modo Snipe Real (solo alerta de los últimos 5s del tiempo principal)
                 
                 if (time <= 5 && time > 0) {
                     // Alerta visual: Aplica la clase .snipe-active SOLO al número
                     timerElement.classList.add('snipe-active'); 
-                    // El texto se mantiene "El sorteo/subasta termina en"
-                    
                 } else {
                     // Remueve la clase para el tiempo normal
                     timerElement.classList.remove('snipe-active');
                 }
+                
+                // Reafirmar el texto normal si no hay snipe
+                subtextElement.textContent = 'El sorteo/subasta termina en'; 
             }
-            // NOTA: Si el subtext tiene 'snipe-active', los estilos se mantienen
-            // y el texto ya fue cambiado por el evento 'snipe_start'.
         }
 
         // Si el tiempo es > 0, la subasta está activa
