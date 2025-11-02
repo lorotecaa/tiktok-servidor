@@ -422,18 +422,18 @@
         const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
 
         if (!snipeActivado && tiempoSnipe > 0) {
-            // A) AÚN QUEDA EL SNIPE
-            snipeActivado = true; // Marcamos que el snipe ya se usó
-            logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
+            // A) AÚN QUEDA EL SNIPE
+            snipeActivado = true; // Marcamos que el snipe ya se usó
+            logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
 
-            // Avisamos a los widgets del nuevo tiempo
-            socket.emit("iniciar_snipe_cliente", tiempoSnipe);
+            // Avisamos a los widgets del nuevo tiempo
+            socket.emit("iniciar_snipe_cliente", tiempoSnipe); // <--- ESTA ES LA CLAVE
 
-            // Reiniciamos el temporizador local solo con el tiempo de snipe
-            tiempoActual = tiempoSnipe;
-            iniciarTimerLogic();
+            // Reiniciamos el temporizador local solo con el tiempo de snipe
+            tiempoActual = tiempoSnipe;
+            iniciarTimerLogic();
 
-        } 
+        }
         else {
             // B) NO HAY SNIPE (o el snipe ya terminó)
             // ¡Aquí es donde ocurre la finalización automática!
@@ -622,9 +622,6 @@
 // --- NUEVO EVENTO: INICIO DEL MODO SNIPE (tiempo extra de 15s) ---
 // NOTA: Tu dashboard emite 'iniciar_snipe_cliente', lo escuchamos aquí.
 socket.on('iniciar_snipe_cliente', (snipeDuration) => {
-    // Aquí se setea la duración, aunque la lógica del contador es del servidor
-    window.SNIPE_THRESHOLD = snipeDuration || 15; 
-
     if (document.body.classList.contains('widget-mode')) {
         const timerElement = document.getElementById('tiempoRestante-widget'); 
         const subtextElement = document.getElementById('subtext-widget');
@@ -634,7 +631,7 @@ socket.on('iniciar_snipe_cliente', (snipeDuration) => {
             timerElement.classList.add('snipe-active'); 
             subtextElement.classList.add('snipe-active');
             
-            // 🚀 ESTE ES EL ÚNICO LUGAR DONDE CAMBIA EL TEXTO DE SNIPE 🚀
+            // 🚀 ESTO ES LO QUE CAMBIA EL TEXTO A 'MOMENTO DE SNIPE' 🚀
             subtextElement.textContent = 'MOMENTO DE SNIPE'; 
         }
     }
