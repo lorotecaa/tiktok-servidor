@@ -641,8 +641,14 @@
                                  // - Si tiene repeatEnd: procesamos solo el final
                                  // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
                                  if (gift.repeatEnd === false) { 
-                                 console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
-                                 break;
+                                 
+                                 // 🛑 Excepción clave: Si el regalo vale 100 o más, lo procesamos.
+                                 if (gift.diamondCount >= 100) {
+                                     console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
+                                 } else {
+                                     console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
+                                     break;
+                                 }
                              }
                                  
                                  // (Si repeatEnd es 'true' o 'undefined', el código continúa)
