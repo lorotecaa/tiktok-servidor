@@ -583,48 +583,45 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time, isSnipeActive = false) => {
-    // isSnipeActive será 'true' si el dashboard lo envió, o 'false' por defecto
-    
-    if (document.body.classList.contains('widget-mode')) {
-        
-        const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget');
-        
-        if (timerElement && subtextElement) {
-            timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
-            
-            // LÓGICA CLAVE: Usamos la bandera del Dashboard para establecer el texto
-            if (isSnipeActive) {
-                // 1. MODO SNIPE ACTIVO
-                subtextElement.textContent = 'MOMENTO DE SNIPE';
-                subtextElement.classList.add('snipe-active');
-                timerElement.classList.add('snipe-active'); 
-            } 
-            else { 
-                // 2. MODO TIEMPO NORMAL
-                
-                // Mantenemos el texto normal y limpiamos la bandera de snipe
-                subtextElement.textContent = 'El sorteo/subasta termina en'; 
-                subtextElement.classList.remove('snipe-active'); // Aseguramos que la bandera se limpie
-                
-                // 🚨 Alerta visual de 5 segundos antes del final (solo el número cambia de color)
-                if (time <= 5 && time > 0) {
-                    timerElement.classList.add('snipe-active'); 
-                } else {
-                    timerElement.classList.remove('snipe-active');
-                }
-                
-                // Mantiene el texto normal ("El sorteo/subasta termina en")
-                subtextElement.textContent = 'El sorteo/subasta termina en'; 
-            }
-        }
+    // isSnipeActive será 'true' si el dashboard lo envió, o 'false' por defecto
+    
+    if (document.body.classList.contains('widget-mode')) {
+        
+        const timerElement = document.getElementById('tiempoRestante-widget'); 
+        const subtextElement = document.getElementById('subtext-widget');
+        
+        if (timerElement && subtextElement) {
+            timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
+            
+            // LÓGICA CLAVE: Usamos la bandera del Dashboard para establecer el texto
+            if (isSnipeActive) {
+                // 1. MODO SNIPE ACTIVO
+                subtextElement.textContent = 'MOMENTO DE SNIPE';
+                subtextElement.classList.add('snipe-active');
+                timerElement.classList.add('snipe-active'); 
+            } 
+            else { 
+                // 2. MODO TIEMPO NORMAL
+                
+                // Mantenemos el texto normal y limpiamos la bandera de snipe
+                subtextElement.classList.remove('snipe-active'); // Aseguramos que la bandera se limpie
+                subtextElement.textContent = 'El sorteo/subasta termina en'; // SÓLO UNA VEZ AQUÍ
 
-        // Si el tiempo es > 0, la subasta está activa
-        if (time > 0 && !subastaActiva) {
-            subastaActiva = true;
-            console.log("WIDGET: Interruptor ENCENDIDO");
-        }
-    }
+                // 🚨 Alerta visual de 5 segundos antes del final (solo el número cambia de color)
+                if (time <= 5 && time > 0) {
+                    timerElement.classList.add('snipe-active'); 
+                } else {
+                    timerElement.classList.remove('snipe-active');
+                }
+            }
+        }
+
+        // Si el tiempo es > 0, la subasta está activa
+        if (time > 0 && !subastaActiva) {
+            subastaActiva = true;
+            console.log("WIDGET: Interruptor ENCENDIDO");
+        }
+    }
 });
 // <-------------------------- 🚀 INSERTAR AQUÍ 🚀 -------------------------->
 
