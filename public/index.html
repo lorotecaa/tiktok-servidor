@@ -421,13 +421,13 @@
         // (Nota: cambié el default de 15 a 0 para más seguridad)
         const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
 
-        if (!snipeActivado && tiempoSnipe > 0) {
-            // A) AÚN QUEDA EL SNIPE
-            snipeActivado = true; // Marcamos que el snipe ya se usó
-            logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
+            if (!snipeActivado && tiempoSnipe > 0) {
+                // A) AÚN QUEDA EL SNIPE
+                snipeActivado = true; // Marcamos que el snipe ya se usó
+                logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
 
             // Avisamos a los widgets del nuevo tiempo
-            socket.emit("iniciar_snipe_cliente", tiempoSnipe); // <--- ESTA ES LA CLAVE
+            socket.emit("sync_time", tiempoSnipe, true); // Enviamos tiempo Y la bandera 'true'
 
             // Reiniciamos el temporizador local solo con el tiempo de snipe
             tiempoActual = tiempoSnipe;
@@ -582,8 +582,9 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time) => {
-    // Este código solo corre en el Widget
+        socket.on('update_time', (time, isSnipeActive = false) => {
+    // isSnipeActive será 'true' si el dashboard lo envió, o 'false' por defecto
+    
     if (document.body.classList.contains('widget-mode')) {
         
         const timerElement = document.getElementById('tiempoRestante-widget'); 
@@ -592,15 +593,19 @@
         if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
             
-            // 🚀 LÓGICA CLAVE: SI LA CLASE SNIPE ESTÁ ACTIVA, MANTENEMOS EL TEXTO SNIPE 🚀
-            if (subtextElement.classList.contains('snipe-active')) {
-                
-                // Mantiene el texto de snipe, no importa cuántas veces se ejecute update_time
+            // LÓGICA CLAVE: Usamos la bandera del Dashboard para establecer el texto
+            if (isSnipeActive) {
+                // 1. MODO SNIPE ACTIVO
                 subtextElement.textContent = 'MOMENTO DE SNIPE';
-                timerElement.classList.add('snipe-active'); // Aseguramos el estilo
+                subtextElement.classList.add('snipe-active');
+                timerElement.classList.add('snipe-active'); 
+            } 
+            else { 
+                // 2. MODO TIEMPO NORMAL
                 
-            } else { 
-                // Lógica de tiempo normal
+                // Mantenemos el texto normal y limpiamos la bandera de snipe
+                subtextElement.textContent = 'El sorteo/subasta termina en'; 
+                subtextElement.classList.remove('snipe-active'); // Aseguramos que la bandera se limpie
                 
                 // 🚨 Alerta visual de 5 segundos antes del final (solo el número cambia de color)
                 if (time <= 5 && time > 0) {
