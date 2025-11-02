@@ -625,6 +625,7 @@ socket.on('update_time', (time) => {
             subastaActiva = true;
             console.log("WIDGET: Interruptor ENCENDIDO");
         }
+
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
         const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global
