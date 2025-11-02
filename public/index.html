@@ -617,7 +617,47 @@
         }
     }
 });
+// <-------------------------- 🚀 INSERTAR AQUÍ 🚀 -------------------------->
 
+// --- NUEVO EVENTO: INICIO DEL MODO SNIPE (tiempo extra de 15s) ---
+// NOTA: Tu dashboard emite 'iniciar_snipe_cliente', lo escuchamos aquí.
+socket.on('iniciar_snipe_cliente', (snipeDuration) => {
+    // Aquí se setea la duración, aunque la lógica del contador es del servidor
+    window.SNIPE_THRESHOLD = snipeDuration || 15; 
+
+    if (document.body.classList.contains('widget-mode')) {
+        const timerElement = document.getElementById('tiempoRestante-widget'); 
+        const subtextElement = document.getElementById('subtext-widget');
+        
+        if (timerElement && subtextElement) {
+            // Aplicamos la animación completa (Modo Snipe real)
+            timerElement.classList.add('snipe-active'); 
+            subtextElement.classList.add('snipe-active');
+            
+            // 🚀 ESTE ES EL ÚNICO LUGAR DONDE CAMBIA EL TEXTO DE SNIPE 🚀
+            subtextElement.textContent = 'MOMENTO DE SNIPE'; 
+        }
+    }
+});
+
+// --- NUEVO EVENTO: FIN DEL SNIPE / SUBSTA TERMINADA ---
+// Tu dashboard emite 'finalizar_subasta' cuando el snipe termina, lo escuchamos para limpiar.
+socket.on('finalizar_subasta', () => {
+    if (document.body.classList.contains('widget-mode')) {
+        const timerElement = document.getElementById('tiempoRestante-widget'); 
+        const subtextElement = document.getElementById('subtext-widget');
+        
+        if (timerElement && subtextElement) {
+            // Limpia todos los estilos y restablece el texto a la versión normal
+            timerElement.classList.remove('snipe-active'); 
+            subtextElement.classList.remove('snipe-active');
+            subtextElement.textContent = 'El sorteo/subasta termina en';
+        }
+    }
+    // Opcional: También ocultamos el pop-up de ganador si estaba visible
+    document.getElementById('winner-popup').style.display = 'none';
+    document.getElementById('winner-popup').style.opacity = '0';
+});
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
         const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global
