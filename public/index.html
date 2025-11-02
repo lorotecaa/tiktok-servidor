@@ -592,21 +592,24 @@
         if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
             
-            // Si el texto de snipe ya se activó, lo mantenemos y solo actualizamos el tiempo.
+            // 🚀 LÓGICA CLAVE: SI LA CLASE SNIPE ESTÁ ACTIVA, MANTENEMOS EL TEXTO SNIPE 🚀
             if (subtextElement.classList.contains('snipe-active')) {
+                
+                // Mantiene el texto de snipe, no importa cuántas veces se ejecute update_time
                 subtextElement.textContent = 'MOMENTO DE SNIPE';
                 timerElement.classList.add('snipe-active'); // Aseguramos el estilo
+                
             } else { 
                 // Lógica de tiempo normal
                 
-                // 🚨 Alerta visual de 5 segundos antes del final del tiempo principal
+                // 🚨 Alerta visual de 5 segundos antes del final (solo el número cambia de color)
                 if (time <= 5 && time > 0) {
                     timerElement.classList.add('snipe-active'); 
                 } else {
                     timerElement.classList.remove('snipe-active');
                 }
                 
-                // Mantenemos el texto normal si no hay snipe
+                // Mantiene el texto normal ("El sorteo/subasta termina en")
                 subtextElement.textContent = 'El sorteo/subasta termina en'; 
             }
         }
@@ -623,19 +626,19 @@
 // --- NUEVO EVENTO: INICIO DEL MODO SNIPE (tiempo extra de 15s) ---
 // NOTA: Tu dashboard emite 'iniciar_snipe_cliente', lo escuchamos aquí.
 socket.on('iniciar_snipe_cliente', (snipeDuration) => {
-    window.SNIPE_THRESHOLD = snipeDuration || 15; 
-
     if (document.body.classList.contains('widget-mode')) {
         const timerElement = document.getElementById('tiempoRestante-widget'); 
         const subtextElement = document.getElementById('subtext-widget');
         
         if (timerElement && subtextElement) {
-            // Aplicamos la animación completa y ponemos la bandera
-            timerElement.classList.add('snipe-active'); 
+            // Aplicamos la bandera que la función update_time respeta
             subtextElement.classList.add('snipe-active');
             
-            // 🚀 CAMBIO DE TEXTO QUE DEBE OCURRIR UNA SOLA VEZ AL INICIO 🚀
+            // 🎯 Cambia el texto
             subtextElement.textContent = 'MOMENTO DE SNIPE'; 
+            
+            // Aplica los estilos al número
+            timerElement.classList.add('snipe-active'); 
         }
     }
 });
@@ -648,7 +651,7 @@ socket.on('finalizar_subasta', () => {
         const subtextElement = document.getElementById('subtext-widget');
         
         if (timerElement && subtextElement) {
-            // Limpia los estilos y quita la bandera .snipe-active
+            // Limpia los estilos y QUITA la bandera .snipe-active
             timerElement.classList.remove('snipe-active'); 
             subtextElement.classList.remove('snipe-active');
             
