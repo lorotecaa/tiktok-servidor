@@ -583,35 +583,30 @@
     if (document.body.classList.contains('widget-mode')) {
         
         const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget');
+        const subtextElement = document.getElementById('subtext-widget'); // <-- Referencia al subtexto
         
         if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time);
             
-            // 🚨 LÓGICA DE ALERTA EN TIEMPO NORMAL (Solo últimos 5 segundos) 🚨
-            // Usamos la clase 'snipe-active' SOLO en el TIEMPO como ALERTA.
-            
-            // Si no estamos en el modo SNIPE (que se activa con 'snipe_start')
-            if (!subtextElement.classList.contains('snipe-active')) {
+            // 🚨 LÓGICA DE ANIMACIÓN Y TEXTO (NUEVA) 🚨
+            if (time <= 5 && time > 0) {
+                // Aplica la animación al tiempo
+                timerElement.classList.add('snipe-active'); 
                 
-                if (time <= 5 && time > 0) {
-                    // Alerta: animar solo el número
-                    timerElement.classList.add('snipe-active'); 
-                    subtextElement.textContent = 'El sorteo/subasta termina en'; 
-                    subtextElement.classList.remove('snipe-active'); 
+                // ➡️ CAMBIO DE TEXTO SECUNDARIO
+                subtextElement.textContent = 'MOMENTO DE SNIPE'; 
+                // ➡️ Aplicar la misma animación al texto secundario para resaltarlo
+                subtextElement.classList.add('snipe-active');
+            } else {
+                // Remueve la animación del tiempo
+                timerElement.classList.remove('snipe-active');
                 
-                } else {
-                    // Estado normal: remueve la animación si no está activa
-                    timerElement.classList.remove('snipe-active');
-                    subtextElement.textContent = 'El sorteo/subasta termina en'; 
-                    subtextElement.classList.remove('snipe-active');
-                }
+                // ➡️ RESTAURA EL TEXTO Y LA ANIMACIÓN
+                subtextElement.textContent = 'El sorteo/subasta termina en'; 
+                subtextElement.classList.remove('snipe-active');
             }
-            // NOTA: Si el modo SNIPE ya se activó (por el evento 'snipe_start'),
-            // la clase 'snipe-active' permanece y el texto es 'MOMENTO DE SNIPE'.
-        } // FIN DE if (timerElement && subtextElement)
-        
-        // 🚀 ESTO DEBE QUEDAR AQUÍ (FUERA del bloque 'if (timerElement...')
+        }
+
         // Si el tiempo es > 0, la subasta está activa
         if (time > 0 && !subastaActiva) {
             subastaActiva = true;
