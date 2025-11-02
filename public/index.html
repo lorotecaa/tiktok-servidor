@@ -582,49 +582,42 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-socket.on('update_time', (time) => {
+        socket.on('update_time', (time) => {
     // Este código solo corre en el Widget
     if (document.body.classList.contains('widget-mode')) {
         
-        // 🚨 Obtiene el tiempo de snipe (se asume que se recibe del servidor/dashboard)
-        // Usa 5 como valor por defecto si la variable no ha sido seteada aún.
-        const snipeDuration = window.SNIPE_THRESHOLD || 5; 
-        
         const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget');
+        const subtextElement = document.getElementById('subtext-widget'); // <-- Referencia al subtexto
         
         if (timerElement && subtextElement) {
             timerElement.textContent = formatTime(time);
             
-            // 🚨 CORRECCIÓN CLAVE: Ahora usa la variable snipeDuration 🚨
-            if (time <= snipeDuration && time > 0) {
+            // 🚨 LÓGICA DE ANIMACIÓN Y TEXTO (NUEVA) 🚨
+            if (time <= 5 && time > 0) {
                 // Aplica la animación al tiempo
                 timerElement.classList.add('snipe-active'); 
                 
-                // CAMBIO DE TEXTO SECUNDARIO
+                // ➡️ CAMBIO DE TEXTO SECUNDARIO
                 subtextElement.textContent = 'MOMENTO DE SNIPE'; 
-                // Aplicar la misma animación al texto secundario para resaltarlo
+                // ➡️ Aplicar la misma animación al texto secundario para resaltarlo
                 subtextElement.classList.add('snipe-active');
             } else {
                 // Remueve la animación del tiempo
                 timerElement.classList.remove('snipe-active');
                 
-                // RESTAURA EL TEXTO Y LA ANIMACIÓN
+                // ➡️ RESTAURA EL TEXTO Y LA ANIMACIÓN
                 subtextElement.textContent = 'El sorteo/subasta termina en'; 
                 subtextElement.classList.remove('snipe-active');
             }
         }
-
-        // ... (resto del código) ...
-    }
-});
 
         // Si el tiempo es > 0, la subasta está activa
         if (time > 0 && !subastaActiva) {
             subastaActiva = true;
             console.log("WIDGET: Interruptor ENCENDIDO");
         }
+    }
+});
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
