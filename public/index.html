@@ -169,26 +169,6 @@
     font-weight: bold;
     color: #FFD700 !important;
 }
-/* 🔥 ANIMACIÓN DE SNIPE TIME (últimos segundos de la subasta) */
-@keyframes snipePulse {
-  0%, 100% { transform: scale(1); background: linear-gradient(45deg, #ff0000, #ffcc00); }
-  50% { transform: scale(1.1); background: linear-gradient(45deg, #ff6600, #ff0000); }
-}
-
-@keyframes snipeGlow {
-  0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.7); }
-  50% { box-shadow: 0 0 40px rgba(255, 0, 0, 0.9); }
-}
-
-.snipe-active {
-  animation: snipePulse 0.8s infinite, snipeGlow 1s infinite;
-  color: #fff !important;
-  text-shadow: 0 0 10px #fff, 0 0 20px #ff0;
-  font-size: 2em !important;
-  border-radius: 15px;
-  padding: 10px 25px;
-  transition: all 0.3s ease;
-}
     </style>
 </head>
 <body>
@@ -355,28 +335,19 @@
             if (intervalo) clearInterval(intervalo);
             
             intervalo = setInterval(() => {
-                if (!isPaused && tiempoActual > 0) {
-                    tiempoActual--;
-                    const formattedTime = formatTime(tiempoActual);
-                    
-                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    if (!document.body.classList.contains('widget-mode')) {
-                        socket.emit('sync_time', tiempoActual); 
-                    }
-                    
-                    // 2. Actualizamos el display LOCAL del dashboard
-                    const dashTimeEl = document.getElementById('tiempoRestante');
-                    if (dashTimeEl) {
-                        dashTimeEl.textContent = formattedTime;
-                        // 🚨 LÓGICA DE ANIMACIÓN AÑADIDA AQUÍ 🚨
-                        if (tiempoActual <= 5) {
-                            dashTimeEl.classList.add('snipe-active');
-                        } else {
-                            dashTimeEl.classList.remove('snipe-active');
-                        }
-                    }
-                        
-                } else if (tiempoActual <= 0) {
+                if (!isPaused && tiempoActual > 0) {
+                    tiempoActual--;
+                    const formattedTime = formatTime(tiempoActual);
+                    
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    if (!document.body.classList.contains('widget-mode')) {
+                        socket.emit('sync_time', tiempoActual); 
+                    }
+                    
+                    // 2. Actualizamos el display LOCAL del dashboard
+                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+
+                } else if (tiempoActual <= 0) {
                      // Solo el dashboard detiene el tiempo
                     if (!document.body.classList.contains('widget-mode')) {
                         terminarTiempo();
@@ -421,19 +392,19 @@
         // (Nota: cambié el default de 15 a 0 para más seguridad)
         const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
 
-            if (!snipeActivado && tiempoSnipe > 0) {
-                // A) AÚN QUEDA EL SNIPE
-                snipeActivado = true; // Marcamos que el snipe ya se usó
-                logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
+        if (!snipeActivado && tiempoSnipe > 0) {
+            // A) AÚN QUEDA EL SNIPE
+            snipeActivado = true; // Marcamos que el snipe ya se usó
+            logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
 
-            // Avisamos a los widgets del nuevo tiempo
-            socket.emit("sync_time", tiempoSnipe, true); // Enviamos tiempo Y la bandera 'true'
+            // Avisamos a los widgets del nuevo tiempo
+            socket.emit("iniciar_snipe_cliente", tiempoSnipe);
 
-            // Reiniciamos el temporizador local solo con el tiempo de snipe
-            tiempoActual = tiempoSnipe;
-            iniciarTimerLogic();
+            // Reiniciamos el temporizador local solo con el tiempo de snipe
+            tiempoActual = tiempoSnipe;
+            iniciarTimerLogic();
 
-        }
+        } 
         else {
             // B) NO HAY SNIPE (o el snipe ya terminó)
             // ¡Aquí es donde ocurre la finalización automática!
@@ -582,89 +553,24 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time, isSnipeActive = false) => {
-    // isSnipeActive será 'true' si el dashboard lo envió, o 'false' por defecto
-    
-    if (document.body.classList.contains('widget-mode')) {
-        
-        const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget');
-        
-        if (timerElement && subtextElement) {
-            timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
-            
-            // LÓGICA CLAVE: Usamos la bandera del Dashboard para establecer el texto
-            if (isSnipeActive) {
-                // 1. MODO SNIPE ACTIVO
-                subtextElement.textContent = 'MOMENTO DE SNIPE';
-                subtextElement.classList.add('snipe-active');
-                timerElement.classList.add('snipe-active'); 
-            } 
-            else { 
-                // 2. MODO TIEMPO NORMAL
-                
-                // Mantenemos el texto normal y limpiamos la bandera de snipe
-                subtextElement.classList.remove('snipe-active'); // Aseguramos que la bandera se limpie
-                subtextElement.textContent = 'El sorteo/subasta termina en'; // SÓLO UNA VEZ AQUÍ
+        socket.on('update_time', (time) => {
+            // Este código solo corre en el Widget
+            if (document.body.classList.contains('widget-mode')) {
 
-                // 🚨 Alerta visual de 5 segundos antes del final (solo el número cambia de color)
-                if (time <= 5 && time > 0) {
-                    timerElement.classList.add('snipe-active'); 
-                } else {
-                    timerElement.classList.remove('snipe-active');
+                // --- 👇 INICIO: CAMBIO AÑADIDO ---
+                // Si el tiempo es > 0, la subasta está activa
+                if (time > 0 && !subastaActiva) {
+                    subastaActiva = true;
+                    console.log("WIDGET: Interruptor ENCENDIDO");
                 }
+                // --- 👆 FIN: CAMBIO AÑADIDO ---
+
+                tiempoActual = time; // Actualizar el tiempo local del widget
+                const formattedTime = formatTime(time);
+                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
             }
-        }
+        });
 
-        // Si el tiempo es > 0, la subasta está activa
-        if (time > 0 && !subastaActiva) {
-            subastaActiva = true;
-            console.log("WIDGET: Interruptor ENCENDIDO");
-        }
-    }
-});
-// <-------------------------- 🚀 INSERTAR AQUÍ 🚀 -------------------------->
-
-// --- NUEVO EVENTO: INICIO DEL MODO SNIPE (tiempo extra de 15s) ---
-// NOTA: Tu dashboard emite 'iniciar_snipe_cliente', lo escuchamos aquí.
-socket.on('iniciar_snipe_cliente', (snipeDuration) => {
-    if (document.body.classList.contains('widget-mode')) {
-        const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget');
-        
-        if (timerElement && subtextElement) {
-            // Aplicamos la bandera que la función update_time respeta
-            subtextElement.classList.add('snipe-active');
-            
-            // 🎯 Cambia el texto
-            subtextElement.textContent = 'MOMENTO DE SNIPE'; 
-            
-            // Aplica los estilos al número
-            timerElement.classList.add('snipe-active'); 
-        }
-    }
-});
-
-// --- NUEVO EVENTO: FIN DEL SNIPE / SUBSTA TERMINADA ---
-// Tu dashboard emite 'finalizar_subasta' cuando el snipe termina, lo escuchamos para limpiar.
-socket.on('finalizar_subasta', () => {
-    if (document.body.classList.contains('widget-mode')) {
-        const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget');
-        
-        if (timerElement && subtextElement) {
-            // Limpia los estilos y QUITA la bandera .snipe-active
-            timerElement.classList.remove('snipe-active'); 
-            subtextElement.classList.remove('snipe-active');
-            
-            // Restablece el texto normal
-            subtextElement.textContent = 'El sorteo/subasta termina en';
-        }
-    }
-    // Opcional: También ocultamos el pop-up de ganador si estaba visible
-    document.getElementById('winner-popup').style.display = 'none';
-    document.getElementById('winner-popup').style.opacity = '0';
-});
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
         const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global
