@@ -356,15 +356,19 @@
             
             intervalo = setInterval(() => {
                 if (!isPaused && tiempoActual > 0) {
-// ...
+                    tiempoActual--;
+                    const formattedTime = formatTime(tiempoActual);
+                    
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    if (!document.body.classList.contains('widget-mode')) {
+                        socket.emit('sync_time', tiempoActual); 
+                    }
+                    
                     // 2. Actualizamos el display LOCAL del dashboard
                     const dashTimeEl = document.getElementById('tiempoRestante');
                     if (dashTimeEl) {
                         dashTimeEl.textContent = formattedTime;
-                        
-                        // 🚨 CORRECCIÓN: SOLO APLICAR ANIMACIÓN si estamos cerca de terminar
-                        // Nota: El dashboard NO necesita la lógica completa de snipe aquí, 
-                        // solo el efecto visual de 'Alerta'.
+                        // 🚨 LÓGICA DE ANIMACIÓN AÑADIDA AQUÍ 🚨
                         if (tiempoActual <= 5) {
                             dashTimeEl.classList.add('snipe-active');
                         } else {
