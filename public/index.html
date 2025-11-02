@@ -586,28 +586,19 @@
     // Este código solo corre en el Widget
     if (document.body.classList.contains('widget-mode')) {
         
+        // El elemento del widget es 'tiempoRestante-widget'
         const timerElement = document.getElementById('tiempoRestante-widget'); 
-        const subtextElement = document.getElementById('subtext-widget'); // <-- Referencia al subtexto
         
-        if (timerElement && subtextElement) {
-            timerElement.textContent = formatTime(time);
+        if (timerElement) {
+            timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
             
-            // 🚨 LÓGICA DE ANIMACIÓN Y TEXTO (NUEVA) 🚨
+            // 🚨 LÓGICA DE ANIMACIÓN APLICADA AL WIDGET 🚨
             if (time <= 5 && time > 0) {
-                // Aplica la animación al tiempo
+                // Aplica la clase .snipe-active
                 timerElement.classList.add('snipe-active'); 
-                
-                // ➡️ CAMBIO DE TEXTO SECUNDARIO
-                subtextElement.textContent = 'MOMENTO DE SNIPE'; 
-                // ➡️ Aplicar la misma animación al texto secundario para resaltarlo
-                subtextElement.classList.add('snipe-active');
             } else {
-                // Remueve la animación del tiempo
+                // Remueve la clase para el tiempo normal
                 timerElement.classList.remove('snipe-active');
-                
-                // ➡️ RESTAURA EL TEXTO Y LA ANIMACIÓN
-                subtextElement.textContent = 'El sorteo/subasta termina en'; 
-                subtextElement.classList.remove('snipe-active');
             }
         }
 
