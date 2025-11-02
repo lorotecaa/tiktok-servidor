@@ -368,7 +368,7 @@
                     const dashTimeEl = document.getElementById('tiempoRestante');
                     if (dashTimeEl) {
                         dashTimeEl.textContent = formattedTime;
-                        // 🚨 LÓGICA DE ANIMACIÓN AÑADIDA AQUÍ 🚨
+                        // 🚨 Lógica de animación del tiempo en el Dashboard
                         if (tiempoActual <= 5) {
                             dashTimeEl.classList.add('snipe-active');
                         } else {
@@ -586,19 +586,28 @@
     // Este código solo corre en el Widget
     if (document.body.classList.contains('widget-mode')) {
         
-        // El elemento del widget es 'tiempoRestante-widget'
         const timerElement = document.getElementById('tiempoRestante-widget'); 
+        const subtextElement = document.getElementById('subtext-widget'); // <-- Referencia al subtexto
         
-        if (timerElement) {
-            timerElement.textContent = formatTime(time); // Actualiza el tiempo visual
+        if (timerElement && subtextElement) {
+            timerElement.textContent = formatTime(time);
             
-            // 🚨 LÓGICA DE ANIMACIÓN APLICADA AL WIDGET 🚨
+            // 🚨 LÓGICA DE ANIMACIÓN Y TEXTO (NUEVA) 🚨
             if (time <= 5 && time > 0) {
-                // Aplica la clase .snipe-active
+                // Aplica la animación al tiempo
                 timerElement.classList.add('snipe-active'); 
+                
+                // ➡️ CAMBIO DE TEXTO SECUNDARIO
+                subtextElement.textContent = 'MOMENTO DE SNIPE'; 
+                // ➡️ Aplicar la misma animación al texto secundario para resaltarlo
+                subtextElement.classList.add('snipe-active');
             } else {
-                // Remueve la clase para el tiempo normal
+                // Remueve la animación del tiempo
                 timerElement.classList.remove('snipe-active');
+                
+                // ➡️ RESTAURA EL TEXTO Y LA ANIMACIÓN
+                subtextElement.textContent = 'El sorteo/subasta termina en'; 
+                subtextElement.classList.remove('snipe-active');
             }
         }
 
