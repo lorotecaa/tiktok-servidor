@@ -640,10 +640,10 @@
                                  // 3️⃣ Filtro inteligente:
                                  // - Si tiene repeatEnd: procesamos solo el final
                                  // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
-                                 if (gift.repeatEnd === false && gift.repeatCount > 1) { 
-                                     console.log(`Ignorando evento intermedio de racha (repeatEnd: false, repeatCount: ${gift.repeatCount})`);
-                                     break;
-                                 }
+                                 if (gift.repeatEnd === false) { 
+                                 console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
+                                 break;
+                             }
                                  
                                  // (Si repeatEnd es 'true' o 'undefined', el código continúa)
 
@@ -722,31 +722,44 @@ socket.on("new_gift", (gift) => {
             console.log("💎 Nuevo regalo recibido del servidor:", gift);
 
             const existente = participantes.find(p => p.usuario === gift.usuario);
+            // Tomamos la cantidad del regalo que nos envían (ej: 1 rosa, 100 leones)
+            const cantidadDelRegalo = parseInt(gift.cantidad) || 0; 
 
             if (existente) {
-                existente.cantidad = gift.cantidad;
+                // 🛑 CORRECCIÓN CRÍTICA: Sumamos la cantidad nueva a la cantidad existente
+                existente.cantidad = parseInt(existente.cantidad) + cantidadDelRegalo; 
                 existente.avatar_url = gift.avatar_url;
             } else {
+                // 💡 Es un usuario nuevo
                 participantes.push({
                     usuario: gift.usuario,
-                    cantidad: gift.cantidad,
+                    cantidad: cantidadDelRegalo, 
                     regalo: gift.regalo,
                     avatar_url: gift.avatar_url
                 });
             }
 
-            // 👇 AÑADE ESTA LÍNEA AQUÍ 👇
-            // Ordena la lista CADA VEZ que llegue un regalo, ANTES de dibujar.
-            participantes.sort((a, b) => b.cantidad - a.cantidad);
+            // 💡 Ordena la lista CADA VEZ que llegue un regalo.
+            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
 
-            // Ahora sí, actualiza la UI con la lista ya ordenada
-            actualizarParticipantesUI();
-        });
-    
+            // 🛑 LÓGICA DE SNIPE: Reiniciar el contador si la subasta está en modo snipe
+            if (!document.body.classList.contains('widget-mode') && snipeActivado && cantidadDelRegalo > 0) {
+                const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
+                
+                // Si el tiempo está bajo o en 0 (esperando el final)
+                if (tiempoActual <= tiempoSnipe) {
+                    tiempoActual = tiempoSnipe;
+                    socket.emit('sync_time', tiempoActual); 
+                    logDonacionesEl.innerHTML += `<p style="color: yellow;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
+                }
+            }
+// 📢 ¡AQUÍ VA LA LÍNEA DE SINCRONIZACIÓN!
+            // Ahora la variable 'participantes' está finalizada, sumada y ordenada.
+            socket.emit('sync_participantes', participantes); // <-- ¡MOVER AQUÍ!
 
-    // 🔹 Ordenar y refrescar la interfaz
-    actualizarParticipantesUI();
-
+            // Ahora sí, actualiza la UI con la lista ya ordenada
+            actualizarParticipantesUI();
+        });
 
 // ===============================
 // 🧹 Limpiar listas cuando el servidor lo indique
@@ -763,6 +776,8 @@ socket.on("limpiar_listas_clientes", () => {
 // 🧭 Función para actualizar la UI (debe ir FUERA de socket.on)
 // ===============================
 function actualizarParticipantesUI() {
+    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+
     const listaDashboard = document.getElementById("listaParticipantes");
     const listaWidget = document.getElementById("listaParticipantes-widget");
     if (listaDashboard) listaDashboard.innerHTML = "";
