@@ -613,57 +613,56 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time, isSnipeActive) => {
-            // Este código solo corre en el Widget
-            if (document.body.classList.contains('widget-mode')) {
-                
-                // ... (código existente de subastaActiva) ...
+    // Este código solo corre en el Widget
+    if (document.body.classList.contains('widget-mode')) {
+        
+        tiempoActual = time; 
+        const formattedTime = formatTime(time);
+        
+        const subtextEl = document.getElementById('subtext-widget');
+        const tiempoEl = document.getElementById('tiempoRestante-widget'); 
+        const snipeBannerEl = document.getElementById('snipe-banner'); 
 
-                tiempoActual = time; 
-                const formattedTime = formatTime(time);
-                
-                const subtextEl = document.getElementById('subtext-widget');
-                const tiempoEl = document.getElementById('tiempoRestante-widget'); 
-                const snipeBannerEl = document.getElementById('snipe-banner'); // <-- Nuevo Elemento
-
-                if (isSnipeActive) {
-                    // 1. Mostrar el banner
-                    if (snipeBannerEl) snipeBannerEl.style.display = 'block'; 
-                    
-                    // 2. Ocultar el subtexto normal
-                    if (subtextEl) subtextEl.style.display = 'none';
-                    
-                    // 3. Poner el número en rojo brillante (para que resalte)
-                    if (tiempoEl) {
-                        tiempoEl.style.color = '#FF4D4D'; // Rojo de alerta
-                        tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
-                        // Ocultamos la animación anterior si existía
-                        tiempoEl.classList.remove('snipe-active'); 
-                    }
-
-                } else {
-                    // MODO NORMAL
-                    
-                    // 1. Ocultar el banner
-                    if (snipeBannerEl) snipeBannerEl.style.display = 'none'; 
-
-                    // 2. Mostrar el subtexto normal
-                    if (subtextEl) {
-                        subtextEl.textContent = "El sorteo/subasta termina en";
-                        subtextEl.style.color = "#ccc";
-                        subtextEl.style.display = 'block';
-                    }
-                    
-                    // 3. Restaurar el estilo del número (Dorando de la subasta)
-                    if (tiempoEl) {
-                        tiempoEl.style.color = '#FFD700';
-                        tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
-                    }
-                }
-                
-                // 4. Actualizar el tiempo restante (en ambos modos)
-                if (tiempoEl) tiempoEl.textContent = formattedTime;
+        // 1. Siempre actualizar el tiempo
+        if (tiempoEl) tiempoEl.textContent = formattedTime;
+        
+        // --- LÓGICA DE SNIPE ---
+        if (isSnipeActive) {
+            // MODO SNIPE: Mostrar el Banner, Ocultar el Subtexto
+            
+            // Mostrar Banner
+            if (snipeBannerEl) snipeBannerEl.style.display = 'block'; 
+            
+            // Ocultar Subtexto normal
+            if (subtextEl) subtextEl.style.display = 'none'; 
+            
+            // Estilizar el tiempo para que se vea de alerta
+            if (tiempoEl) {
+                tiempoEl.style.color = '#FF4D4D'; // Rojo de alerta
+                tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
             }
-        });
+
+        } else {
+            // MODO NORMAL: Ocultar el Banner, Mostrar el Subtexto
+            
+            // Ocultar Banner
+            if (snipeBannerEl) snipeBannerEl.style.display = 'none'; 
+
+            // Mostrar Subtexto normal
+            if (subtextEl) {
+                subtextEl.textContent = "El sorteo/subasta termina en";
+                subtextEl.style.color = "#ccc";
+                subtextEl.style.display = 'block'; 
+            }
+            
+            // Restaurar el estilo del número a Dorado
+            if (tiempoEl) {
+                tiempoEl.style.color = '#FFD700';
+                tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
+            }
+        }
+    }
+});
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
