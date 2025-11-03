@@ -46,7 +46,17 @@
 
         /* ESTILOS INTERNOS DEL WIDGET (INTACTO) */
         #tiempoBox-widget { background: #1a1a1a; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0;border-bottom: 2px solid #FFD700; }
-        #tiempoRestante-widget { font-size: 2.5em; color: #FFD700; font-weight: bold; text-shadow: 0 0 8px rgba(255, 215, 0, 0.7); }
+        #tiempoRestante-widget { 
+            font-size: 2.5em; 
+            color: #FFD700; /* Color inicial */
+            font-weight: bold; 
+            /* Quitamos el text-shadow inicial para que el snipe lo defina */
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); 
+            padding: 10px 20px; /* Un poco de aire */
+            border-radius: 10px;
+            /* Agregamos una transición para que el cambio de estilo sea suave */
+            transition: all 0.3s ease-in-out;
+        }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
 
         #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px;box-sizing: border-box; }
