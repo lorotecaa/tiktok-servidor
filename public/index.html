@@ -976,33 +976,44 @@ socket.on("new_gift", (gift) => {
             actualizarParticipantesUI();
         });
 
-/// ===============================
-// 🧹 Limpiar listas cuando el servidor lo indique
-// ===============================
 socket.on("limpiar_listas_clientes", () => {
     console.log("🧹 Recibido comando para limpiar lista local.");
 
     participantes = [];
     actualizarParticipantesUI();
     subastaActiva = false;
+    tiempoActual = 0; // 🔁 Reinicia la cuenta local
 
-    // ✅ Quitar modo SNIPe visual
+    // ✅ Quitar efectos visuales del modo snipe o tiempo extra
     document.body.classList.remove("snipe-mode");
 
-    // ✅ Restaurar texto del widget sin tocar estilos ni IDs
-    const texto = document.getElementById("subtext-widget");
-    if (texto) texto.textContent = "El sorteo/subasta termina en";
-
-    // ✅ Asegurarse de que el contador siga con su ID correcto
-    const contador = document.getElementById("tiempoRestante-widget");
-    if (contador) {
-        contador.classList.remove("contador-tiempo-extra"); // quitamos animaciones del modo extra
-        contador.style.color = "#FFD700"; // color original dorado
-        contador.style.textShadow = "0 0 8px rgba(255, 215, 0, 0.7)";
+    // ✅ Restaurar texto visible en el widget
+    const texto = document.getElementById("texto-tiempo-widget");
+    if (texto) {
+        texto.textContent = "El sorteo/subasta termina en";
+        texto.style.color = "#fff";
+        texto.style.fontWeight = "normal";
+        texto.style.textShadow = "none";
     }
 
-    console.log("CLIENTE: Limpieza completa, texto y contador restaurados.");
+    // ✅ Restaurar el contador principal
+    const contador = document.getElementById("contador-tiempo-widget") || document.getElementById("tiempoRestante-widget");
+    if (contador) {
+        contador.classList.remove("contador-tiempo-extra");
+        contador.textContent = "00:00"; // valor neutral
+        contador.style.color = "#FFD700"; // dorado brillante original
+        contador.style.textShadow = "0 0 10px rgba(255, 215, 0, 0.9)";
+        contador.style.fontSize = "2.5em";
+        contador.style.fontWeight = "bold";
+    }
+
+    // ✅ Quitar banners extra
+    const banner = document.getElementById("extra-time-banner");
+    if (banner) banner.remove();
+
+    console.log("✅ CLIENTE: Limpieza completa, texto y contador restaurados correctamente.");
 });
+
 
 // ===============================
 // 🧭 Función para actualizar la UI (debe ir FUERA de socket.on)
