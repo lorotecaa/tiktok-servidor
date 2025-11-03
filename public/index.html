@@ -169,6 +169,22 @@
     font-weight: bold;
     color: #FFD700 !important;
 }
+.widget-mode .snipe-active {
+            animation: pulse-snipe 0.8s infinite alternate; /* Animación de parpadeo */
+        }
+
+        @keyframes pulse-snipe {
+            0% { 
+                color: #FFD700; /* Oro */
+                transform: scale(1);
+                text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            }
+            100% { 
+                color: #ff4d4d; /* Rojo intenso */
+                transform: scale(1.1); /* Ligeramente más grande */
+                text-shadow: 0 0 20px rgba(255, 77, 77, 0.8), 0 0 10px rgba(255, 77, 77, 0.8);
+            }
+        }
     </style>
 </head>
 <body>
@@ -553,23 +569,37 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time) => {
-            // Este código solo corre en el Widget
-            if (document.body.classList.contains('widget-mode')) {
+        socket.on('update_time', (time, isSnipeActive) => {
+            // Este código solo corre en el Widget
+            if (document.body.classList.contains('widget-mode')) {
+                
+                if (time > 0 && !subastaActiva) {
+                    subastaActiva = true;
+                } else if (time === 0 && subastaActiva && !isSnipeActive) {
+                    subastaActiva = false;
+                }
 
-                // --- 👇 INICIO: CAMBIO AÑADIDO ---
-                // Si el tiempo es > 0, la subasta está activa
-                if (time > 0 && !subastaActiva) {
-                    subastaActiva = true;
-                    console.log("WIDGET: Interruptor ENCENDIDO");
-                }
-                // --- 👆 FIN: CAMBIO AÑADIDO ---
+                tiempoActual = time; 
+                const formattedTime = formatTime(time);
+                
+                const subtextEl = document.getElementById('subtext-widget');
+                const tiempoEl = document.getElementById('tiempoRestante-widget'); // Capturamos el elemento del tiempo
 
-                tiempoActual = time; // Actualizar el tiempo local del widget
-                const formattedTime = formatTime(time);
-                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
-            }
-        });
+                if (isSnipeActive) {
+                    subtextEl.textContent = "🔥 ¡TIEMPO DE SNIPE! 🔥";
+                    subtextEl.style.color = "red";
+                    // ✅ APLICAR LA CLASE DE ANIMACIÓN
+                    if (tiempoEl) tiempoEl.classList.add('snipe-active');
+                } else {
+                    subtextEl.textContent = "El sorteo/subasta termina en";
+                    subtextEl.style.color = "#ccc";
+                    // ✅ ELIMINAR LA CLASE DE ANIMACIÓN
+                    if (tiempoEl) tiempoEl.classList.remove('snipe-active');
+                }
+                
+                if (tiempoEl) tiempoEl.textContent = formattedTime;
+            }
+        });
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
