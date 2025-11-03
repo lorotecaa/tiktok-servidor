@@ -40,10 +40,24 @@ io.on("connection", (socket) => {
     io.emit("subasta_iniciada", data);
   });
 
-  // Evento de sincronización de tiempo desde el dashboard
-  socket.on("sync_time", (time) => {
-    socket.broadcast.emit("update_time", time);
-  });
+  socket.on("sync_time", (tiempo, isSnipeConfigurado) => {
+    
+    // NOTA: El tiempo lo controla el Dashboard, no el servidor.
+    // Solo lo retransmitimos y calculamos el estado de la alerta.
+
+    // 1. OBTENEMOS EL UMBRAL DE SNIPE
+    // Usamos 15s, que es el valor que configuraste en tu Dashboard.
+    const TIEMPO_SNIPE_UMBRAL = 15; 
+
+    // 2. CRÍTICO: CALCULAMOS SI DEBE ESTAR LA ALERTA VISUAL
+    // La alerta se activa si el modo Snipe está ON Y el tiempo ha llegado al umbral.
+    const isSnipeActive = isSnipeConfigurado && (tiempo <= TIEMPO_SNIPE_UMBRAL);
+
+    // 3. REENVIAMOS la información COMPLETA a TODOS los clientes
+    // Usamos io.emit (a todos) para que el Dashboard (que es cliente también) reciba la alerta
+    // Si usas socket.broadcast.emit solo los widgets lo recibirán.
+    io.emit('update_time', tiempo, isSnipeActive); 
+});
 
   // Evento cuando se finaliza la subasta
   socket.on("finalizar_subasta", () => {
