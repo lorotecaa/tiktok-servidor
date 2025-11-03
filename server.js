@@ -42,20 +42,14 @@ io.on("connection", (socket) => {
 
   socket.on("sync_time", (tiempo, isSnipeConfigurado) => {
     
-    // NOTA: El tiempo lo controla el Dashboard, no el servidor.
-    // Solo lo retransmitimos y calculamos el estado de la alerta.
-
-    // 1. OBTENEMOS EL UMBRAL DE SNIPE
-    // Usamos 15s, que es el valor que configuraste en tu Dashboard.
+    // ... Código para obtener TIEMPO_SNIPE_UMBRAL (mantener en 15) ...
     const TIEMPO_SNIPE_UMBRAL = 15; 
 
-    // 2. CRÍTICO: CALCULAMOS SI DEBE ESTAR LA ALERTA VISUAL
-    // La alerta se activa si el modo Snipe está ON Y el tiempo ha llegado al umbral.
-    const isSnipeActive = isSnipeConfigurado && (tiempo <= TIEMPO_SNIPE_UMBRAL);
+    // 🚨 CORRECCIÓN CRÍTICA: La alerta solo se activa si el tiempo es ESTRICTAMENTE MENOR al umbral (14s o menos)
+    // Esto asegura que al reiniciar a 15s, la alerta esté en FALSE.
+    const isSnipeActive = isSnipeConfigurado && (tiempo < TIEMPO_SNIPE_UMBRAL); // <-- ¡Cambio de <= a < !
 
-    // 3. REENVIAMOS la información COMPLETA a TODOS los clientes
-    // Usamos io.emit (a todos) para que el Dashboard (que es cliente también) reciba la alerta
-    // Si usas socket.broadcast.emit solo los widgets lo recibirán.
+    // ... Reenviar con io.emit ...
     io.emit('update_time', tiempo, isSnipeActive); 
 });
 
