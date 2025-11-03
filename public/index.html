@@ -976,23 +976,32 @@ socket.on("new_gift", (gift) => {
             actualizarParticipantesUI();
         });
 
-// ===============================
+/// ===============================
 // 🧹 Limpiar listas cuando el servidor lo indique
 // ===============================
 socket.on("limpiar_listas_clientes", () => {
     console.log("🧹 Recibido comando para limpiar lista local.");
+
     participantes = [];
     actualizarParticipantesUI();
     subastaActiva = false;
 
-    // 🔥 Si estaba en modo snipe, vuelve al color normal
+    // ✅ Quitar modo SNIPe visual
     document.body.classList.remove("snipe-mode");
 
-    // 🔄 Restaurar el texto del widget (por si estaba mostrando "TIEMPO EXTRA")
-    const texto = document.getElementById("texto-tiempo-widget");
+    // ✅ Restaurar texto del widget sin tocar estilos ni IDs
+    const texto = document.getElementById("subtext-widget");
     if (texto) texto.textContent = "El sorteo/subasta termina en";
 
-    console.log("CLIENTE: Interruptor APAGADO y texto restaurado.");
+    // ✅ Asegurarse de que el contador siga con su ID correcto
+    const contador = document.getElementById("tiempoRestante-widget");
+    if (contador) {
+        contador.classList.remove("contador-tiempo-extra"); // quitamos animaciones del modo extra
+        contador.style.color = "#FFD700"; // color original dorado
+        contador.style.textShadow = "0 0 8px rgba(255, 215, 0, 0.7)";
+    }
+
+    console.log("CLIENTE: Limpieza completa, texto y contador restaurados.");
 });
 
 // ===============================
