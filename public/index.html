@@ -614,55 +614,74 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time, isSnipeActive) => {
-    // Este código solo corre en el Widget
-    if (document.body.classList.contains('widget-mode')) {
-        
-        tiempoActual = time; 
-        const formattedTime = formatTime(time);
-        
-        const subtextEl = document.getElementById('subtext-widget');
-        const tiempoEl = document.getElementById('tiempoRestante-widget'); 
-        const snipeBannerEl = document.getElementById('snipe-banner'); 
+    
+    tiempoActual = time; 
+    const formattedTime = formatTime(time);
+    
+    // Elementos del Dashboard
+    const subtextDashEl = document.getElementById('subtext');
+    const tiempoDashEl = document.getElementById('tiempoRestante'); 
+    
+    // Elementos del Widget
+    const subtextWidgetEl = document.getElementById('subtext-widget');
+    const tiempoWidgetEl = document.getElementById('tiempoRestante-widget'); 
+    const snipeBannerEl = document.getElementById('snipe-banner'); 
+    
+    // Determinar qué elementos usar (Dashboard o Widget)
+    const isWidgetMode = document.body.classList.contains('widget-mode');
+    const tiempoEl = isWidgetMode ? tiempoWidgetEl : tiempoDashEl;
+    const subtextEl = isWidgetMode ? subtextWidgetEl : subtextDashEl;
+    
+    // 1. Siempre actualizar el tiempo en la UI visible
+    if (tiempoEl) tiempoEl.textContent = formattedTime;
 
-        // 1. Siempre actualizar el tiempo
-        if (tiempoEl) tiempoEl.textContent = formattedTime;
+    // --- LÓGICA DE SNIPE (Corre en AMBOS) ---
+    if (isSnipeActive) {
+        // MODO SNIPE: Mostrar Banner (solo en Widget), Estilizar tiempo en rojo
         
-        // --- LÓGICA DE SNIPE ---
-        if (isSnipeActive) {
-            // MODO SNIPE: Mostrar el Banner, Ocultar el Subtexto
-            
-            console.log("✅ MODO SNIPE ACTIVADO EN WIDGET"); // <-- MENSAJE DE DEPURACIÓN
-            
-            // Mostrar Banner
+        console.log(`✅ MODO SNIPE ACTIVADO en ${isWidgetMode ? 'WIDGET' : 'DASHBOARD'}`); 
+        
+        // Lógica Específica del Widget
+        if (isWidgetMode) {
             if (snipeBannerEl) snipeBannerEl.style.display = 'block'; 
-            
-            // Ocultar Subtexto normal
             if (subtextEl) subtextEl.style.display = 'none'; 
-            
-            // Estilizar el tiempo para que se vea de alerta (lo que ya tenías)
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FF4D4D'; 
-                tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
-            }
+        }
 
-        } else {
-            // MODO NORMAL
-            
-            // Ocultar Banner
+        // Estilo de Alerta (Corre en AMBOS)
+        if (tiempoEl) {
+            tiempoEl.style.color = '#FF4D4D'; // Rojo de Alerta
+            tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
+        }
+
+        // Lógica Específica del Dashboard (mostrar el texto "Tiempo Extra")
+        if (!isWidgetMode && subtextEl) {
+             subtextEl.textContent = "¡TIEMPO EXTRA!";
+             subtextEl.style.color = "#FF4D4D";
+        }
+
+    } else {
+        // MODO NORMAL: Ocultar Banner (solo en Widget), Restaurar estilo
+        
+        // Lógica Específica del Widget
+        if (isWidgetMode) {
             if (snipeBannerEl) snipeBannerEl.style.display = 'none'; 
-
-            // Mostrar Subtexto normal
             if (subtextEl) {
                 subtextEl.textContent = "El sorteo/subasta termina en";
                 subtextEl.style.color = "#ccc";
                 subtextEl.style.display = 'block'; 
             }
-            
-            // Restaurar el estilo del número a Dorado
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FFD700';
-                tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
-            }
+        } else {
+             // Lógica Específica del Dashboard (restaurar texto normal)
+             if (subtextEl) {
+                subtextEl.textContent = "El sorteo termina en:";
+                subtextEl.style.color = "#ccc";
+             }
+        }
+        
+        // Restaurar el estilo del número a Dorado (Corre en AMBOS)
+        if (tiempoEl) {
+            tiempoEl.style.color = '#FFD700';
+            tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
         }
     }
 });
