@@ -553,70 +553,46 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time) => { 
-    
-    tiempoActual = time; // Ya estaba aquí
-    const formattedTime = formatTime(time); // Ya estaba aquí
-    const isWidgetMode = document.body.classList.contains('widget-mode'); // Ya estaba aquí
+        socket.on('update_time', (time) => {
+            // Este código solo corre en el Widget
+            if (document.body.classList.contains('widget-mode')) {
 
-    // 🛑 NUEVA LÓGICA: Determinar si el modo Snipe (Tiempo Extra) está activo en el Dashboard
-    let isSnipeActiveInDashboard = false;
-    const snipeActivadoToggle = document.getElementById('snipeActivado'); // ID de tu switch de Snipe en el Dashboard
-    if (snipeActivadoToggle) { // Asegúrate de que el switch existe
-        const snipeTiempoUmbral = parseInt(document.getElementById("tiempoSnipe").value) || 15; // Tiempo configurado en tu Dashboard
-        
-        // El modo Snipe está activo en el Dashboard si:
-        // 1. El switch 'snipeActivado' está encendido.
-        // 2. El tiempo actual es menor o igual al umbral de Snipe (ej. 15 segundos o menos).
-        // NOTA: Usamos <= para que se active justo en el umbral, como en tu imagen.
-        isSnipeActiveInDashboard = snipeActivadoToggle.checked && (tiempoActual <= snipeTiempoUmbral);
-    }
+                // --- 👇 INICIO: CAMBIO AÑADIDO ---
+                // Si el tiempo es > 0, la subasta está activa
+                if (time > 0 && !subastaActiva) {
+                    subastaActiva = true;
+                    console.log("WIDGET: Interruptor ENCENDIDO");
+                }
+                // --- 👆 FIN: CAMBIO AÑADIDO ---
 
+                tiempoActual = time; // Actualizar el tiempo local del widget
+                const formattedTime = formatTime(time);
+                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+            }
+        });
 
-    if (isWidgetMode) {
-        // ===============================
-        // 📱 MODO WIDGET (NO SE CAMBIA EL WIDGET PARA ESTA FUNCIONALIDAD)
-        // ===============================
-        const tiempoElWidget = document.getElementById('tiempoRestanteWidget'); 
-        if (tiempoElWidget) tiempoElWidget.textContent = formattedTime;
+        // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global
 
-        // Aquí podrías añadir lógica si QUIERES que el Widget también cambie
-        // Pero tu solicitud es que SOLO el Dashboard lo haga.
-        // Por ahora, el Widget se queda con su estilo normal.
+        if (isWidgetMode) {
+             // ===============================
+             // 🏃 MODO WIDGET (ESCLAVO)
+             // ===============================
+            document.body.classList.add('widget-mode');
+            
+            // Ocultamos el dashboard principal y mostramos el contenedor del widget
+            document.getElementById('main-dashboard-content').style.display = 'none';
+            document.getElementById('widget-container').style.display = 'flex';
+            
+            // Al ser un widget, solo se conecta al socket y espera órdenes
+            socket.emit("iniciar_subasta"); // Avisa al servidor que es un cliente
 
-    } else {
-             /// ===============================
-        // 🖥️ MODO DASHBOARD (MAESTRO) - ¡AQUÍ ESTÁ EL CAMBIO!
-        // ===============================
-        const subtextEl = document.getElementById('subtext-dashboard'); // El texto "El sorteo termina en:"
-        const tiempoEl = document.getElementById('tiempo-dashboard');   // El número del contador
-        
-        // Siempre actualiza el tiempo
-        if (tiempoEl) tiempoEl.textContent = formattedTime;
-
-        if (isSnipeActiveInDashboard) { // Si el MODO SNIPE está activo en el Dashboard
-            // Cambiar el texto y el color del número
-            if (subtextEl) {
-                subtextEl.textContent = "Tiempo por delay de live"; // ¡NUEVO TEXTO!
-                subtextEl.style.color = "#FF4D4D"; // Rojo
-            }
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FF4D4D'; // Número en rojo
-                tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)'; // Efecto luminoso (opcional)
-            }
         } else {
-            // Restaurar a la normalidad si el modo Snipe NO está activo
-            if (subtextEl) {
-                subtextEl.textContent = "El sorteo termina en:"; // Texto original
-                subtextEl.style.color = "#ccc"; // Color original
-            }
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FFD700'; // Color dorado original
-                tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)'; // Efecto original
-            }
-        }
-    }
-});
+             // ===============================
+             // 🖥️ MODO DASHBOARD (MAESTRO)
+             // ===============================
+            document.getElementById('widget-container').style.display = 'none';
 
              // ===============================
              // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
@@ -742,7 +718,7 @@
                      logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
                  }
              }
-         // <-- FIN DEL ELSE (MODO DASHBOARD)
+        } // <-- FIN DEL ELSE (MODO DASHBOARD)
 
         // ===============================
 // 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
