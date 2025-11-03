@@ -699,22 +699,21 @@ socket.on("iniciar_snipe_cliente", (duracion) => {
 });
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
-            // Este código solo corre en el Widget
-            if (document.body.classList.contains('widget-mode')) {
+    // Este código solo corre en el Widget
+    if (document.body.classList.contains('widget-mode')) {
 
-                // --- 👇 INICIO: CAMBIO AÑADIDO ---
-                // Si el tiempo es > 0, la subasta está activa
-                if (time > 0 && !subastaActiva) {
-                    subastaActiva = true;
-                    console.log("WIDGET: Interruptor ENCENDIDO");
-                }
-                // --- 👆 FIN: CAMBIO AÑADIDO ---
+        // Si el tiempo es > 0, la subasta está activa
+        if (time > 0 && !subastaActiva) {
+            subastaActiva = true;
+            console.log("WIDGET: Interruptor ENCENDIDO");
+        }
 
-                tiempoActual = time; // Actualizar el tiempo local del widget
-                const formattedTime = formatTime(time);
-                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
-            }
-        });
+        tiempoActual = time; // Actualizar el tiempo local del widget
+        const formattedTime = formatTime(time);
+        if (document.getElementById('tiempoRestante-widget'))
+            document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+    }
+});
 socket.on("activar_tiempo_extra", () => {
     if (!document.body.classList.contains("widget-mode")) return;
 
