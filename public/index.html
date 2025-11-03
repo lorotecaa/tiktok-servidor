@@ -194,6 +194,25 @@
     from { opacity: 1; transform: translateX(-50%) scale(1); }
     to { opacity: 0.6; transform: translateX(-50%) scale(1.1); }
 }
+#timerText {
+    color: #FFD700; /* Amarillo */
+    text-shadow: 0 0 20px #FFD700, 0 0 40px #FFA500;
+    font-weight: 900;
+  }
+
+  #timerLabel {
+    color: #fff;
+    font-size: 18px;
+  }
+
+  .snipe-mode #timerText {
+    color: #00FFFF; /* Cian brillante para snipe */
+    text-shadow: 0 0 25px #00FFFF, 0 0 50px #00BFFF;
+  }
+
+  .snipe-mode #timerLabel {
+    color: #00FFFF;
+  }
     </style>
 </head>
 <body>
@@ -619,32 +638,35 @@ socket.on("activar_tiempo_extra", () => {
 
     // ⚡ Banner visual en el centro
     const existente = document.getElementById("extra-time-banner");
-    if (existente) existente.remove();
+if (existente) existente.remove();
 
-    const banner = document.createElement("div");
-    banner.id = "extra-time-banner";
-    banner.innerHTML = "⚡ ¡TIEMPO EXTRA ACTIVO! ⚡";
-    banner.style.position = "absolute";
-    banner.style.top = "5%";
-    banner.style.left = "50%";
-    banner.style.transform = "translateX(-50%)";
-    banner.style.padding = "12px 35px";
-    banner.style.background = "linear-gradient(90deg, #ff0000, #ff9900)";
-    banner.style.color = "white";
-    banner.style.fontSize = "2em";
-    banner.style.fontWeight = "bold";
-    banner.style.borderRadius = "15px";
-    banner.style.boxShadow = "0 0 25px rgba(255, 100, 0, 0.9)";
-    banner.style.zIndex = "9999";
-    banner.style.animation = "flashBanner 0.5s alternate infinite";
-    document.getElementById("widget-container").appendChild(banner);
+const banner = document.createElement("div");
+banner.id = "extra-time-banner";
+banner.innerHTML = "⚡ ¡TIEMPO EXTRA ACTIVO! ⚡";
+banner.style.position = "absolute";
+banner.style.top = "5%";
+banner.style.left = "50%";
+banner.style.transform = "translateX(-50%)";
+banner.style.padding = "12px 35px";
+banner.style.background = "linear-gradient(90deg, #ff0000, #ff9900)";
+banner.style.color = "white";
+banner.style.fontSize = "2em";
+banner.style.fontWeight = "bold";
+banner.style.borderRadius = "15px";
+banner.style.boxShadow = "0 0 25px rgba(255, 100, 0, 0.9)";
+banner.style.zIndex = "9999";
+banner.style.animation = "flashBanner 0.5s alternate infinite";
+document.getElementById("widget-container").appendChild(banner);
 
-    // 🕓 Quitar banner después de 10 segundos (opcional)
-    setTimeout(() => {
-        banner.style.transition = "opacity 0.5s ease";
-        banner.style.opacity = "0";
-        setTimeout(() => banner.remove(), 500);
-    }, 10000);
+// ✅ Activa el modo visual de tiempo extra
+document.body.classList.add("snipe-mode");
+
+// 🕓 Quitar banner después de 10 segundos (opcional)
+setTimeout(() => {
+  banner.style.transition = "opacity 0.5s ease";
+  banner.style.opacity = "0";
+  setTimeout(() => banner.remove(), 500);
+}, 10000);
 });
 
 // Animación del cartel
