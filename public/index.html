@@ -202,7 +202,6 @@
         }
         /* --- ESTILOS PARA EL BANNER DE SNIPE EN EL WIDGET --- */
 #snipe-banner {
-    /* Estilo tomado de tu imagen (rojo/naranja brillante) */
     background: linear-gradient(90deg, #ff4d4d 0%, #ff8c00 100%);
     color: white;
     font-size: 2em;
@@ -210,10 +209,13 @@
     text-align: center;
     padding: 10px 0;
     width: 100%;
+    /* CRÍTICO: Asegurarse de que esté en una nueva línea o debajo del tiempo */
     margin-top: 10px;
     box-shadow: 0 0 15px rgba(255, 77, 77, 0.8);
-    /* Animación de parpadeo */
     animation: pulse-banner 1s infinite alternate;
+    /* CRÍTICO: Usar display: block; para asegurar que el JS lo muestre correctamente */
+    display: none; 
+    z-index: 100; /* Asegurar que esté sobre otros elementos si hay conflicto */
 }
 
 @keyframes pulse-banner {
@@ -384,37 +386,36 @@
         
         // --- LÓGICA DEL TEMPORIZADOR ---
         function iniciarTimerLogic() {
-            let tiempoInput = document.getElementById("tiempo");
-            // Solo resetea si el tiempo es 0 o indefinido (inicio)
-            if (tiempoActual <= 0) {
-                 tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); // Usar 200 como default si no hay input
-            }
+    let tiempoInput = document.getElementById("tiempo");
+    // Solo resetea si el tiempo es 0 o indefinido (inicio)
+    if (tiempoActual <= 0) {
+        tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200);
+    }
 
-
-            if (intervalo) clearInterval(intervalo);
+    if (intervalo) clearInterval(intervalo);
+    
+    intervalo = setInterval(() => {
+        if (!isPaused && tiempoActual > 0) {
+            tiempoActual--;
+            const formattedTime = formatTime(tiempoActual);
             
-            intervalo = setInterval(() => {
-                if (!isPaused && tiempoActual > 0) {
-                    tiempoActual--;
-                    const formattedTime = formatTime(tiempoActual);
-                    
-                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    if (!document.body.classList.contains('widget-mode')) {
-                        socket.emit('sync_time', tiempoActual); 
-                    }
-                    
-                    // 2. Actualizamos el display LOCAL del dashboard
-                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+            // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+            if (!document.body.classList.contains('widget-mode')) {
+                // 👇 CRÍTICO: Enviamos el tiempo Y el estado 'snipeActivado' al servidor
+                socket.emit('sync_time', tiempoActual, snipeActivado); 
+            }
+            
+            // 2. Actualizamos el display LOCAL del dashboard
+            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
 
-                } else if (tiempoActual <= 0) {
-                     // Solo el dashboard detiene el tiempo
-                    if (!document.body.classList.contains('widget-mode')) {
-                        terminarTiempo();
-                    }
-                }
-            }, 1000);
+        } else if (tiempoActual <= 0) {
+            // Solo el dashboard detiene el tiempo
+            if (!document.body.classList.contains('widget-mode')) {
+                terminarTiempo();
+            }
         }
-
+    }, 1000);
+}
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
              if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
@@ -630,20 +631,22 @@
         if (isSnipeActive) {
             // MODO SNIPE: Mostrar el Banner, Ocultar el Subtexto
             
+            console.log("✅ MODO SNIPE ACTIVADO EN WIDGET"); // <-- MENSAJE DE DEPURACIÓN
+            
             // Mostrar Banner
             if (snipeBannerEl) snipeBannerEl.style.display = 'block'; 
             
             // Ocultar Subtexto normal
             if (subtextEl) subtextEl.style.display = 'none'; 
             
-            // Estilizar el tiempo para que se vea de alerta
+            // Estilizar el tiempo para que se vea de alerta (lo que ya tenías)
             if (tiempoEl) {
-                tiempoEl.style.color = '#FF4D4D'; // Rojo de alerta
+                tiempoEl.style.color = '#FF4D4D'; 
                 tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
             }
 
         } else {
-            // MODO NORMAL: Ocultar el Banner, Mostrar el Subtexto
+            // MODO NORMAL
             
             // Ocultar Banner
             if (snipeBannerEl) snipeBannerEl.style.display = 'none'; 
