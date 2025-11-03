@@ -877,7 +877,7 @@ socket.on("new_gift", (gift) => {
                 // Si el tiempo está bajo o en 0 (esperando el final)
                 if (tiempoActual <= tiempoSnipe) {
                     tiempoActual = tiempoSnipe;
-                    socket.emit('sync_time', tiempoActual); 
+                    socket.emit('sync_time', tiempoActual, snipeActivado);
                     logDonacionesEl.innerHTML += `<p style="color: yellow;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
                 }
             }
