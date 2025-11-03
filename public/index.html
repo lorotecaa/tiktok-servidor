@@ -169,6 +169,31 @@
     font-weight: bold;
     color: #FFD700 !important;
 }
+.modo-tiempo-extra {
+    border-color: red !important;
+    box-shadow: 0 0 40px 10px red !important;
+    animation: resplandorExtra 1s infinite alternate;
+}
+
+@keyframes resplandorExtra {
+    from { box-shadow: 0 0 20px 5px red; }
+    to { box-shadow: 0 0 45px 15px orange; }
+}
+
+.contador-tiempo-extra {
+    color: #ff0000 !important;
+    animation: parpadeoContador 0.4s infinite alternate;
+}
+
+@keyframes parpadeoContador {
+    from { color: #ff0000; text-shadow: 0 0 10px #ff5c00; }
+    to { color: #ffffff; text-shadow: 0 0 20px #ff0000; }
+}
+
+@keyframes flashBanner {
+    from { opacity: 1; transform: translateX(-50%) scale(1); }
+    to { opacity: 0.6; transform: translateX(-50%) scale(1.1); }
+}
     </style>
 </head>
 <body>
@@ -570,43 +595,51 @@
                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
             }
         });
-// 🎯 EVENTO: Mostrar animación "Tiempo Extra" en el Widget
 socket.on("activar_tiempo_extra", () => {
     if (!document.body.classList.contains("widget-mode")) return;
 
-    // Cambiar el texto debajo del contador
     const textoWidget = document.getElementById("texto-tiempo-widget");
+    const contador = document.getElementById("contador-tiempo-widget");
+    const widget = document.getElementById("widget-container");
+
+    // 💬 Cambiar texto inferior
     if (textoWidget) {
-        textoWidget.textContent = "⏱ Tiempo extra";
-        textoWidget.style.color = "#ffcc00"; // opcional: cambia color
+        textoWidget.textContent = "🔥 ¡TIEMPO EXTRA! ÚLTIMOS SEGUNDOS 🔥";
+        textoWidget.style.color = "#ff3b3b";
         textoWidget.style.fontWeight = "bold";
+        textoWidget.style.fontSize = "1.2em";
+        textoWidget.style.textShadow = "0 0 10px red";
     }
 
-    // Si ya hay un cartel previo, eliminarlo
+    // 💡 Efecto visual al contenedor
+    widget.classList.add("modo-tiempo-extra");
+
+    // 💡 Animación al contador
+    if (contador) contador.classList.add("contador-tiempo-extra");
+
+    // ⚡ Banner visual en el centro
     const existente = document.getElementById("extra-time-banner");
     if (existente) existente.remove();
 
-    // Crear el cartel visual
     const banner = document.createElement("div");
     banner.id = "extra-time-banner";
-    banner.innerHTML = "⏱️ ¡TIEMPO EXTRA!";
+    banner.innerHTML = "⚡ ¡TIEMPO EXTRA ACTIVO! ⚡";
     banner.style.position = "absolute";
-    banner.style.top = "10%";
+    banner.style.top = "5%";
     banner.style.left = "50%";
     banner.style.transform = "translateX(-50%)";
-    banner.style.padding = "15px 40px";
-    banner.style.background = "linear-gradient(90deg, #ff0055, #ffcc00)";
+    banner.style.padding = "12px 35px";
+    banner.style.background = "linear-gradient(90deg, #ff0000, #ff9900)";
     banner.style.color = "white";
     banner.style.fontSize = "2em";
     banner.style.fontWeight = "bold";
     banner.style.borderRadius = "15px";
-    banner.style.boxShadow = "0 0 25px rgba(255, 0, 100, 0.8)";
+    banner.style.boxShadow = "0 0 25px rgba(255, 100, 0, 0.9)";
     banner.style.zIndex = "9999";
     banner.style.animation = "flashBanner 0.5s alternate infinite";
-
     document.getElementById("widget-container").appendChild(banner);
 
-    // Quitar cartel después de 10 segundos (opcional)
+    // 🕓 Quitar banner después de 10 segundos (opcional)
     setTimeout(() => {
         banner.style.transition = "opacity 0.5s ease";
         banner.style.opacity = "0";
