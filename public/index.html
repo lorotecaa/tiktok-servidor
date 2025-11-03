@@ -46,17 +46,7 @@
 
         /* ESTILOS INTERNOS DEL WIDGET (INTACTO) */
         #tiempoBox-widget { background: #1a1a1a; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0;border-bottom: 2px solid #FFD700; }
-        #tiempoRestante-widget { 
-            font-size: 2.5em; 
-            color: #FFD700; /* Color inicial */
-            font-weight: bold; 
-            /* Quitamos el text-shadow inicial para que el snipe lo defina */
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); 
-            padding: 10px 20px; /* Un poco de aire */
-            border-radius: 10px;
-            /* Agregamos una transición para que el cambio de estilo sea suave */
-            transition: all 0.3s ease-in-out;
-        }
+        #tiempoRestante-widget { font-size: 2.5em; color: #FFD700; font-weight: bold; text-shadow: 0 0 8px rgba(255, 215, 0, 0.7); }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
 
         #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px;box-sizing: border-box; }
@@ -179,50 +169,6 @@
     font-weight: bold;
     color: #FFD700 !important;
 }
-.widget-mode .snipe-active {
-            /* Anulamos el estilo preexistente del gradiente y aplicamos la animación */
-            background: none !important; /* ¡CRÍTICO! Anular el fondo del gradiente */
-            border: none !important;     /* Anular bordes si los tiene */
-            color: #ff4d4d !important;  /* CRÍTICO: Forzamos el color rojo inmediatamente */
-            animation: pulse-snipe 0.8s infinite alternate !important; 
-        }
-
-        @keyframes pulse-snipe {
-            0% { 
-                color: #FFD700; /* Oro */
-                transform: scale(1);
-                text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-            }
-            100% { 
-                color: #ff4d4d; /* Rojo intenso */
-                transform: scale(1.1); 
-                /* CRÍTICO: Aumentamos el brillo para que se note sobre el fondo oscuro */
-                text-shadow: 0 0 25px rgba(255, 77, 77, 1), 0 0 15px rgba(255, 77, 77, 1);
-            }
-        }
-        /* --- ESTILOS PARA EL BANNER DE SNIPE EN EL WIDGET --- */
-#snipe-banner {
-    background: linear-gradient(90deg, #ff4d4d 0%, #ff8c00 100%);
-    color: white;
-    font-size: 2em;
-    font-weight: bold;
-    text-align: center;
-    padding: 10px 0;
-    width: 100%;
-    /* CRÍTICO: Asegurarse de que esté en una nueva línea o debajo del tiempo */
-    margin-top: 10px;
-    box-shadow: 0 0 15px rgba(255, 77, 77, 0.8);
-    animation: pulse-banner 1s infinite alternate;
-    /* CRÍTICO: Usar display: block; para asegurar que el JS lo muestre correctamente */
-    display: none; 
-    z-index: 100; /* Asegurar que esté sobre otros elementos si hay conflicto */
-}
-
-@keyframes pulse-banner {
-    0% { transform: scale(1); opacity: 0.9; }
-    100% { transform: scale(1.03); opacity: 1; }
-}
-/* --- FIN: ESTILOS BANNER DE SNIPE --- */
     </style>
 </head>
 <body>
@@ -260,21 +206,14 @@
     </div> 
 
     <div id="widget-container" style="display:none;">
-    
-    <div id="tiempoBox-widget">
         
-        <div id="tiempoRestante-widget">00:00</div> 
-        
-        <div id="snipe-banner" style="display: none;">MOMENTO DE SNIPE</div> 
-        
-        <div id="subtext-widget">El sorteo/subasta termina en</div>
-        
-    </div>
-    
-    <div id="participantes-widget">
-        <ul id="listaParticipantes-widget"></ul>
-    </div>
-</div>
+        <div id="tiempoBox-widget">
+            <div id="tiempoRestante-widget">00:00</div>
+            <div id="subtext-widget">El sorteo/subasta termina en</div>
+        </div>
+        <div id="participantes-widget">
+            <ul id="listaParticipantes-widget"></ul>
+        </div>
         
     </div>
     <div id="winner-popup" style="display: none;">
@@ -386,36 +325,37 @@
         
         // --- LÓGICA DEL TEMPORIZADOR ---
         function iniciarTimerLogic() {
-    let tiempoInput = document.getElementById("tiempo");
-    // Solo resetea si el tiempo es 0 o indefinido (inicio)
-    if (tiempoActual <= 0) {
-        tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200);
-    }
-
-    if (intervalo) clearInterval(intervalo);
-    
-    intervalo = setInterval(() => {
-        if (!isPaused && tiempoActual > 0) {
-            tiempoActual--;
-            const formattedTime = formatTime(tiempoActual);
-            
-            // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-            if (!document.body.classList.contains('widget-mode')) {
-                // 👇 CRÍTICO: Enviamos el tiempo Y el estado 'snipeActivado' al servidor
-                socket.emit('sync_time', tiempoActual, snipeActivado); 
+            let tiempoInput = document.getElementById("tiempo");
+            // Solo resetea si el tiempo es 0 o indefinido (inicio)
+            if (tiempoActual <= 0) {
+                 tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); // Usar 200 como default si no hay input
             }
-            
-            // 2. Actualizamos el display LOCAL del dashboard
-            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
 
-        } else if (tiempoActual <= 0) {
-            // Solo el dashboard detiene el tiempo
-            if (!document.body.classList.contains('widget-mode')) {
-                terminarTiempo();
-            }
+
+            if (intervalo) clearInterval(intervalo);
+            
+            intervalo = setInterval(() => {
+                if (!isPaused && tiempoActual > 0) {
+                    tiempoActual--;
+                    const formattedTime = formatTime(tiempoActual);
+                    
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    if (!document.body.classList.contains('widget-mode')) {
+                        socket.emit('sync_time', tiempoActual); 
+                    }
+                    
+                    // 2. Actualizamos el display LOCAL del dashboard
+                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+
+                } else if (tiempoActual <= 0) {
+                     // Solo el dashboard detiene el tiempo
+                    if (!document.body.classList.contains('widget-mode')) {
+                        terminarTiempo();
+                    }
+                }
+            }, 1000);
         }
-    }, 1000);
-}
+
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
              if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
@@ -613,85 +553,23 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time, isSnipeActive) => {
-    
-    tiempoActual = time; 
-    const formattedTime = formatTime(time);
-    const isWidgetMode = document.body.classList.contains('widget-mode');
+        socket.on('update_time', (time) => {
+            // Este código solo corre en el Widget
+            if (document.body.classList.contains('widget-mode')) {
 
-    if (isWidgetMode) {
-        // ===============================
-        // 🏃 MODO WIDGET (ESCLAVO)
-        // ===============================
-        const subtextEl = document.getElementById('subtext-widget');
-        const tiempoEl = document.getElementById('tiempoRestante-widget'); 
-        const snipeBannerEl = document.getElementById('snipe-banner'); 
+                // --- 👇 INICIO: CAMBIO AÑADIDO ---
+                // Si el tiempo es > 0, la subasta está activa
+                if (time > 0 && !subastaActiva) {
+                    subastaActiva = true;
+                    console.log("WIDGET: Interruptor ENCENDIDO");
+                }
+                // --- 👆 FIN: CAMBIO AÑADIDO ---
 
-        // 1. Siempre actualizar el tiempo
-        if (tiempoEl) tiempoEl.textContent = formattedTime;
-        
-        // --- LÓGICA DE SNIPE EN WIDGET ---
-        if (isSnipeActive) {
-            // MODO SNIPE: Mostrar el Banner, Ocultar el Subtexto
-            if (snipeBannerEl) snipeBannerEl.style.display = 'block'; 
-            if (subtextEl) subtextEl.style.display = 'none'; 
-            
-            // Estilizar el tiempo para que se vea de alerta
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FF4D4D'; 
-                tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
-            }
-        } else {
-            // MODO NORMAL
-            if (snipeBannerEl) snipeBannerEl.style.display = 'none'; 
-            if (subtextEl) {
-                subtextEl.textContent = "El sorteo/subasta termina en";
-                subtextEl.style.color = "#ccc";
-                subtextEl.style.display = 'block'; 
-            }
-            // Restaurar el estilo del número a Dorado
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FFD700';
-                tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
-            }
-        }
-    } else {
-        // CÓDIGO CORREGIDO (USA LOS IDS REALES DE TU HTML)
-// ===============================
-// 🖥️ MODO DASHBOARD (MAESTRO)
-// ===============================
-const subtextEl = document.getElementById('subtext-dashboard'); // ¡CORREGIDO!
-const tiempoEl = document.getElementById('tiempo-dashboard'); // ¡CORREGIDO!
-        
-        // 1. Siempre actualizar el tiempo
-        if (tiempoEl) tiempoEl.textContent = formattedTime;
-
-        // --- LÓGICA DE SNIPE EN DASHBOARD ---
-        if (isSnipeActive) {
-            // Estilizar el tiempo para que se vea de alerta
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FF4D4D'; // Rojo de Alerta
-                tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
-            }
-            // Cambiar el texto de "El sorteo termina en:" a "¡TIEMPO EXTRA!"
-            if (subtextEl) {
-                subtextEl.textContent = "¡TIEMPO EXTRA!";
-                subtextEl.style.color = "#FF4D4D";
-            }
-        } else {
-            // Restaurar el estilo del número a Dorado
-            if (tiempoEl) {
-                tiempoEl.style.color = '#FFD700';
-                tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
-            }
-            // Restaurar el texto normal
-            if (subtextEl) {
-                subtextEl.textContent = "El sorteo termina en:";
-                subtextEl.style.color = "#ccc";
-            }
-        }
-    }
-});
+                tiempoActual = time; // Actualizar el tiempo local del widget
+                const formattedTime = formatTime(time);
+                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
+            }
+        });
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -877,7 +755,7 @@ socket.on("new_gift", (gift) => {
                 // Si el tiempo está bajo o en 0 (esperando el final)
                 if (tiempoActual <= tiempoSnipe) {
                     tiempoActual = tiempoSnipe;
-                    socket.emit('sync_time', tiempoActual, snipeActivado);
+                    socket.emit('sync_time', tiempoActual); 
                     logDonacionesEl.innerHTML += `<p style="color: yellow;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
                 }
             }
