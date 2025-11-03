@@ -200,6 +200,27 @@
                 text-shadow: 0 0 25px rgba(255, 77, 77, 1), 0 0 15px rgba(255, 77, 77, 1);
             }
         }
+        /* --- ESTILOS PARA EL BANNER DE SNIPE EN EL WIDGET --- */
+#snipe-banner {
+    /* Estilo tomado de tu imagen (rojo/naranja brillante) */
+    background: linear-gradient(90deg, #ff4d4d 0%, #ff8c00 100%);
+    color: white;
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px 0;
+    width: 100%;
+    margin-top: 10px;
+    box-shadow: 0 0 15px rgba(255, 77, 77, 0.8);
+    /* Animación de parpadeo */
+    animation: pulse-banner 1s infinite alternate;
+}
+
+@keyframes pulse-banner {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(1.03); opacity: 1; }
+}
+/* --- FIN: ESTILOS BANNER DE SNIPE --- */
     </style>
 </head>
 <body>
@@ -237,14 +258,21 @@
     </div> 
 
     <div id="widget-container" style="display:none;">
+    
+    <div id="tiempoBox-widget">
         
-        <div id="tiempoBox-widget">
-            <div id="tiempoRestante-widget">00:00</div>
-            <div id="subtext-widget">El sorteo/subasta termina en</div>
-        </div>
-        <div id="participantes-widget">
-            <ul id="listaParticipantes-widget"></ul>
-        </div>
+        <div id="tiempoRestante-widget">00:00</div> 
+        
+        <div id="snipe-banner" style="display: none;">MOMENTO DE SNIPE</div> 
+        
+        <div id="subtext-widget">El sorteo/subasta termina en</div>
+        
+    </div>
+    
+    <div id="participantes-widget">
+        <ul id="listaParticipantes-widget"></ul>
+    </div>
+</div>
         
     </div>
     <div id="winner-popup" style="display: none;">
@@ -588,30 +616,51 @@
             // Este código solo corre en el Widget
             if (document.body.classList.contains('widget-mode')) {
                 
-                if (time > 0 && !subastaActiva) {
-                    subastaActiva = true;
-                } else if (time === 0 && subastaActiva && !isSnipeActive) {
-                    subastaActiva = false;
-                }
+                // ... (código existente de subastaActiva) ...
 
                 tiempoActual = time; 
                 const formattedTime = formatTime(time);
                 
                 const subtextEl = document.getElementById('subtext-widget');
-                const tiempoEl = document.getElementById('tiempoRestante-widget'); // Capturamos el elemento del tiempo
+                const tiempoEl = document.getElementById('tiempoRestante-widget'); 
+                const snipeBannerEl = document.getElementById('snipe-banner'); // <-- Nuevo Elemento
 
                 if (isSnipeActive) {
-                    subtextEl.textContent = "🔥 ¡TIEMPO DE SNIPE! 🔥";
-                    subtextEl.style.color = "red";
-                    // ✅ APLICAR LA CLASE DE ANIMACIÓN
-                    if (tiempoEl) tiempoEl.classList.add('snipe-active');
+                    // 1. Mostrar el banner
+                    if (snipeBannerEl) snipeBannerEl.style.display = 'block'; 
+                    
+                    // 2. Ocultar el subtexto normal
+                    if (subtextEl) subtextEl.style.display = 'none';
+                    
+                    // 3. Poner el número en rojo brillante (para que resalte)
+                    if (tiempoEl) {
+                        tiempoEl.style.color = '#FF4D4D'; // Rojo de alerta
+                        tiempoEl.style.textShadow = '0 0 15px rgba(255, 77, 77, 1)';
+                        // Ocultamos la animación anterior si existía
+                        tiempoEl.classList.remove('snipe-active'); 
+                    }
+
                 } else {
-                    subtextEl.textContent = "El sorteo/subasta termina en";
-                    subtextEl.style.color = "#ccc";
-                    // ✅ ELIMINAR LA CLASE DE ANIMACIÓN
-                    if (tiempoEl) tiempoEl.classList.remove('snipe-active');
+                    // MODO NORMAL
+                    
+                    // 1. Ocultar el banner
+                    if (snipeBannerEl) snipeBannerEl.style.display = 'none'; 
+
+                    // 2. Mostrar el subtexto normal
+                    if (subtextEl) {
+                        subtextEl.textContent = "El sorteo/subasta termina en";
+                        subtextEl.style.color = "#ccc";
+                        subtextEl.style.display = 'block';
+                    }
+                    
+                    // 3. Restaurar el estilo del número (Dorando de la subasta)
+                    if (tiempoEl) {
+                        tiempoEl.style.color = '#FFD700';
+                        tiempoEl.style.textShadow = '0 0 8px rgba(255, 215, 0, 0.7)';
+                    }
                 }
                 
+                // 4. Actualizar el tiempo restante (en ambos modos)
                 if (tiempoEl) tiempoEl.textContent = formattedTime;
             }
         });
