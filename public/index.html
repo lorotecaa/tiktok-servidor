@@ -169,30 +169,6 @@
     font-weight: bold;
     color: #FFD700 !important;
 }
-/* === Modo solo tiempo extra === */
-.solo-tiempo-extra .tabla-participantes {
-    display: none !important; /* Oculta toda la tabla */
-}
-
-.solo-tiempo-extra #delayContainer {
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-.solo-tiempo-extra #delayContainer h2 {
-    color: yellow;
-    font-weight: bold;
-    text-shadow: 2px 2px 5px black;
-    margin-bottom: 5px;
-}
-
-.solo-tiempo-extra #delayContainer #delayTime {
-    color: red;
-    font-weight: bold;
-    font-size: 1.8em;
-}
-
     </style>
 </head>
 <body>
@@ -229,41 +205,25 @@
         <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
     </div> 
 
-  <div id="widget-container" style="display:none;">
-    
-    <div id="tiempoBox-widget">
-        <div id="tiempoRestante-widget">00:00</div>
-        <div id="subtext-widget">El sorteo/subasta termina en</div>
+    <div id="widget-container" style="display:none;">
+        
+        <div id="tiempoBox-widget">
+            <div id="tiempoRestante-widget">00:00</div>
+            <div id="subtext-widget">El sorteo/subasta termina en</div>
+        </div>
+        <div id="participantes-widget">
+            <ul id="listaParticipantes-widget"></ul>
+        </div>
+        
     </div>
-
-    <div id="participantes-widget">
-        <ul id="listaParticipantes-widget"></ul>
+    <div id="winner-popup" style="display: none;">
+    <div id="winner-content">
+        <h2>¡Ganador de la Ronda!</h2>
+        <div id="winner-avatar"><img></div>
+        <h1 id="winner-name">@username</h1>
+        <p>Donó un total de <span id="winner-amount">0</span> 💎</p>
+        <p class="felicidades">¡Felicidades! 🏆</p>
     </div>
-
-    <!-- 👇 Nuevo bloque para el delay -->
-    <div id="delay-container" style="display: none; 
-        flex-direction: column; 
-        align-items: center; 
-        justify-content: center; 
-        font-size: 2em; 
-        color: red; 
-        font-weight: bold; 
-        margin-top: 20px;">
-      <div>Tiempo por delay de live</div>
-      <span id="delay-tiempo">9s</span>
-    </div>
-
-</div>
-
-<div id="winner-popup" style="display: none;">
-  <div id="winner-content">
-    <h2>¡Ganador de la Ronda!</h2>
-    <div id="winner-avatar"><img></div>
-    <h1 id="winner-name">@username</h1>
-    <p>Donó un total de <span id="winner-amount">0</span> 💎</p>
-    <p class="felicidades">¡Felicidades! 🏆</p>
-  </div>
-</div>
 </div>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
@@ -364,31 +324,37 @@
         }
         
         // --- LÓGICA DEL TEMPORIZADOR ---
-        function iniciarTiempoDelay() {
-    const delayContainer = document.getElementById("delay-container");
-    const delayTiempo = document.getElementById("delay-tiempo");
+        function iniciarTimerLogic() {
+            let tiempoInput = document.getElementById("tiempo");
+            // Solo resetea si el tiempo es 0 o indefinido (inicio)
+            if (tiempoActual <= 0) {
+                 tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); // Usar 200 como default si no hay input
+            }
 
-    if (!delayContainer || !delayTiempo) {
-        console.warn("⚠️ Contenedor del delay no encontrado en el DOM.");
-        return;
-    }
 
-    delayContainer.style.display = "flex";
-    let segundos = 9; // ⏱️ puedes ajustar este valor
-    delayTiempo.textContent = `${segundos}s`;
+            if (intervalo) clearInterval(intervalo);
+            
+            intervalo = setInterval(() => {
+                if (!isPaused && tiempoActual > 0) {
+                    tiempoActual--;
+                    const formattedTime = formatTime(tiempoActual);
+                    
+                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
+                    if (!document.body.classList.contains('widget-mode')) {
+                        socket.emit('sync_time', tiempoActual); 
+                    }
+                    
+                    // 2. Actualizamos el display LOCAL del dashboard
+                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
 
-    const intervaloDelay = setInterval(() => {
-        segundos--;
-        delayTiempo.textContent = `${segundos}s`;
-
-        if (segundos <= 0) {
-            clearInterval(intervaloDelay);
-            console.log("🏁 Fin del delay de live.");
-            delayContainer.style.display = "none";
-            document.body.classList.remove("solo-tiempo-extra");
+                } else if (tiempoActual <= 0) {
+                     // Solo el dashboard detiene el tiempo
+                    if (!document.body.classList.contains('widget-mode')) {
+                        terminarTiempo();
+                    }
+                }
+            }, 1000);
         }
-    }, 1000);
-}
 
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
@@ -809,9 +775,9 @@ socket.on("limpiar_listas_clientes", () => {
     participantes = [];
     actualizarParticipantesUI();
     subastaActiva = false;
-    document.body.classList.remove("solo-tiempo-extra"); // 👉 NUEVO
     console.log("CLIENTE: Interruptor APAGADO.");
 });
+
 // ===============================
 // 🧭 Función para actualizar la UI (debe ir FUERA de socket.on)
 // ===============================
