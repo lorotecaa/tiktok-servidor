@@ -40,18 +40,10 @@ io.on("connection", (socket) => {
     io.emit("subasta_iniciada", data);
   });
 
-  socket.on("sync_time", (tiempo, isSnipeConfigurado) => {
-    
-    // ... Código para obtener TIEMPO_SNIPE_UMBRAL (mantener en 15) ...
-    const TIEMPO_SNIPE_UMBRAL = 15; 
-
-    // 🚨 CORRECCIÓN CRÍTICA: La alerta solo se activa si el tiempo es ESTRICTAMENTE MENOR al umbral (14s o menos)
-    // Esto asegura que al reiniciar a 15s, la alerta esté en FALSE.
-    const isSnipeActive = isSnipeConfigurado && (tiempo < TIEMPO_SNIPE_UMBRAL); // <-- ¡Cambio de <= a < !
-
-    // ... Reenviar con io.emit ...
-    io.emit('update_time', tiempo, isSnipeActive); 
-});
+  // Evento de sincronización de tiempo desde el dashboard
+  socket.on("sync_time", (time) => {
+    socket.broadcast.emit("update_time", time);
+  });
 
   // Evento cuando se finaliza la subasta
   socket.on("finalizar_subasta", () => {
