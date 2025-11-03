@@ -574,11 +574,19 @@
 socket.on("activar_tiempo_extra", () => {
     if (!document.body.classList.contains("widget-mode")) return;
 
+    // Cambiar el texto debajo del contador
+    const textoWidget = document.getElementById("texto-tiempo-widget");
+    if (textoWidget) {
+        textoWidget.textContent = "⏱ Tiempo extra";
+        textoWidget.style.color = "#ffcc00"; // opcional: cambia color
+        textoWidget.style.fontWeight = "bold";
+    }
+
     // Si ya hay un cartel previo, eliminarlo
     const existente = document.getElementById("extra-time-banner");
     if (existente) existente.remove();
 
-    // Crear el cartel
+    // Crear el cartel visual
     const banner = document.createElement("div");
     banner.id = "extra-time-banner";
     banner.innerHTML = "⏱️ ¡TIEMPO EXTRA!";
