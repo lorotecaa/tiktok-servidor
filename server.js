@@ -39,7 +39,11 @@ io.on("connection", (socket) => {
     console.log("🚀 Cliente solicitando inicio de subasta.");
     io.emit("subasta_iniciada", data);
   });
-
+// cuando el dashboard manda iniciar_snipe_cliente
+socket.on("iniciar_snipe_cliente", (duracion) => {
+  console.log("Servidor: reenviando iniciar_snipe_cliente ->", duracion);
+  io.emit("iniciar_snipe_cliente", duracion); // envía a todos (widgets)
+});
   // Evento de sincronización de tiempo desde el dashboard
   socket.on("sync_time", (time) => {
     socket.broadcast.emit("update_time", time);
@@ -84,5 +88,6 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
+
 
 
