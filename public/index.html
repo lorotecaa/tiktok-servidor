@@ -570,6 +570,50 @@
                 if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
             }
         });
+// 🎯 EVENTO: Mostrar animación "Tiempo Extra" en el Widget
+socket.on("activar_tiempo_extra", () => {
+    if (!document.body.classList.contains("widget-mode")) return;
+
+    // Si ya hay un cartel previo, eliminarlo
+    const existente = document.getElementById("extra-time-banner");
+    if (existente) existente.remove();
+
+    // Crear el cartel
+    const banner = document.createElement("div");
+    banner.id = "extra-time-banner";
+    banner.innerHTML = "⏱️ ¡TIEMPO EXTRA!";
+    banner.style.position = "absolute";
+    banner.style.top = "10%";
+    banner.style.left = "50%";
+    banner.style.transform = "translateX(-50%)";
+    banner.style.padding = "15px 40px";
+    banner.style.background = "linear-gradient(90deg, #ff0055, #ffcc00)";
+    banner.style.color = "white";
+    banner.style.fontSize = "2em";
+    banner.style.fontWeight = "bold";
+    banner.style.borderRadius = "15px";
+    banner.style.boxShadow = "0 0 25px rgba(255, 0, 100, 0.8)";
+    banner.style.zIndex = "9999";
+    banner.style.animation = "flashBanner 0.5s alternate infinite";
+
+    document.getElementById("widget-container").appendChild(banner);
+
+    // Quitar cartel después de 10 segundos (opcional)
+    setTimeout(() => {
+        banner.style.transition = "opacity 0.5s ease";
+        banner.style.opacity = "0";
+        setTimeout(() => banner.remove(), 500);
+    }, 10000);
+});
+
+// Animación del cartel
+const styleExtra = document.createElement("style");
+styleExtra.innerHTML = `
+@keyframes flashBanner {
+  from { transform: translateX(-50%) scale(1); opacity: 1; }
+  to { transform: translateX(-50%) scale(1.1); opacity: 0.7; }
+}`;
+document.head.appendChild(styleExtra);
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -757,6 +801,7 @@ socket.on("new_gift", (gift) => {
                     tiempoActual = tiempoSnipe;
                     socket.emit('sync_time', tiempoActual); 
                     logDonacionesEl.innerHTML += `<p style="color: yellow;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
+                    socket.emit("activar_tiempo_extra");
                 }
             }
 // 📢 ¡AQUÍ VA LA LÍNEA DE SINCRONIZACIÓN!
