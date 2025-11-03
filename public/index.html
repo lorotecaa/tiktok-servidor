@@ -230,6 +230,38 @@ body.snipe-mode #texto-tiempo-widget {
   from { transform: scale(1); opacity: 1; }
   to { transform: scale(1.1); opacity: 0.8; }
 }
+/* ====== ESTILOS SNIPE / TIEMPO EXTRA ====== */
+body.snipe-mode #contador-tiempo-widget,
+body.snipe-mode #tiempoRestante-widget {
+  color: #ffeb3b !important;
+  text-shadow: 0 0 10px #ffd54f, 0 0 30px #ff3b3b;
+  animation: pulseSnipe 0.8s ease-in-out infinite alternate;
+  transform-origin: center center;
+}
+
+body.snipe-mode #texto-tiempo-widget {
+  color: #ffcc00 !important;
+  font-weight: 700;
+  text-shadow: 0 0 8px #ff6f61;
+  font-size: 1.05em;
+}
+
+/* contenedor con glow */
+body.snipe-mode #widget-container {
+  box-shadow: 0 0 40px rgba(255, 102, 0, 0.45), 0 0 20px rgba(255, 204, 0, 0.2);
+  border-color: #ff9900;
+}
+
+/* anim */
+@keyframes pulseSnipe {
+  from { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 6px rgba(255,80,30,0.6)); }
+  to   { transform: scale(1.08); opacity: 0.9; filter: drop-shadow(0 0 18px rgba(255,120,30,0.9)); }
+}
+
+/* banner (si lo creamos dinámicamente) */
+#extra-time-banner {
+  pointer-events: none;
+}
     </style>
 </head>
 <body>
@@ -269,9 +301,9 @@ body.snipe-mode #texto-tiempo-widget {
     <div id="widget-container" style="display:none;">
         
         <div id="tiempoBox-widget">
-            <div id="tiempoRestante-widget">00:00</div>
-            <div id="subtext-widget">El sorteo/subasta termina en</div>
-        </div>
+    <div id="contador-tiempo-widget">00:00</div>
+    <div id="texto-tiempo-widget">El sorteo/subasta termina en</div>
+</div>
         <div id="participantes-widget">
             <ul id="listaParticipantes-widget"></ul>
         </div>
@@ -612,7 +644,59 @@ body.snipe-mode #texto-tiempo-widget {
             });
         }
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
+// Escucha desde servidor cuando empieza el tiempo snipe (dashboard -> servidor -> clientes)
+socket.on("iniciar_snipe_cliente", (duracion) => {
+  console.log("WIDGET: iniciar_snipe_cliente recibido ->", duracion);
 
+  // Solo en widget:
+  if (!document.body.classList.contains('widget-mode')) return;
+
+  // 1) Activa visualmente SNIPE
+  document.body.classList.add("snipe-mode");
+
+  // 2) Actualiza contador y texto inferior
+  const contador = document.getElementById("contador-tiempo-widget") || document.getElementById("tiempoRestante-widget");
+  const texto = document.getElementById("texto-tiempo-widget");
+  const dur = parseInt(duracion) || 0;
+
+  if (contador) {
+    contador.textContent = (dur > 0) ? (("00:" + String(dur).padStart(2,'0')).slice(-5)) : "00:00";
+  }
+  if (texto) {
+    texto.textContent = "🔥 TIEMPO EXTRA — ÚLTIMOS SEGUNDOS 🔥";
+  }
+
+  // 3) Mostrar banner grande (opcional) — se crea dinámicamente
+  const existente = document.getElementById("extra-time-banner");
+  if (existente) existente.remove();
+
+  const banner = document.createElement("div");
+  banner.id = "extra-time-banner";
+  banner.innerHTML = "⚡ ¡TIEMPO EXTRA! ⚡";
+  banner.style.position = "absolute";
+  banner.style.top = "8%";
+  banner.style.left = "50%";
+  banner.style.transform = "translateX(-50%)";
+  banner.style.padding = "10px 28px";
+  banner.style.background = "linear-gradient(90deg,#ff3b3b,#ffcc00)";
+  banner.style.color = "#111";
+  banner.style.fontSize = "1.6em";
+  banner.style.fontWeight = "bold";
+  banner.style.borderRadius = "14px";
+  banner.style.boxShadow = "0 6px 24px rgba(255,90,0,0.6)";
+  banner.style.zIndex = "9999";
+  banner.style.animation = "flashBanner 0.6s alternate infinite";
+  document.getElementById("widget-container").appendChild(banner);
+
+  // 4) Quitar visual SNIPE al terminar la duración (según la duración que enviaron)
+  setTimeout(() => {
+    banner.remove();
+    document.body.classList.remove("snipe-mode");
+
+    // Restaurar texto por defecto
+    if (texto) texto.textContent = "El sorteo/subasta termina en";
+  }, (dur * 1000) || 10000); // si dur==0, 10s por defecto
+});
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
             // Este código solo corre en el Widget
@@ -900,8 +984,15 @@ socket.on("limpiar_listas_clientes", () => {
     participantes = [];
     actualizarParticipantesUI();
     subastaActiva = false;
-    document.body.classList.remove("snipe-mode"); // ✅ vuelve al color normal
-    console.log("CLIENTE: Interruptor APAGADO.");
+
+    // 🔥 Si estaba en modo snipe, vuelve al color normal
+    document.body.classList.remove("snipe-mode");
+
+    // 🔄 Restaurar el texto del widget (por si estaba mostrando "TIEMPO EXTRA")
+    const texto = document.getElementById("texto-tiempo-widget");
+    if (texto) texto.textContent = "El sorteo/subasta termina en";
+
+    console.log("CLIENTE: Interruptor APAGADO y texto restaurado.");
 });
 
 // ===============================
