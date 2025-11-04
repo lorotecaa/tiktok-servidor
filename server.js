@@ -50,6 +50,10 @@ io.on("connection", (socket) => {
     console.log("⏹️ Subasta finalizada.");
     io.emit("subasta_finalizada");
   });
+  socket.on("activar_alerta_snipe_visual", () => {
+    console.log("⚡ Señal de ALERTA SNIPE ACTIVO recibida. Reenviando a clientes.");
+    io.emit("activar_alerta_snipe_visual");
+});
 
   // 🆕 NUEVO: evento para reenviar regalos recibidos desde el dashboard
   socket.on("nuevo_regalo", (giftData) => {
