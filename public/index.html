@@ -46,8 +46,11 @@
 
         /* ESTILOS INTERNOS DEL WIDGET (INTACTO) */
         #tiempoBox-widget { background: #1a1a1a; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0;border-bottom: 2px solid #FFD700; }
-        #tiempoRestante-widget { font-size: 2.5em; color: #ff0000; font-weight: bold; text-shadow: 0 0 8px rgba(255, 0, 0, 0.363); }
+        #tiempoRestante-widget { font-size: 2.5em; color: #FFD700; font-weight: bold; text-shadow: 0 0 8px rgba(255, 215, 0, 0.7); }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
+       .snipe-alert #tiempoRestante-widget {  color: #FF4D4D !important; /* ROJO */ text-shadow: 0 0 15px rgba(255, 77, 77, 1) !important; /* Sombra ROJA más fuerte */}
+        .snipe-alert #subtext-widget {  color: #FF4D4D !important; /* ROJO */}
+
 
         #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px;box-sizing: border-box; }
         #participantes-widget h2, #participantes-widget .totales { display: none; }
@@ -554,22 +557,45 @@
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
         socket.on('update_time', (time) => {
-            // Este código solo corre en el Widget
-            if (document.body.classList.contains('widget-mode')) {
+    
+    if (document.body.classList.contains('widget-mode')) {
+        
+        // ... (Tu lógica existente para subastaActiva) ...
 
-                // --- 👇 INICIO: CAMBIO AÑADIDO ---
-                // Si el tiempo es > 0, la subasta está activa
-                if (time > 0 && !subastaActiva) {
-                    subastaActiva = true;
-                    console.log("WIDGET: Interruptor ENCENDIDO");
-                }
-                // --- 👆 FIN: CAMBIO AÑADIDO ---
+        tiempoActual = time;
+        const formattedTime = formatTime(time);
+        
+        const tiempoElWidget = document.getElementById('tiempoRestante-widget'); 
+        const subtextElWidget = document.getElementById('subtext-widget');
+        
+        if (tiempoElWidget) tiempoElWidget.textContent = formattedTime;
+        
+        // 🛑 LÓGICA DE CAMBIO DE CLASE 🛑
+        const SNIPE_UMBRAL_WIDGET = 15; 
 
-                tiempoActual = time; // Actualizar el tiempo local del widget
-                const formattedTime = formatTime(time);
-                if (document.getElementById('tiempoRestante-widget')) document.getElementById('tiempoRestante-widget').textContent = formattedTime;
-            }
-        });
+        // Si el tiempo está bajo (Modo Snipe/Alerta)
+        if (time > 0 && time <= SNIPE_UMBRAL_WIDGET) {
+            
+            // 1. Activa la clase 'snipe-alert'. ¡El CSS aplica el ROJO!
+            document.body.classList.add('snipe-alert');
+            
+            // 2. Cambia el texto del subtítulo a la alerta
+            if (subtextElWidget) {
+                subtextElWidget.textContent = "Tiempo por delay de live"; 
+            }
+        
+        } else {
+            
+            // 1. Desactiva la clase 'snipe-alert'. ¡El CSS vuelve al AMARILLO original!
+            document.body.classList.remove('snipe-alert');
+            
+            // 2. Restaura el texto original del subtítulo
+            if (subtextElWidget) {
+                subtextElWidget.textContent = "El sorteo/subasta termina en"; 
+            }
+        }
+    }
+});
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
         const urlParams = new URLSearchParams(window.location.search);
