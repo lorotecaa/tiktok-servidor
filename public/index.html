@@ -245,6 +245,7 @@
         let isPaused = false; // Estado para la función pausar
         let snipeActivado = false; // <-- AÑADE ESTA LÍNEA
         let subastaActiva = false;
+        let isSnipeModeVisual = false;
 
         // 👇 INICIO: AÑADIDO BLOQUE (PROTECCIÓN ANTI-DUPLICADOS) 👇
         const processedGiftIds = new Set();
@@ -402,6 +403,9 @@
 
             // Avisamos a los widgets del nuevo tiempo
             socket.emit("iniciar_snipe_cliente", tiempoSnipe);
+
+            // 🛑 NUEVA EMISIÓN: Avisamos a los Widgets que inicien la ALERTA ROJA 🛑
+            socket.emit("activar_alerta_snipe_visual"); // <--- AÑADE ESTA LÍNEA
 
             // Reiniciamos el temporizador local solo con el tiempo de snipe
             tiempoActual = tiempoSnipe;
@@ -570,13 +574,12 @@
         
         if (tiempoElWidget) tiempoElWidget.textContent = formattedTime;
         
-        // 🛑 LÓGICA DE CAMBIO DE CLASE 🛑
-        const SNIPE_UMBRAL_WIDGET = 15; 
-
-        // Si el tiempo está bajo (Modo Snipe/Alerta)
-        if (time > 0 && time <= SNIPE_UMBRAL_WIDGET) {
+        // 🛑 LÓGICA DE CAMBIO DE CLASE AHORA USA LA BANDERA 🛑
+        
+        // Si la bandera está ACTIVA (solo se activa cuando el tiempo llega a cero por primera vez)
+        if (isSnipeModeVisual && time > 0) {
             
-            // 1. Activa la clase 'snipe-alert'. ¡El CSS aplica el ROJO!
+            // 1. Activa la clase 'snipe-alert'. ¡El contador se pone ROJO!
             document.body.classList.add('snipe-alert');
             
             // 2. Cambia el texto del subtítulo a la alerta
@@ -586,10 +589,10 @@
         
         } else {
             
-            // 1. Desactiva la clase 'snipe-alert'. ¡El CSS vuelve al AMARILLO original!
+            // 1. Desactiva la clase (vuelve al AMARILLO original si no está en Snipe)
             document.body.classList.remove('snipe-alert');
             
-            // 2. Restaura el texto original del subtítulo
+            // 2. Restaura el texto original del subtítulo (si la subasta aún no ha terminado, es el texto por defecto)
             if (subtextElWidget) {
                 subtextElWidget.textContent = "El sorteo/subasta termina en"; 
             }
@@ -953,7 +956,21 @@ style.innerHTML = `
   100% { transform: scale(1); opacity: 1; }
 }`;
 document.head.appendChild(style);
+// Widget (Cliente) - Recepción de eventos del Dashboard
+socket.on("activar_alerta_snipe_visual", () => {
+    // Cuando el Dashboard dice que el Snipe comenzó, activamos la bandera visual
+    isSnipeModeVisual = true;
+});
 
+socket.on('finalizar_subasta', () => {
+    // Cuando la subasta termina, la bandera se apaga (además de la limpieza)
+    isSnipeModeVisual = false; 
+    
+    // Y hacemos la limpieza final del cuerpo para volver a amarillo
+    document.body.classList.remove('snipe-alert');
+    const subtextElWidget = document.getElementById('subtext-widget');
+    if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
+});
     </script>
 </body>
 </html>
