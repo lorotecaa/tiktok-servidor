@@ -238,14 +238,9 @@
         };
 
         // 2. INICIALIZACIÓN DE ID Y CONEXIÓN
-        let streamerId = getUrlParameter('id'); // Obtiene el ID de la URL
-        
-        // Si no hay ID en la URL, usa el valor del input del Dashboard (si existe)
-        if (!streamerId && document.getElementById('streamerIdInput')) {
-            streamerId = document.getElementById('streamerIdInput').value || ""; 
-        }
+let streamerId = getUrlParameter('id'); // Obtiene el ID de la URL
 
-        const socket = io("https://tiktok-servidor.onrender.com"); 
+const socket = io("https://tiktok-servidor.onrender.com");
 
         // 3. VARIABLES GLOBALES
         const listaParticipantesEl = document.getElementById('listaParticipantes');
@@ -280,30 +275,29 @@
         }
 
         // 6. Configuración Inicial del Dashboard
-        document.addEventListener('DOMContentLoaded', () => {
-             // Si estamos en modo Dashboard, cargamos el ID del input al inicio
-             if (!document.body.classList.contains('widget-mode') && document.getElementById('streamerIdInput')) {
-                // Aquí podrías cargar el ID de localStorage si lo necesitas,
-                // pero por ahora lo dejamos vacío para que el usuario lo establezca.
-             }
-
-             // Si estamos en modo Widget, mostramos el contenedor del widget
-             if (streamerId && getUrlParameter('mode') === 'widget') {
-                 document.body.classList.add('widget-mode');
-                 const widgetContainer = document.getElementById('widget-container');
-                 if (widgetContainer) widgetContainer.style.display = 'flex';
-                 
-                 // CRÍTICO: El widget se une a la sala
-                 socket.emit("join_room", streamerId);
-                 console.log(`WIDGET unido a la sala: ${streamerId}`);
-             } else if (streamerId) {
-                // CRÍTICO: El Dashboard se une a la sala (solo si tiene ID, que viene del input o de la URL)
-                socket.emit("join_room", streamerId);
-                console.log(`DASHBOARD unido a la sala: ${streamerId}`);
-             } else {
-                console.log("No se ha definido un ID de streamer. Funcionalidad limitada.");
-             }
-        });
+        // 6. Configuración Inicial del Dashboard (REVISADA)
+document.addEventListener('DOMContentLoaded', () => {
+    // Si estamos en modo Dashboard y no tenemos un ID en la URL, 
+    // lo tomamos del input para la conexión inicial
+    if (!streamerId && !document.body.classList.contains('widget-mode') && document.getElementById('streamerIdInput')) {
+        streamerId = document.getElementById('streamerIdInput').value || ""; 
+    }
+    
+    // Si estamos en modo Widget, mostramos el contenedor del widget
+    if (streamerId && getUrlParameter('mode') === 'widget') {
+        document.body.classList.add('widget-mode');
+        //... resto del código ...
+        // CRÍTICO: El widget se une a la sala
+        socket.emit("join_room", streamerId);
+        console.log(`WIDGET unido a la sala: ${streamerId}`);
+    } else if (streamerId) {
+        // CRÍTICO: El Dashboard se une a la sala
+        socket.emit("join_room", streamerId);
+        console.log(`DASHBOARD unido a la sala: ${streamerId}`);
+    } else {
+        console.log("No se ha definido un ID de streamer. Funcionalidad limitada.");
+    }
+});
 
         // 🛑 Aquí va el resto del JavaScript (la Parte 2 que enviaste antes) 🛑
 
@@ -819,15 +813,6 @@ socket.on('finalizar_subasta', () => {
     document.body.classList.remove('snipe-alert');
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
-});
-document.addEventListener('DOMContentLoaded', () => {
-    // Si la URL tenía el ID, nos unimos a la sala
-    if (streamerId) {
-        socket.emit("join_room", streamerId);
-        console.log(`WIDGET unido a la sala: ${streamerId}`);
-    } else {
-        console.error("WIDGET no tiene ID de streamer en la URL. No se unirá a ninguna sala.");
-    }
 });
     </script>
 </body>
