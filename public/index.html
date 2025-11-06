@@ -30,6 +30,18 @@
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
         .widget-mode #main-dashboard-content { display: none !important; }
         .widget-mode #logDonaciones { display: none !important; } 
+        .widget-mode #widget-container {
+    /* Usamos !important para anular el 'display: none' del CSS general. */
+    display: flex !important; 
+    
+    /* Adaptar al tamaño de la ventana del Widget */
+    position: absolute; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
 
         /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET (INTACTO) */
         #widget-container {
@@ -216,7 +228,7 @@
         <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
     </div> 
 
-    <div id="widget-container" style="display:none;">
+    <<div id="widget-container">
         
         <div id="tiempoBox-widget">
             <div id="tiempoRestante-widget">00:00</div>
