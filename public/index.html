@@ -283,6 +283,7 @@ const socket = io("https://tiktok-servidor.onrender.com");
 
         // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
         function abrirWidget() {
+    // Obtenemos el ID del streamer de forma segura.
     const streamerId = getCurrentStreamerId(); 
 
     if (!streamerId) {
@@ -290,12 +291,12 @@ const socket = io("https://tiktok-servidor.onrender.com");
         return;
     }
     
-    // 🛑 CAMBIO CRÍTICO: Usa la URL completa de tu servidor (Ajusta el puerto si es necesario)
-    const serverAddress = "http://localhost:3000"; // <--- ¡CAMBIA ESTE PUERTO/DIRECCIÓN!
+    // 🛑 CRÍTICO: Usamos la URL pública de Render (sin el puerto, ya que Render lo gestiona)
+    const serverAddress = "https://tiktok-servidor.onrender.com"; 
     
     const widgetUrl = `${serverAddress}/widget?streamerId=${streamerId}`; 
     
-    // Abre la ventana
+    // Abre la ventana, como antes
     window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
 }
         // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
@@ -652,9 +653,9 @@ function simularRegalo() {
 }
 // --- FUNCIÓN AUXILIAR ---
 function getCurrentStreamerId() {
-    const streamerMasterInput = document.getElementById('streamerMasterId');
+    // 🛑 Verifica que este ID exista una SOLA VEZ en tu HTML
+    const streamerMasterInput = document.getElementById('streamerMasterId'); 
     if (streamerMasterInput) {
-        // Devuelve el valor actual del campo de texto
         return streamerMasterInput.value.trim() || "";
     }
     return "";
