@@ -378,54 +378,140 @@ function actualizarGanadoresUI() {
 
 // --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
 function iniciarTimerLogic() {
-    let tiempoInput = document.getElementById("tiempo");
+    // 1. Limpiar cualquier intervalo anterior
+    if (intervalo) {
+        clearInterval(intervalo);
+    }
+    
+    // 2. Obtener la duración inicial del input, si estamos en el inicio
     if (tiempoActual <= 0) {
-        tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); 
+        const tiempoInicialInput = document.getElementById("tiempoInicial").value; 
+        tiempoActual = parseInt(tiempoInicialInput) || 200; // Usa el valor del input
     }
 
-    if (intervalo) clearInterval(intervalo);
-    
+    // 3. Crear el bucle que se ejecuta cada segundo
     intervalo = setInterval(() => {
-        if (!isPaused && tiempoActual > 0) {
-            tiempoActual--;
-            const formattedTime = formatTime(tiempoActual);
+        if (!isPaused) {
+            tiempoActual--; // Descontamos 1 segundo
             
-            // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO) 
-            // 🛑 CORRECCIÓN: Incluir streamerId en el objeto 'time'
-            if (!document.body.classList.contains('widget-mode') && streamerId) {
-                socket.emit('sync_time', { time: tiempoActual, streamerId: streamerId }); 
+            // Actualizar la interfaz del Dashboard
+            const tiempoRestanteEl = document.getElementById('tiempoRestante');
+            if (tiempoRestanteEl) {
+                // Asumo que tienes la función formatTime(segundos)
+                tiempoRestanteEl.textContent = formatTime(tiempoActual); 
             }
-            
-            // 2. Actualizamos el display LOCAL del dashboard
-            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
 
-        } else if (tiempoActual <= 0) {
-            if (!document.body.classList.contains('widget-mode')) {
-                terminarTiempo();
+            // 🛑 CRÍTICO: Sincronizar el tiempo con el servidor para el Widget
+            socket.emit('sync_time', { 
+                time: tiempoActual, 
+                streamerId: streamerId 
+            }); 
+
+            // 4. Verificar fin del tiempo
+            if (tiempoActual <= 0) {
+                clearInterval(intervalo);
+                intervalo = null;
+                terminarTiempo(); // Llama a la lógica de fin o snipe
             }
         }
-    }, 1000);
+    }, 1000); // 1000 ms = 1 segundo
 }
 
-// --- FUNCIONES DE CONTROL (SOLO DASHBOARD) ---
 function iniciar() {
     if (!document.body.classList.contains('widget-mode') && streamerId) {
         snipeActivado = false;
         subastaActiva = true;
         logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
         
-        // 🛑 CORRECCIÓN: Incluir streamerId
+        // 1. Avisar al servidor que la subasta ha comenzado
         socket.emit("iniciar_subasta", { streamerId: streamerId }); 
         
         isPaused = false;
-        tiempoActual = 0; 
-        iniciarTimerLogic();
+        tiempoActual = 0; // Se inicializará correctamente dentro de iniciarTimerLogic
+        
+        // 2. 🛑 CRÍTICO: Iniciar el bucle de sincronización de tiempo
+        iniciarTimerLogic(); 
     }
 }
 
+function pausar() {
+    if (!document.body.classList.contains('widget-mode')) {
+        isPaused = !isPaused;
+        if (isPaused) {
+            if (intervalo) clearInterval(intervalo);
+            intervalo = null;
+            logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
+        } else {
+            // Si reanudamos, volvemos a llamar a la lógica para reestablecer el intervalo
+            iniciarTimerLogic(); 
+            logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
+        }
+    }
+}
+
+function finalizar() {
+    if (!document.body.classList.contains('widget-mode') && streamerId) {
+        if (intervalo) { 
+            clearInterval(intervalo); 
+            intervalo = null; 
+        }
+        
+        tiempoActual = 0;
+        socket.emit('sync_time', { time: 0, streamerId: streamerId }); // Sincroniza el tiempo a 0
+        if (document.getElementById('tiempoRestante')) {
+            document.getElementById('tiempoRestante').textContent = formatTime(0);
+        }
+        
+        // 1. Avisar al servidor que se finalizó
+        socket.emit('finalizar_subasta', { streamerId: streamerId }); 
+
+        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+
+        // Lógica de ganador (mantienes la tuya)
+        if (participantes.length > 0) {
+            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+            const ganador = participantes[0];
+            ganadoresHistorial.unshift(ganador); 
+            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+            actualizarGanadoresUI();
+            
+            socket.emit("anunciar_ganador", { ...ganador, streamerId: streamerId });
+        } else {
+            logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+        }
+
+        // 2. Limpiar listas y apagar interruptor (CRÍTICO)
+        subastaActiva = false;
+        participantes = []; 
+        actualizarParticipantesUI(); 
+        socket.emit("limpiar_listas", { streamerId: streamerId });
+    }
+}
+
+function restart() {
+    if (!document.body.classList.contains('widget-mode') && streamerId) { 
+        // Llama a finalizar, lo que limpia listas y detiene el tiempo
+        finalizar(); 
+
+        // Limpia el historial de ganadores también
+        ganadoresHistorial = [];
+        actualizarGanadoresUI();
+        
+        snipeActivado = false;
+        
+        logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong><p style="color: cyan;">🔄 Sistema reiniciado. Listo para una nueva subasta.</p>';
+        
+        if (document.getElementById('tiempoRestante')) 
+            document.getElementById('tiempoRestante').textContent = formatTime(0);
+        
+        socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
+        socket.emit("limpiar_listas", { streamerId: streamerId });
+    }
+}
+
+// Nota: La función terminarTiempo se usa internamente por iniciarTimerLogic()
 function terminarTiempo() {
     if (!document.body.classList.contains('widget-mode') && streamerId) { 
-        // 🛑 CORRECCIÓN: Avisamos al servidor que restaure el widget para salir de modo SNIPE
         socket.emit("restaurar_widget", { streamerId: streamerId });
 
         if (intervalo) { 
@@ -433,7 +519,6 @@ function terminarTiempo() {
             intervalo = null; 
         }
 
-        // 🛑 CORRECCIÓN: Incluir streamerId
         socket.emit('finalizar_subasta', { streamerId: streamerId });
         socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
         tiempoActual = 0; 
@@ -448,17 +533,13 @@ function terminarTiempo() {
             snipeActivado = true;
             logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
 
-            // Avisamos a los widgets del nuevo tiempo
-            // 🛑 CORRECCIÓN: Incluir streamerId
             socket.emit("iniciar_snipe_cliente", { time: tiempoSnipe, streamerId: streamerId });
-            // 🛑 CORRECCIÓN: Incluir streamerId
             socket.emit("activar_alerta_snipe_visual", { streamerId: streamerId });
 
             tiempoActual = tiempoSnipe;
-            iniciarTimerLogic();
-
+            iniciarTimerLogic(); // Inicia el timer de nuevo con el tiempo Snipe
         } else {
-            // B) NO HAY SNIPE (o el snipe ya terminó)
+            // B) NO HAY SNIPE
             if (snipeActivado) {
                 logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada automáticamente (post-snipe).</p>`;
             } else {
@@ -466,115 +547,35 @@ function terminarTiempo() {
             }
 
             if (participantes.length > 0) {
+                // Lógica de ganador
                 participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad)); 
                 const ganador = participantes[0];
                 ganadoresHistorial.unshift(ganador);
                 logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
                 actualizarGanadoresUI();
                 
-                // 🛑 CORRECCIÓN: Incluir streamerId con los datos del ganador
                 socket.emit("anunciar_ganador", { ...ganador, streamerId: streamerId });
             } else {
-                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+                logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
             }
-            // Limpieza y apagado de interruptor solo ocurre en `anunciar_ganador` o `finalizar()`
         }
     }
 } 
 
-function finalizar() {
-    if (!document.body.classList.contains('widget-mode') && streamerId) {
-
-        if (intervalo) { 
-            clearInterval(intervalo); 
-            intervalo = null; 
-        }
-        
-        tiempoActual = 0;
-        // 🛑 CORRECCIÓN: Incluir streamerId
-        socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
-        if (document.getElementById('tiempoRestante')) {
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        }
-        
-        // 🛑 CORRECCIÓN: Incluir streamerId
-        socket.emit('finalizar_subasta', { streamerId: streamerId }); 
-
-        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
-
-        if (participantes.length > 0) {
-            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
-            const ganador = participantes[0];
-            ganadoresHistorial.unshift(ganador); 
-            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-            actualizarGanadoresUI();
-            
-            // 🛑 CORRECCIÓN: Incluir streamerId con los datos del ganador
-            socket.emit("anunciar_ganador", { ...ganador, streamerId: streamerId });
-        
-        } else {
-            logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-        }
-
-        // 7. APAGAR EL INTERRUPTOR Y LIMPIAR
-        subastaActiva = false;
-        participantes = []; 
-        actualizarParticipantesUI(); 
-        
-        // 🛑 CORRECCIÓN: Incluir streamerId para limpiar listas
-        socket.emit("limpiar_listas", { streamerId: streamerId });
-    }
-}
-      
-function restart() {
-    if (!document.body.classList.contains('widget-mode') && streamerId) { 
-        finalizar(); // Finaliza la ronda actual (llama a finalizar, que limpia las listas)
-
-        // Limpia el historial de ganadores también
-        ganadoresHistorial = [];
-        actualizarGanadoresUI();
-        
-        snipeActivado = false;
-        
-        logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong><p style="color: cyan;">🔄 Sistema reiniciado. Listo para una nueva subasta.</p>';
-        
-        if (document.getElementById('tiempoRestante')) 
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        
-        // 🛑 CORRECCIÓN: Incluir streamerId
-        socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
-        
-        // Forzamos la limpieza del servidor por si acaso (aunque finalizar() ya lo hizo)
-        socket.emit("limpiar_listas", { streamerId: streamerId });
-    }
-}
-
-
-function pausar() {
-    if (!document.body.classList.contains('widget-mode')) {
-        isPaused = !isPaused;
-        if (isPaused) {
-            if (intervalo) clearInterval(intervalo);
-            intervalo = null;
-            logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
-        } else {
-            iniciarTimerLogic();
-            logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
-        }
-    }
-}
-// 👇 FUNCIÓN SIMULAR REGALO (CORREGIDA) 👇
 function simularRegalo() {
-    // ... código anterior ...
-    // 4. Emitir al servidor SOLO LA CANTIDAD DEL REGALO
-    // 💡 CAMBIAMOS "nuevo_regalo" por "new_gift" para ser coherentes con el socket.on que lo escucha
-    socket.emit("new_gift", { 
-        usuario: randomUser,
-        cantidad: randomAmount, 
-        regalo: giftName,
-        avatar_url: `https://via.placeholder.com/30/555/FFFFFF?text=${randomUser.charAt(0)}`,
-        streamerId: streamerId
-    });
+    // ... código de generación de usuario/cantidad ...
+    const randomUser = 'TestUser' + Math.floor(Math.random() * 100);
+    const randomAmount = Math.floor(Math.random() * 100) + 1;
+    const giftName = 'Rosa';
+    
+    // 🛑 CRÍTICA: Cambiado a "new_gift" para coincidir con el Servidor
+    socket.emit("new_gift", { 
+        usuario: randomUser,
+        cantidad: randomAmount, 
+        regalo: giftName,
+        avatar_url: `https://via.placeholder.com/30/555/FFFFFF?text=${randomUser.charAt(0)}`,
+        streamerId: streamerId
+    });
 }
 // 👆 FIN DE FUNCIÓN SIMULAR REGALO CORREGIDA 👆
 
@@ -587,9 +588,10 @@ socket.on('update_time', (data) => {
 
     const time = data.time;
 
+    // Solo ejecuta si es el Widget
     if (document.body.classList.contains('widget-mode')) {
         
-        tiempoActual = time;
+        tiempoActual = time; // El Widget solo recibe, no calcula
         const formattedTime = formatTime(time);
         
         const tiempoElWidget = document.getElementById('tiempoRestante-widget'); 
