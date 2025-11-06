@@ -25,7 +25,7 @@
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
 
         /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) (INTACTO) */
-        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
+        .widget-mode body { background: #111; min-height: 0; display: block; overflow: hidden; }
         
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
         .widget-mode #main-dashboard-content { display: none !important; }
@@ -429,31 +429,33 @@ function iniciarTimerLogic() {
 }
 
 function iniciar() {
-    // Solo necesitas esta verificación.
-    const streamerId = getCurrentStreamerId(); 
+    // 1. OBTENER Y VALIDAR EL ID DEL STREAMER (¡CRÍTICO!)
+    const currentStreamerId = getCurrentStreamerId(); 
     
-    if (!streamerId) {
+    if (!currentStreamerId) {
         alert("¡Alerta! Por favor, introduce tu ID de Streamer antes de iniciar.");
+        return; // Detiene la función si no hay ID
+    }
+    
+    // 2. VERIFICAR QUE NO ESTAMOS EN MODO WIDGET
+    if (document.body.classList.contains('widget-mode')) {
+        // No hacemos nada si estamos en modo Widget.
         return;
     }
+
+    // 3. INICIAR LA LÓGICA
+    snipeActivado = false;
+    subastaActiva = true;
+    logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
     
-    // ------------------------------------------------------------------
-    // EL RESTO DE LA LÓGICA ES CORRECTA
-    // ------------------------------------------------------------------
-    if (!document.body.classList.contains('widget-mode')) {
-        snipeActivado = false;
-        subastaActiva = true;
-        logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
-        
-        // 1. Avisar al servidor que la subasta ha comenzado (ahora con el ID correcto)
-        socket.emit("iniciar_subasta", { streamerId: streamerId }); 
-        
-        isPaused = false;
-        tiempoActual = 0;
-        
-        // 2. Iniciar el bucle de sincronización de tiempo
-        iniciarTimerLogic(); 
-    }
+    // 4. Avisar al servidor (Usamos el ID local y VALIDADO)
+    socket.emit("iniciar_subasta", { streamerId: currentStreamerId }); 
+    
+    isPaused = false;
+    tiempoActual = 0;
+    
+    // 5. Iniciar el bucle de sincronización de tiempo
+    iniciarTimerLogic(); 
 }
 
 function pausar() {
