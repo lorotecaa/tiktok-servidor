@@ -73,7 +73,7 @@ io.on("connection", (socket) => {
 // ==========================================================
 // 🎁 EVENTO CENTRAL DE REGALO (RECIBIDO DEL PUENTE LOCAL/DASHBOARD)
 // ==========================================================
-  socket.on("nuevo_regalo", (giftData) => {
+  socket.on("new_gift", (giftData) => { // ✅
     // giftData = { usuario, cantidad, regalo, avatar_url, streamerId }
     console.log(`🎁 [${giftData.streamerId}] nuevo_regalo recibido de ${giftData.usuario} con cantidad ${giftData.cantidad}`);
     
