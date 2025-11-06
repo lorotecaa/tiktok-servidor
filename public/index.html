@@ -402,28 +402,32 @@ function actualizarGanadoresUI() {
 
 // --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
 function iniciarTimerLogic() {
-    // 🛑 AÑADIDO: Obtenemos el ID del streamer justo antes de iniciar el intervalo
     const currentStreamerId = getCurrentStreamerId();
 
-    // 1. Limpiar cualquier intervalo anterior
     if (intervalo) {
         clearInterval(intervalo);
     }
     
-    // ... (El resto del paso 2 y 3 es correcto) ...
-
-    // 3. Crear el bucle que se ejecuta cada segundo
+    // 🛑 CRÍTICO: Re-leer y establecer el tiempo inicial
+    if (tiempoActual <= 0) {
+        // Asumiendo que el ID del input es "tiempo"
+        const tiempoInicialInput = document.getElementById("tiempo"); 
+        
+        // Si el input existe, usamos su valor; de lo contrario, 200 por defecto.
+        tiempoActual = parseInt(tiempoInicialInput.value) || 200; 
+    }
+    
+    // Si la subasta está en pausa, no iniciamos el intervalo
+    if (isPaused) {
+        return; 
+    }
+    
+    // 3. Crear el bucle que se ejecuta cada segundo (el resto de tu código)
     intervalo = setInterval(() => {
         if (!isPaused) {
-            // ... (Descuento de tiempo y actualización UI) ...
-
-            // 🛑 CORRECCIÓN: Usar el ID capturado
-            socket.emit('sync_time', { 
-                time: tiempoActual, 
-                streamerId: currentStreamerId // ✅ ¡Usamos el ID correcto!
-            }); 
-
-            // ... (Verificación fin del tiempo) ...
+            tiempoActual--;
+            
+            // ... (resto de la lógica de sincronización y verificación) ...
         }
     }, 1000); 
 }
