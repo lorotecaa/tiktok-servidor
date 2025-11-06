@@ -283,8 +283,6 @@ const socket = io("https://tiktok-servidor.onrender.com");
 
         // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
         function abrirWidget() {
-    // 1. Obtenemos el ID del streamer de forma segura.
-    // **Asegúrate de que esta función getCurrentStreamerId() existe en tu JS**
     const streamerId = getCurrentStreamerId(); 
 
     if (!streamerId) {
@@ -292,18 +290,15 @@ const socket = io("https://tiktok-servidor.onrender.com");
         return;
     }
     
-    // 2. Construye la URL completa con el ID del streamer
-    // URL: https://tiktok-servidor.onrender.com/?mode=widget&streamerId=lorotecayt
+    // 🛑 CRÍTICO: Usa la URL COMPLETA de Render con el protocolo https://
     const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${streamerId}`; 
     
-    // 3. Usa la API de Electron si existe, si no, usa window.open (Respaldo)
     if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
-        // Opción 1: Estás en Electron (usa la API)
-        console.log("Abriendo Widget con Electron API...");
+        // Usa la API de Electron (llama al preload.js)
         window.electronAPI.abrirWidgetVentana(widgetUrl);
     } else {
-        // Opción 2: No estás en Electron (usa el navegador)
-        console.log("Abriendo Widget con window.open (Entorno de prueba)...");
+        // Respaldo (para pruebas en el navegador)
+        console.warn("API de Electron no disponible. Abriendo en ventana de navegador.");
         window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
     }
 }
@@ -664,12 +659,8 @@ function simularRegalo() {
 }
 // --- FUNCIÓN AUXILIAR ---
 function getCurrentStreamerId() {
-    // 🛑 Verifica que este ID exista una SOLA VEZ en tu HTML
-    const streamerMasterInput = document.getElementById('streamerMasterId'); 
-    if (streamerMasterInput) {
-        return streamerMasterInput.value.trim() || "";
-    }
-    return "";
+    const streamerMasterInput = document.getElementById('streamerMasterId');
+    return streamerMasterInput ? streamerMasterInput.value.trim() : ""; 
 }
 // 👆 FIN DE FUNCIÓN SIMULAR REGALO CORREGIDA 👆
 
