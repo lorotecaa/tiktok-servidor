@@ -278,33 +278,32 @@ const socket = io("https://tiktok-servidor.onrender.com");
             }
         }
 
-        // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
+        // 6. Configuración Inicial del Dashboard (¡CORRECCIÓN FINAL!)
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Si no hay ID en la URL Y el input del streamer existe, 
-    // usamos el valor del input para la variable streamerId.
-    if (!streamerId && document.getElementById('streamerIdInput')) {
-        streamerId = document.getElementById('streamerIdInput').value || ""; 
+    // 1. Lectura del ID Master
+    if (!streamerId && document.getElementById('streamerMasterId')) {
+        streamerId = document.getElementById('streamerMasterId').value || ""; 
     }
 
-    const isWidgetMode = getUrlParameter('mode') === 'widget';
-    
-    // 2. Lógica de unión a la sala
-    if (streamerId) {
-        // Unirse a la sala si el ID existe (ya sea de la URL o del input)
-        socket.emit("join_room", streamerId);
+    const isWidgetMode = getUrlParameter('mode') === 'widget';
+    
+    // 2. Lógica de unión a la sala
+    if (streamerId) {
+        socket.emit("join_room", streamerId);
 
-        if (isWidgetMode) {
-            document.body.classList.add('widget-mode');
-            console.log(`WIDGET unido a la sala: ${streamerId}`);
-        } else {
-            console.log(`DASHBOARD unido a la sala: ${streamerId}`);
-            // Ocultar el input del ID una vez conectado para evitar cambios accidentales
-            const inputEl = document.getElementById('streamerIdInput');
-            if (inputEl) inputEl.disabled = true;
-        }
-    } else {
-        console.log("⚠️ ERROR: No se ha definido un ID de streamer. Funcionalidad deshabilitada.");
-    }
+        if (isWidgetMode) {
+            document.body.classList.add('widget-mode');
+            console.log(`WIDGET unido a la sala: ${streamerId}`);
+        } else {
+            console.log(`DASHBOARD unido a la sala: ${streamerId}`);
+            
+            // 🛑 CORRECCIÓN: Usar el ID correcto para deshabilitar el input
+            const inputEl = document.getElementById('streamerMasterId'); 
+            if (inputEl) inputEl.disabled = true;
+        }
+    } else {
+        console.log("⚠️ ERROR: No se ha definido un ID de streamer. Funcionalidad deshabilitada.");
+    }
 });
 
         // 🛑 Aquí va el resto del JavaScript (la Parte 2 que enviaste antes) 🛑
