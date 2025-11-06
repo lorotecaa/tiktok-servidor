@@ -284,22 +284,12 @@ const socket = io("https://tiktok-servidor.onrender.com");
 
         // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
         function abrirWidget() {
-    const streamerId = getCurrentStreamerId(); 
-
-    if (!streamerId) {
-        alert("Por favor, introduce tu ID de Streamer antes de abrir el Widget.");
-        return;
-    }
-    
-    // 🛑 CRÍTICO: Usa la URL COMPLETA de Render con el protocolo https://
-    const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${streamerId}`; 
-    
+    const streamerId = getCurrentStreamerId(); // tu función que lee input 'streamerMasterId' o 'streamerIdInput'
+    if (!streamerId) { alert("Introduce tu ID de Streamer antes de abrir el Widget."); return; }
+    const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${encodeURIComponent(streamerId)}`;
     if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
-        // Usa la API de Electron (llama al preload.js)
         window.electronAPI.abrirWidgetVentana(widgetUrl);
     } else {
-        // Respaldo (para pruebas en el navegador)
-        console.warn("API de Electron no disponible. Abriendo en ventana de navegador.");
         window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
     }
 }
@@ -673,69 +663,75 @@ function getCurrentStreamerId() {
 // El Widget recibe la hora (Esta función también debe ser modificada)
 // 🛑 CORRECCIÓN: El servidor ahora envía un objeto, no solo el tiempo 🛑
 socket.on('update_time', (data) => {
-    // Asegurarse de que 'data' exista y contenga 'time'
-    if (typeof data !== 'object' || data === null || typeof data.time === 'undefined') return;
-
-    const time = data.time;
-
-    // Solo ejecuta si es el Widget
-    if (document.body.classList.contains('widget-mode')) {
-        
-        tiempoActual = time; // El Widget solo recibe, no calcula
-        const formattedTime = formatTime(time);
-        
-        const tiempoElWidget = document.getElementById('tiempoRestante-widget'); 
-        const subtextElWidget = document.getElementById('subtext-widget');
-        
-        if (tiempoElWidget) tiempoElWidget.textContent = formattedTime;
-        
-        // Lógica visual del snipe
-        if (isSnipeModeVisual && time > 0) {
-            document.body.classList.add('snipe-alert');
-            if (subtextElWidget) {
-                subtextElWidget.textContent = "Tiempo por delay de live"; 
-            }
-        } else {
-            document.body.classList.remove('snipe-alert');
-            if (subtextElWidget) {
-                subtextElWidget.textContent = "El sorteo/subasta termina en"; 
-            }
-        }
-    }
+  if (!data || typeof data.time === 'undefined') return;
+  if (!document.body.classList.contains('widget-mode')) return;
+  tiempoActual = data.time;
+  const formatted = formatTime(data.time);
+  const el = document.getElementById('tiempoRestante-widget');
+  if (el) el.textContent = formatted;
+  // (resto de visual snipe)
 });
 
+// ===============================================
+// 🎁 CONEXIÓN A LA API DE TIKFINITY (localmente)
+// ===============================================
+const tikfinityWS = new WebSocket("ws://localhost:21213/");
+tikfinityWS.onopen = () => console.log("✅ Conectado a TikFinity WebSocket");
+tikfinityWS.onerror = err => console.error("❌ Error TikFinity WS:", err);
 
-// ===============================
-// 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
-// (Esto corre en AMBOS: Dashboard y Widget)
-// 🛑 CORRECCIÓN: El servidor ahora envía un objeto, no solo el regalo 🛑
-// ===============================
-socket.on("new_gift", (data) => {
-    // 1. Asegurarse de que 'data' exista y contenga 'gift'
-    if (typeof data !== 'object' || data === null || typeof data.gift === 'undefined') return;
+// ===============================================
+// 🎁 CUANDO LLEGUE UN EVENTO DE TIKTOK
+// ===============================================
+tikfinityWS.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (!data || !data.event) return;
 
-    const gift = data.gift;
+    if (data.event === "gift") {
+        const gift = data.data;
+        const totalDiamonds = gift.diamondCount || gift.repeatCount || 1;
+        const streamerId = getCurrentStreamerId(); // usa el input donde el streamer pone su ID
 
-    console.log("💎 Nuevo regalo recibido del servidor:", gift);
+        if (!streamerId) {
+            console.warn("⚠️ No se encontró streamerId, no se enviará el regalo");
+            return;
+        }
 
-    const existente = participantes.find(p => p.usuario === gift.usuario);
-    // Tomamos la cantidad del regalo que nos envían (ej: 1 rosa, 100 leones)
-    const cantidadDelRegalo = parseInt(gift.cantidad) || 0; 
+        // Armar el payload
+        const payload = {
+            usuario: gift.uniqueId || gift.nickname || "Anon",
+            cantidad: totalDiamonds,
+            regalo: gift.giftName || "Regalo",
+            avatar_url: gift.profilePictureUrl || null,
+            streamerId: streamerId
+        };
 
-    if (existente) {
-        // CORRECCIÓN CRÍTICA: Sumamos la cantidad nueva a la cantidad existente
-        existente.cantidad = parseInt(existente.cantidad) + cantidadDelRegalo; 
-        existente.avatar_url = gift.avatar_url;
-    } else {
-        // Es un usuario nuevo
-        participantes.push({
-            usuario: gift.usuario,
-            cantidad: cantidadDelRegalo, 
-            regalo: gift.regalo,
-            avatar_url: gift.avatar_url
-        });
+        // Enviar al servidor (Render)
+        socket.emit("new_gift", payload);
+        console.log("🎁 Enviado al servidor new_gift:", payload);
     }
+};
 
+// ===============================================
+// 🎁 NUEVOS REGALOS
+// ===============================================
+socket.on("new_gift", (giftData) => {
+  if (!giftData || !giftData.streamerId) return; // Validar datos
+  const room = giftData.streamerId;
+
+  // Crear objeto limpio del regalo
+  const individualGift = {
+    usuario: giftData.usuario,
+    cantidad: giftData.cantidad,
+    regalo: giftData.regalo,
+    avatar_url: giftData.avatar_url
+  };
+
+  // Enviar el regalo a todos los clientes (widgets) en esa sala
+  io.to(room).emit("new_gift", individualGift);
+
+  // Mostrar en consola del servidor
+  console.log(`🎁 [${room}] -> ${individualGift.usuario} envió ${individualGift.regalo} (${individualGift.cantidad})`);
+});
     // Ordena la lista CADA VEZ que llegue un regalo.
     participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
 
@@ -751,7 +747,13 @@ socket.on("new_gift", (data) => {
             logDonacionesEl.innerHTML += `<p style="color: red;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
         }
     }
-
+// ===============================================
+// ⏱️ SINCRONIZACIÓN DE TIEMPO
+// ===============================================
+socket.on("sync_time", (data) => {
+  if (!data || !data.streamerId) return;
+  io.to(data.streamerId).emit("update_time", { time: data.time });
+});
     // 📢 ¡LÍNEA DE SINCRONIZACIÓN!
     // Enviamos la lista final (ordenada y sumada) al servidor
     // 🛑 CORRECCIÓN: Incluir streamerId
@@ -761,7 +763,6 @@ socket.on("new_gift", (data) => {
 
     // Ahora sí, actualiza la UI con la lista ya ordenada
     actualizarParticipantesUI();
-});
 
 // ===============================
 // 🧹 Limpiar listas cuando el servidor lo indique
