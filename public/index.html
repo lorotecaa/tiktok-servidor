@@ -197,6 +197,8 @@
                 <div class="subcuadro">
                     <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
                     <input type="number" id="tiempo" value="200"><br><br>
+                    <label for="streamerIdInput">ID Único del Streamer:</label>
+                    <input type="text" id="streamerIdInput" value="TestID123">
                     <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
                     <input type="number" id="tiempoSnipe" value="15" min="0">
                     <button class="start" onclick="iniciar()">Iniciar</button>
@@ -274,28 +276,32 @@ const socket = io("https://tiktok-servidor.onrender.com");
             }
         }
 
-        // 6. Configuración Inicial del Dashboard
-        // 6. Configuración Inicial del Dashboard (REVISADA)
+        // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
 document.addEventListener('DOMContentLoaded', () => {
-    // Si estamos en modo Dashboard y no tenemos un ID en la URL, 
-    // lo tomamos del input para la conexión inicial
-    if (!streamerId && !document.body.classList.contains('widget-mode') && document.getElementById('streamerIdInput')) {
+    // 1. Si no hay ID en la URL Y el input del streamer existe, 
+    // usamos el valor del input para la variable streamerId.
+    if (!streamerId && document.getElementById('streamerIdInput')) {
         streamerId = document.getElementById('streamerIdInput').value || ""; 
     }
+
+    const isWidgetMode = getUrlParameter('mode') === 'widget';
     
-    // Si estamos en modo Widget, mostramos el contenedor del widget
-    if (streamerId && getUrlParameter('mode') === 'widget') {
-        document.body.classList.add('widget-mode');
-        //... resto del código ...
-        // CRÍTICO: El widget se une a la sala
+    // 2. Lógica de unión a la sala
+    if (streamerId) {
+        // Unirse a la sala si el ID existe (ya sea de la URL o del input)
         socket.emit("join_room", streamerId);
-        console.log(`WIDGET unido a la sala: ${streamerId}`);
-    } else if (streamerId) {
-        // CRÍTICO: El Dashboard se une a la sala
-        socket.emit("join_room", streamerId);
-        console.log(`DASHBOARD unido a la sala: ${streamerId}`);
+
+        if (isWidgetMode) {
+            document.body.classList.add('widget-mode');
+            console.log(`WIDGET unido a la sala: ${streamerId}`);
+        } else {
+            console.log(`DASHBOARD unido a la sala: ${streamerId}`);
+            // Ocultar el input del ID una vez conectado para evitar cambios accidentales
+            const inputEl = document.getElementById('streamerIdInput');
+            if (inputEl) inputEl.disabled = true;
+        }
     } else {
-        console.log("No se ha definido un ID de streamer. Funcionalidad limitada.");
+        console.log("⚠️ ERROR: No se ha definido un ID de streamer. Funcionalidad deshabilitada.");
     }
 });
 
