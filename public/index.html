@@ -204,7 +204,7 @@
 <input type="text" id="tiktokUser" placeholder="@usuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
 
 <label for="streamerMasterId">🔑 ID Único del Streamer:</label><br>
-<input type="text" id="streamerMasterId" value="TestID123" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
+<input type="text" id="streamerMasterId" value="" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
 
 <div class="subcuadro">
     <div class="subcuadro">
@@ -444,18 +444,35 @@ function iniciarTimerLogic() {
 }
 
 function iniciar() {
-    if (!document.body.classList.contains('widget-mode') && streamerId) {
+    // 🛑 CAMBIO CRÍTICO 1: LEEMOS EL ID DEL INPUT justo antes de usarlo
+    const streamerMasterInput = document.getElementById('streamerMasterId');
+    let streamerId = '';
+    if (streamerMasterInput) {
+        // Obtenemos el valor que está ESCRITO actualmente en el campo
+        streamerId = streamerMasterInput.value.trim() || "";
+    }
+    
+    // 🛑 CAMBIO CRÍTICO 2: Verificación de si el ID está vacío
+    if (!streamerId) {
+        alert("¡Alerta! Por favor, introduce tu ID de Streamer antes de iniciar.");
+        return; // Salimos de la función si no hay ID
+    }
+
+    // ------------------------------------------------------------------
+    // EL RESTO DE LA LÓGICA ESTÁ BIEN
+    // ------------------------------------------------------------------
+    if (!document.body.classList.contains('widget-mode')) {
         snipeActivado = false;
         subastaActiva = true;
         logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
         
-        // 1. Avisar al servidor que la subasta ha comenzado
+        // 1. Avisar al servidor que la subasta ha comenzado (ahora con el ID correcto)
         socket.emit("iniciar_subasta", { streamerId: streamerId }); 
         
         isPaused = false;
-        tiempoActual = 0; // Se inicializará correctamente dentro de iniciarTimerLogic
+        tiempoActual = 0;
         
-        // 2. 🛑 CRÍTICO: Iniciar el bucle de sincronización de tiempo
+        // 2. Iniciar el bucle de sincronización de tiempo
         iniciarTimerLogic(); 
     }
 }
