@@ -283,15 +283,19 @@ const socket = io("https://tiktok-servidor.onrender.com");
 
         // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
         function abrirWidget() {
-    // 🛑 CORRECCIÓN: Usar el ID correcto del campo principal 
-    const id = document.getElementById('streamerMasterId').value; 
-    
-    if (id) {
-        // Asegúrate de que el ID esté en la URL del widget.
-        window.open(window.location.href + '?id=' + id + '&mode=widget', 'WidgetWindow', 'width=400,height=600');
-    } else {
-        alert("Por favor, introduce un ID Único.");
+    // Usamos nuestra función auxiliar centralizada para obtener el ID.
+    const streamerId = getCurrentStreamerId(); 
+
+    if (!streamerId) {
+        alert("Por favor, introduce tu ID de Streamer antes de abrir el Widget.");
+        return;
     }
+
+    // Crea la URL del widget usando el ID verificado
+    const widgetUrl = `/widget?streamerId=${streamerId}`; 
+    
+    // Abre la ventana, como antes
+    window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
 }
 
         // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
@@ -402,18 +406,21 @@ function actualizarGanadoresUI() {
 
 // --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
 function iniciarTimerLogic() {
+    // 🛑 CRÍTICO: Obtenemos el ID del streamer al inicio del intervalo
     const currentStreamerId = getCurrentStreamerId();
 
+    // 1. Limpiar cualquier intervalo anterior
     if (intervalo) {
         clearInterval(intervalo);
     }
     
-    // 🛑 CRÍTICO: Re-leer y establecer el tiempo inicial
+    // 2. CRÍTICO: Obtener la duración inicial del input
     if (tiempoActual <= 0) {
-        // Asumiendo que el ID del input es "tiempo"
+        // Asumiendo que el ID del input de tiempo es "tiempo"
         const tiempoInicialInput = document.getElementById("tiempo"); 
         
-        // Si el input existe, usamos su valor; de lo contrario, 200 por defecto.
+        // Lee el valor del input. Si no existe o está vacío, usa 200 por defecto.
+        // ¡ESTO ES LO QUE ESTABA FALTANDO O FALLANDO!
         tiempoActual = parseInt(tiempoInicialInput.value) || 200; 
     }
     
@@ -421,13 +428,30 @@ function iniciarTimerLogic() {
     if (isPaused) {
         return; 
     }
-    
-    // 3. Crear el bucle que se ejecuta cada segundo (el resto de tu código)
+
+    // 3. Crear el bucle que se ejecuta cada segundo
     intervalo = setInterval(() => {
         if (!isPaused) {
             tiempoActual--;
             
-            // ... (resto de la lógica de sincronización y verificación) ...
+            // Actualizar la interfaz del Dashboard
+            const tiempoRestanteEl = document.getElementById('tiempoRestante');
+            if (tiempoRestanteEl) {
+                tiempoRestanteEl.textContent = formatTime(tiempoActual); 
+            }
+
+            // Sincronizar el tiempo con el servidor para el Widget
+            socket.emit('sync_time', { 
+                time: tiempoActual, 
+                streamerId: currentStreamerId 
+            }); 
+
+            // 4. Verificar fin del tiempo
+            if (tiempoActual <= 0) {
+                clearInterval(intervalo);
+                intervalo = null;
+                terminarTiempo(); // Llama a la lógica de fin o snipe
+            }
         }
     }, 1000); 
 }
