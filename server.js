@@ -1,5 +1,5 @@
 // ===============================
-// 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS)
+// 📦 SERVIDOR PRINCIPAL TIKTOK (CON EVENTO DE REGALOS Y SALAS PRIVADAS)
 // ===============================
 
 const express = require("express");
@@ -7,31 +7,26 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 
-// Crear aplicación Express y servidor HTTP
+// ===============================
+// ⚙️ CONFIGURACIÓN BASE
+// ===============================
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
-
-// Puerto asignado por Render o localmente (por defecto: 10000)
 const PORT = process.env.PORT || 10000;
 
 // ===============================
-// 💾 ESTADO GLOBAL DEL SERVIDOR (CRÍTICO PARA AISLAMIENTO Y ANTI-BUG)
+// 💾 ESTADO GLOBAL DEL SERVIDOR (POR STREAMER)
 // ===============================
-/* Almacena la lista de participantes por streamerId. Limpiarla previene
-   que donadores pasados reaparezcan al iniciar una nueva subasta. */
+/* Cada streamerId tiene su propio estado de participantes.
+   Así, cada usuario tiene una sala completamente independiente. */
 const streamerStates = {};
 
 function getStreamerState(streamerId) {
   if (!streamerStates[streamerId]) {
-    streamerStates[streamerId] = {
-      participantes: [],
-    };
+    streamerStates[streamerId] = { participantes: [] };
   }
   return streamerStates[streamerId];
 }
@@ -46,32 +41,33 @@ app.get("/", (req, res) => {
 });
 
 // ===============================
-// ⚡ CONFIGURACIÓN SOCKET.IO (CON LÓGICA DE SALAS PRIVADAS)
+// ⚡ CONFIGURACIÓN SOCKET.IO
 // ===============================
 io.on("connection", (socket) => {
   console.log("🟢 Cliente conectado:", socket.id);
 
   // ==========================
-  // 🔗 UNIRSE A UNA SALA
+  // 🔗 UNIRSE A UNA SALA PRIVADA
   // ==========================
   socket.on("join_room", (streamerId) => {
-    if (streamerId) {
-      socket.join(streamerId);
-      console.log(`[Sala] Cliente ${socket.id} unido a la sala: ${streamerId}`);
-
-      const state = getStreamerState(streamerId);
-      if (state.participantes.length > 0) {
-        socket.emit("sync_participantes_clientes", {
-          participantes: state.participantes,
-        });
-      }
-    } else {
+    if (!streamerId) {
       console.warn(`⚠️ Cliente ${socket.id} intentó unirse sin streamerId.`);
+      return;
     }
+
+    socket.join(streamerId);
+    console.log(`[Sala] Cliente ${socket.id} unido a la sala: ${streamerId}`);
+
+    const state = getStreamerState(streamerId);
+    // Enviar el estado actual solo a este nuevo cliente
+    socket.emit("sync_participantes_clientes", {
+      participantes: state.participantes,
+      streamerId,
+    });
   });
 
   // ==========================
-  // 🧠 FUNCIÓN AUXILIAR
+  // 🧠 EMISIÓN CENTRALIZADA
   // ==========================
   function emitToRoom(event, data) {
     if (!data || !data.streamerId) return;
@@ -79,24 +75,24 @@ io.on("connection", (socket) => {
   }
 
   // ==========================================================
-  // 🎁 EVENTO CENTRAL DE REGALOS
+  // 🎁 EVENTO: NUEVO REGALO
   // ==========================================================
   socket.on("new_gift", (giftData) => {
-    // giftData = { usuario, cantidad, regalo, avatar_url, streamerId }
     if (!giftData.streamerId) return;
 
     console.log(
       `🎁 [${giftData.streamerId}] Nuevo regalo de ${giftData.usuario} (${giftData.cantidad}💎)`
     );
 
-    const individualGift = {
-      usuario: giftData.usuario,
-      cantidad: giftData.cantidad,
-      regalo: giftData.regalo,
-      avatar_url: giftData.avatar_url,
-    };
-
-    io.to(giftData.streamerId).emit("new_gift", { gift: individualGift });
+    emitToRoom("new_gift", {
+      gift: {
+        usuario: giftData.usuario,
+        cantidad: giftData.cantidad,
+        regalo: giftData.regalo,
+        avatar_url: giftData.avatar_url,
+      },
+      streamerId: giftData.streamerId,
+    });
   });
 
   // ==========================================================
@@ -104,14 +100,17 @@ io.on("connection", (socket) => {
   // ==========================================================
   socket.on("iniciar_subasta", (data) => {
     console.log(`🚀 [${data.streamerId}] Subasta iniciada.`);
-    emitToRoom("iniciar_subasta", data); // mismo nombre
+    emitToRoom("iniciar_subasta", data);
   });
 
   // ==========================================================
   // ⏱️ SINCRONIZAR TIEMPO ENTRE DASHBOARD Y WIDGET
   // ==========================================================
   socket.on("sync_time", (data) => {
-    emitToRoom("sync_time", { time: data.time, streamerId: data.streamerId });
+    emitToRoom("sync_time", {
+      time: data.time,
+      streamerId: data.streamerId,
+    });
   });
 
   // ==========================================================
@@ -123,7 +122,7 @@ io.on("connection", (socket) => {
   });
 
   // ==========================================================
-  // ⚡ ALERTA VISUAL SNIPE
+  // ⚡ ALERTA VISUAL DE SNIPE
   // ==========================================================
   socket.on("activar_alerta_snipe_visual", (data) => {
     console.log(`⚡ [${data.streamerId}] Alerta SNIPE visual activada.`);
@@ -131,7 +130,7 @@ io.on("connection", (socket) => {
   });
 
   // ==========================================================
-  // 🔄 RESTAURAR WIDGET (salir del modo SNIPE)
+  // 🔄 RESTAURAR WIDGET DESPUÉS DEL SNIPE
   // ==========================================================
   socket.on("restaurar_widget", (data) => {
     console.log(`ℹ️ [${data.streamerId}] Restaurar widget.`);
@@ -144,6 +143,7 @@ io.on("connection", (socket) => {
   socket.on("sync_participantes", (data) => {
     const state = getStreamerState(data.streamerId);
     state.participantes = data.participantes;
+
     console.log(
       `📊 [${data.streamerId}] Participantes sincronizados: ${data.participantes.length}`
     );
@@ -163,7 +163,7 @@ io.on("connection", (socket) => {
   });
 
   // ==========================================================
-  // 🧹 LIMPIAR LISTAS
+  // 🧹 LIMPIAR LISTAS Y ESTADO
   // ==========================================================
   socket.on("limpiar_listas", (data) => {
     console.log(`🧹 [${data.streamerId}] Limpiando listas.`);
