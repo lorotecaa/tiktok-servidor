@@ -74,25 +74,24 @@ io.on("connection", (socket) => {
     io.to(data.streamerId).emit(event, data);
   }
 
-  // ==========================================================
-  // 🎁 EVENTO: NUEVO REGALO
-  // ==========================================================
+  // ===============================================
+  // 🎁 NUEVOS REGALOS
+  // ===============================================
   socket.on("new_gift", (giftData) => {
-    if (!giftData.streamerId) return;
+    if (!giftData || !giftData.streamerId) return;
+    const room = giftData.streamerId;
 
+    const individualGift = {
+      usuario: giftData.usuario,
+      cantidad: giftData.cantidad,
+      regalo: giftData.regalo,
+      avatar_url: giftData.avatar_url,
+    };
+
+    io.to(room).emit("new_gift", individualGift);
     console.log(
-      `🎁 [${giftData.streamerId}] Nuevo regalo de ${giftData.usuario} (${giftData.cantidad}💎)`
+      `🎁 [${room}] -> ${individualGift.usuario} envió ${individualGift.regalo} (${individualGift.cantidad})`
     );
-
-    emitToRoom("new_gift", {
-      gift: {
-        usuario: giftData.usuario,
-        cantidad: giftData.cantidad,
-        regalo: giftData.regalo,
-        avatar_url: giftData.avatar_url,
-      },
-      streamerId: giftData.streamerId,
-    });
   });
 
   // ==========================================================
@@ -103,14 +102,12 @@ io.on("connection", (socket) => {
     emitToRoom("iniciar_subasta", data);
   });
 
-  // ==========================================================
-  // ⏱️ SINCRONIZAR TIEMPO ENTRE DASHBOARD Y WIDGET
-  // ==========================================================
+  // ===============================================
+  // ⏱️ SINCRONIZACIÓN DE TIEMPO
+  // ===============================================
   socket.on("sync_time", (data) => {
-    emitToRoom("sync_time", {
-      time: data.time,
-      streamerId: data.streamerId,
-    });
+    if (!data || !data.streamerId) return;
+    io.to(data.streamerId).emit("update_time", { time: data.time });
   });
 
   // ==========================================================
@@ -137,20 +134,13 @@ io.on("connection", (socket) => {
     emitToRoom("restaurar_widget", data);
   });
 
-  // ==========================================================
-  // 📊 SINCRONIZACIÓN DE PARTICIPANTES
-  // ==========================================================
+  // ===============================================
+  // 📢 SINCRONIZACIÓN DE PARTICIPANTES
+  // ===============================================
   socket.on("sync_participantes", (data) => {
-    const state = getStreamerState(data.streamerId);
-    state.participantes = data.participantes;
-
-    console.log(
-      `📊 [${data.streamerId}] Participantes sincronizados: ${data.participantes.length}`
-    );
-
-    emitToRoom("sync_participantes_clientes", {
+    if (!data || !data.streamerId) return;
+    io.to(data.streamerId).emit("update_participantes", {
       participantes: data.participantes,
-      streamerId: data.streamerId,
     });
   });
 
