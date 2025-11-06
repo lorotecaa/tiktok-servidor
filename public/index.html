@@ -25,7 +25,7 @@
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
 
         /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) (INTACTO) */
-        .widget-mode body { background: #111; min-height: 0; display: block; overflow: hidden; }
+        .widget-mode body { background: transparent !important;; min-height: 0; display: block; overflow: hidden; }
         
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
         .widget-mode #main-dashboard-content { display: none !important; }
@@ -300,7 +300,7 @@ const socket = io("https://tiktok-servidor.onrender.com");
 }
         
 
-       // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
+       // 6. Configuración Inicial del Dashboard (COsRREGIDA para leer el Input)
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Si no hay ID en la URL Y el input del streamer existe, 
     // usamos el valor del input para la variable streamerId.
