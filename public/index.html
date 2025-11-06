@@ -283,7 +283,7 @@ const socket = io("https://tiktok-servidor.onrender.com");
 
         // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
         function abrirWidget() {
-    // Obtenemos el ID del streamer de forma segura.
+    // 1. Obtenemos el ID del streamer de forma segura.
     const streamerId = getCurrentStreamerId(); 
 
     if (!streamerId) {
@@ -291,29 +291,23 @@ const socket = io("https://tiktok-servidor.onrender.com");
         return;
     }
     
-    // 🛑 CRÍTICO: Construye la URL completa con el ID
+    // 2. Construye la URL completa con la dirección de Render y los parámetros correctos.
+    // URL: https://tiktok-servidor.onrender.com/?mode=widget&streamerId=lorotecayt
     const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${streamerId}`; 
     
-    // Usa la API de Electron para abrir la ventana
+    // 3. Usa la API de Electron para abrir la ventana (ÚNICA APERTURA)
     window.electronAPI.abrirWidgetVentana(widgetUrl);
 }
-    
-    // 2. CRÍTICO: Usamos la URL base y añadimos AMBOS parámetros (?mode=widget & streamerId=...)
-    const serverAddress = "https://tiktok-servidor.onrender.com"; 
-    
-    // La URL debe ser: https://tiktok-servidor.onrender.com/?mode=widget&streamerId=lorotecayt
-    const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${streamerId}`;
-    
-    // 3. Abrimos la ventana
-    window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
+        
 
-        // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
+       // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Si no hay ID en la URL Y el input del streamer existe, 
     // usamos el valor del input para la variable streamerId.
-    if (!streamerId && document.getElementById('streamerMasterId')) {
-    streamerId = document.getElementById('streamerMasterId').value || ""; 
-}
+    if (!streamerId && document.getElementById('streamerMasterId')) { // Usando 'streamerMasterId' como el ID correcto
+        // Asegúrate que 'streamerId' es una variable global 
+        streamerId = document.getElementById('streamerMasterId').value || ""; 
+    }
 
     const isWidgetMode = getUrlParameter('mode') === 'widget';
     
@@ -328,13 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             console.log(`DASHBOARD unido a la sala: ${streamerId}`);
             // Ocultar el input del ID una vez conectado para evitar cambios accidentales
-            const inputEl = document.getElementById('streamerIdInput');
+            const inputEl = document.getElementById('streamerMasterId'); // Usamos 'streamerMasterId'
             if (inputEl) inputEl.disabled = true;
         }
     } else {
         console.log("⚠️ ERROR: No se ha definido un ID de streamer. Funcionalidad deshabilitada.");
     }
-});
+}); // 🛑 ESTA LLAVE DE CIERRE ERA CRÍTICA Y FALTABA
 
         // 🛑 Aquí va el resto del JavaScript (la Parte 2 que enviaste antes) 🛑
 
