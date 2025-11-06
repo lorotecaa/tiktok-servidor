@@ -295,7 +295,7 @@ const socket = io("https://tiktok-servidor.onrender.com");
     const serverAddress = "https://tiktok-servidor.onrender.com"; 
     
     // La URL debe ser: https://tiktok-servidor.onrender.com/?mode=widget&streamerId=lorotecayt
-    const widgetUrl = `${serverAddress}/?mode=widget&streamerId=${streamerId}`; 
+    const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${streamerId}`;
     
     // 3. Abrimos la ventana
     window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
