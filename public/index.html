@@ -291,13 +291,13 @@ const socket = io("https://tiktok-servidor.onrender.com");
         return;
     }
     
-    // 2. CRÍTICO: Usamos la URL pública de Render (¡ESTA ES LA DIRECCIÓN DE TU SERVIDOR!)
+    // 2. CRÍTICO: Usamos la URL base y añadimos AMBOS parámetros (?mode=widget & streamerId=...)
     const serverAddress = "https://tiktok-servidor.onrender.com"; 
     
-    // 3. Construimos la URL completa para que el navegador sepa dónde buscar.
-    const widgetUrl = `${serverAddress}/widget?streamerId=${streamerId}`; 
+    // La URL debe ser: https://tiktok-servidor.onrender.com/?mode=widget&streamerId=lorotecayt
+    const widgetUrl = `${serverAddress}/?mode=widget&streamerId=${streamerId}`; 
     
-    // 4. Abrimos la ventana
+    // 3. Abrimos la ventana
     window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
 }
         // 6. Configuración Inicial del Dashboard (CORREGIDA para leer el Input)
