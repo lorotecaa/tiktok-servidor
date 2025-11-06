@@ -390,9 +390,13 @@ function iniciarTimerLogic() {
     }
     
     // 2. Obtener la duración inicial del input, si estamos en el inicio
+    // 🛑 CORRECCIÓN CLAVE: Usamos 'tiempo' como el ID del input.
     if (tiempoActual <= 0) {
-        const tiempoInicialInput = document.getElementById("tiempoInicial").value; 
-        tiempoActual = parseInt(tiempoInicialInput) || 200; // Usa el valor del input
+        // Buscamos el ID 'tiempo' en lugar de 'tiempoInicial'
+        const tiempoInicialInput = document.getElementById("tiempo").value; 
+        
+        // Si el input está vacío, usa 200 como fallback
+        tiempoActual = parseInt(tiempoInicialInput) || 200; 
     }
 
     // 3. Crear el bucle que se ejecuta cada segundo
@@ -403,7 +407,6 @@ function iniciarTimerLogic() {
             // Actualizar la interfaz del Dashboard
             const tiempoRestanteEl = document.getElementById('tiempoRestante');
             if (tiempoRestanteEl) {
-                // Asumo que tienes la función formatTime(segundos)
                 tiempoRestanteEl.textContent = formatTime(tiempoActual); 
             }
 
