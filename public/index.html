@@ -715,38 +715,54 @@ tikfinityWS.onmessage = (msg) => {
 // 🎁 NUEVOS REGALOS
 // ===============================================
 socket.on("new_gift", (giftData) => {
-  if (!giftData || !giftData.streamerId) return; // Validar datos
-  const room = giftData.streamerId;
+    const { userId, nickname, profilePictureUrl, diamondCount, streamerId } = giftData;
+    const cantidadDelRegalo = diamondCount || 0;
 
-  // Crear objeto limpio del regalo
-  const individualGift = {
-    usuario: giftData.usuario,
-    cantidad: giftData.cantidad,
-    regalo: giftData.regalo,
-    avatar_url: giftData.avatar_url
-  };
+    // Si este widget no pertenece a este streamer, ignorar el evento
+    if (window.streamerId !== streamerId) return;
 
-  // Enviar el regalo a todos los clientes (widgets) en esa sala
-  io.to(room).emit("new_gift", individualGift);
+    // Buscar si el usuario ya existe en la lista
+    let participante = participantes.find(p => p.userId === userId);
 
-  // Mostrar en consola del servidor
-  console.log(`🎁 [${room}] -> ${individualGift.usuario} envió ${individualGift.regalo} (${individualGift.cantidad})`);
-});
-    // Ordena la lista CADA VEZ que llegue un regalo.
+    if (participante) {
+        // Si ya existe, sumar a su cantidad
+        participante.cantidad = (parseInt(participante.cantidad) + cantidadDelRegalo).toString();
+    } else {
+        // Si es nuevo, agregarlo
+        participantes.push({
+            userId,
+            nickname,
+            profilePictureUrl,
+            cantidad: cantidadDelRegalo.toString()
+        });
+    }
+
+    // 🔢 Ordenar el ranking por cantidad donada
     participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
 
-    // 🛑 LÓGICA DE SNIPE: Reiniciar el contador si la subasta está en modo snipe
-    // (Solo el Dashboard lo hace, ya que es el Maestro)
+    // 📢 Actualizar el ranking en pantalla
+    actualizarListaParticipantes();
+
+    // 🕒 Si el modo snipe está activo (solo para el dashboard, no widgets)
     if (!document.body.classList.contains('widget-mode') && snipeActivado && cantidadDelRegalo > 0 && streamerId) {
         const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
-        
+
         if (tiempoActual <= tiempoSnipe) {
             tiempoActual = tiempoSnipe;
-            // 🛑 CORRECCIÓN: Incluir streamerId
-            socket.emit('sync_time', { time: tiempoActual, streamerId: streamerId }); 
+
+            // 🔄 Avisar al servidor que se sincronice el tiempo
+            socket.emit('sync_time', { time: tiempoActual, streamerId: streamerId });
+
+            // Log visual
             logDonacionesEl.innerHTML += `<p style="color: red;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
         }
     }
+
+    // ✨ Log visual de donación
+    if (logDonacionesEl) {
+        logDonacionesEl.innerHTML += `<p>💎 ${nickname} donó ${cantidadDelRegalo}!</p>`;
+    }
+});
 // ===============================================
 // ⏱️ SINCRONIZACIÓN DE TIEMPO
 // ===============================================
