@@ -291,12 +291,19 @@ const socket = io("https://tiktok-servidor.onrender.com");
         return;
     }
     
-    // 2. Construye la URL completa con la dirección de Render y los parámetros correctos.
-    // URL: https://tiktok-servidor.onrender.com/?mode=widget&streamerId=lorotecayt
+    // 2. Construye la URL completa con la dirección de Render.
     const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${streamerId}`; 
     
-    // 3. Usa la API de Electron para abrir la ventana (ÚNICA APERTURA)
-    window.electronAPI.abrirWidgetVentana(widgetUrl);
+    // 3. CRÍTICO: Usa window.electronAPI si existe, si no, usa window.open
+    if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
+        // Opción 1: Estás en Electron, usa la API para abrir la ventana
+        console.log("Abriendo Widget con Electron API...");
+        window.electronAPI.abrirWidgetVentana(widgetUrl);
+    } else {
+        // Opción 2: No estás en Electron (ej. un navegador), usa el método estándar
+        console.log("Abriendo Widget con window.open (Entorno de prueba)...");
+        window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
+    }
 }
         
 
