@@ -507,6 +507,8 @@
     }
 }
 
+let streamerId = "ID_POR_DEFECTO"; // ⬅️ IMPORTANTE: Define aquí tu ID único para la sala
+let tiktokUser = "USUARIO_POR_DEFECTO"; // ⬅️ Nuevo: Tu nombre para el log de Render
 
         function pausar() {
             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede pausar
@@ -601,27 +603,60 @@
 });
 
         // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global
+// ...
+const urlParams = new URLSearchParams(window.location.search);
+const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global (ya existe)
 
-        if (isWidgetMode) {
-             // ===============================
-             // 🏃 MODO WIDGET (ESCLAVO)
-             // ===============================
-            document.body.classList.add('widget-mode');
-            
-            // Ocultamos el dashboard principal y mostramos el contenedor del widget
-            document.getElementById('main-dashboard-content').style.display = 'none';
-            document.getElementById('widget-container').style.display = 'flex';
-            
-            // Al ser un widget, solo se conecta al socket y espera órdenes
-            socket.emit("iniciar_subasta"); // Avisa al servidor que es un cliente
+// 1. Obtener los valores de los inputs
+// let streamerId = ""; ⬅️ QUITA ESTA LÍNEA O EL 'LET'
+// let tiktokUser = ""; ⬅️ QUITA ESTA LÍNEA O EL 'LET'
+const idUnicoEl = document.getElementById('idUnico');
+const tiktokUserEl = document.getElementById('tiktokUser');
 
-        } else {
-             // ===============================
-             // 🖥️ MODO DASHBOARD (MAESTRO)
-             // ===============================
-            document.getElementById('widget-container').style.display = 'none';
+if (idUnicoEl) {
+    streamerId = idUnicoEl.value; // ⬅️ SOLO ASIGNACIÓN
+}
+if (tiktokUserEl) {
+    tiktokUser = tiktokUserEl.value; // ⬅️ SOLO ASIGNACIÓN
+}
+// ...
+
+if (isWidgetMode) {
+    // ===============================
+    // 🏃 MODO WIDGET (ESCLAVO)
+    // ===============================
+    document.body.classList.add('widget-mode');
+    
+    // Si estamos en widget, el streamerId debe venir de la URL
+    streamerId = urlParams.get('id'); 
+    
+    // Ocultamos el dashboard principal y mostramos el contenedor del widget
+    document.getElementById('main-dashboard-content').style.display = 'none';
+    document.getElementById('widget-container').style.display = 'flex';
+    
+    if (streamerId) {
+        // El Widget se une a la sala
+        socket.emit("join_room", { streamerId: streamerId, tiktokUser: "WidgetCliente" }); // El Widget se identifica como tal
+        console.log(`WIDGET unido a la sala: ${streamerId} (WidgetCliente)`);
+    }
+
+} else {
+    // ===============================
+    // 🖥️ MODO DASHBOARD (MAESTRO)
+    // ===============================
+    document.getElementById('widget-container').style.display = 'none';
+    
+    if (streamerId) { // Si hay ID Único ingresado
+        // El Dashboard se une a la sala
+        socket.emit("join_room", { streamerId: streamerId, tiktokUser: tiktokUser }); // Envía el nombre del TikTok User
+        console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
+
+        // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- TU CÓDIGO COMIENZA AQUÍ
+        // ... (El resto de tu lógica de conexión a TikFinity) ...
+    } else {
+        console.error("ID Único no ingresado. Por favor, complete el campo 'ID Único (para Widget)'.");
+    }
+}
 
              // ===============================
              // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
@@ -698,12 +733,12 @@
                                  logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
                                  
                                  socket.emit("nuevo_regalo", {
-                                     usuario: gift.uniqueId,
-                                     cantidad: totalDiamonds, 
-                                     regalo: gift.giftName,
-                                     // 👇 AÑADE ESTA LÍNEA 👇
-                                     avatar_url: gift.profilePictureUrl 
-                                 });
+    usuario: gift.uniqueId,
+    cantidad: totalDiamonds,
+    regalo: gift.giftName,
+    avatar_url: gift.profilePictureUrl, // ⬅️ ¡AGREGA ESTA COMA!
+    streamerId: streamerId // CRÍTICO: ANADE ESTA LINEA
+});
 
                                  break; // ✅ Fin del case
                              }
@@ -747,7 +782,6 @@
                      logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
                  }
              }
-        } // <-- FIN DEL ELSE (MODO DASHBOARD)
 
         // ===============================
 // 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
