@@ -284,7 +284,7 @@ const socket = io("https://tiktok-servidor.onrender.com");
 
         // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
         function abrirWidget() {
-    const streamerId = getCurrentStreamerId(); // tu función que lee input 'streamerMasterId' o 'streamerIdInput'
+    const streamerId = getCurrentStreamerId();
     if (!streamerId) { alert("Introduce tu ID de Streamer antes de abrir el Widget."); return; }
     const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${encodeURIComponent(streamerId)}`;
     if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
@@ -408,35 +408,28 @@ function actualizarGanadoresUI() {
 
 // --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
 function iniciarTimerLogic() {
-    // 🛑 CRÍTICO: Obtenemos el ID del streamer al inicio del intervalo
-    const currentStreamerId = getCurrentStreamerId();
+    // 🛑 CRÍTICO: Usar la variable global 'streamerId' que ya se inicializó en DOMContentLoaded
+    const currentId = streamerId; 
+    
+    if (!currentId) return; // Si el ID global no está seteado, salir.
 
-    // 1. Limpiar cualquier intervalo anterior
     if (intervalo) {
         clearInterval(intervalo);
     }
     
-    // 2. CRÍTICO: Obtener la duración inicial del input
     if (tiempoActual <= 0) {
-        // Asumiendo que el ID del input de tiempo es "tiempo"
         const tiempoInicialInput = document.getElementById("tiempo"); 
-        
-        // Lee el valor del input. Si no existe o está vacío, usa 200 por defecto.
-        // ¡ESTO ES LO QUE ESTABA FALTANDO O FALLANDO!
         tiempoActual = parseInt(tiempoInicialInput.value) || 200; 
     }
     
-    // Si la subasta está en pausa, no iniciamos el intervalo
     if (isPaused) {
         return; 
     }
 
-    // 3. Crear el bucle que se ejecuta cada segundo
     intervalo = setInterval(() => {
         if (!isPaused) {
             tiempoActual--;
             
-            // Actualizar la interfaz del Dashboard
             const tiempoRestanteEl = document.getElementById('tiempoRestante');
             if (tiempoRestanteEl) {
                 tiempoRestanteEl.textContent = formatTime(tiempoActual); 
@@ -445,14 +438,13 @@ function iniciarTimerLogic() {
             // Sincronizar el tiempo con el servidor para el Widget
             socket.emit('sync_time', { 
                 time: tiempoActual, 
-                streamerId: currentStreamerId 
+                streamerId: currentId // Usamos el ID global/inicializado
             }); 
 
-            // 4. Verificar fin del tiempo
             if (tiempoActual <= 0) {
                 clearInterval(intervalo);
                 intervalo = null;
-                terminarTiempo(); // Llama a la lógica de fin o snipe
+                terminarTiempo(); 
             }
         }
     }, 1000); 
@@ -464,28 +456,16 @@ function iniciar() {
     
     if (!currentStreamerId) {
         alert("¡Alerta! Por favor, introduce tu ID de Streamer antes de iniciar.");
-        return; // Detiene la función si no hay ID
-    }
-    
-    // 2. VERIFICAR QUE NO ESTAMOS EN MODO WIDGET
-    if (document.body.classList.contains('widget-mode')) {
-        // No hacemos nada si estamos en modo Widget.
         return;
     }
-
-    // 3. INICIAR LA LÓGICA
-    snipeActivado = false;
-    subastaActiva = true;
-    logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
     
+    // ...
     // 4. Avisar al servidor (Usamos el ID local y VALIDADO)
     socket.emit("iniciar_subasta", { streamerId: currentStreamerId }); 
     
-    isPaused = false;
-    tiempoActual = 0;
-    
+    // ...
     // 5. Iniciar el bucle de sincronización de tiempo
-    iniciarTimerLogic(); 
+    iniciarTimerLogic(); // <- Esta función ahora usa el ID global 'streamerId'
 }
 
 function pausar() {
@@ -719,7 +699,7 @@ socket.on("new_gift", (giftData) => {
     const cantidadDelRegalo = diamondCount || 0;
 
     // Si este widget no pertenece a este streamer, ignorar el evento
-    if (window.streamerId !== streamerId) return;
+    if (streamerId !== giftData.streamerId) return;
 
     // Buscar si el usuario ya existe en la lista
     let participante = participantes.find(p => p.userId === userId);
