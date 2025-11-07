@@ -31,23 +31,47 @@ app.get("/", (req, res) => {
 // ===============================
 // ⚡ CONFIGURACIÓN SOCKET.IO
 // ===============================
+// 1. 🔑 DEFINE TU LISTA BLANCA DE IDS AQUÍ
+// **IMPORTANTE: Debes cambiar estos valores por los IDs que autorices.**
+const VALID_STREAMER_IDS = [
+    "@yosoytoniu",  
+    "lorotecayt",   
+    "otro_usuario_autorizado" 
+];
+
 io.on("connection", (socket) => {
-  console.log("🟢 Cliente conectado:", socket.id);
-// 👇 AQUÍ DEBES AGREGAR EL BLOQUE 'join_room' 👇
+    console.log("🟢 Cliente conectado:", socket.id);
+
+    // ... (otras funciones como 'iniciar_subasta', 'nuevo_regalo', etc.)
+
     socket.on("join_room", (data) => { 
         if (data && data.streamerId) { 
             const streamerId = data.streamerId;
-            // Obtiene el nombre de usuario para el log
             const tiktokUser = data.tiktokUser || "Desconocido"; 
             
-            socket.join(streamerId);
-            // Log modificado para mostrar el nombre
-            const emoji = '🔗'; // Este emoji se verá azul/gris en Render
-        
-        // El log final: 🔗 [@yosoytoniu] Cliente unido a la sala.
-        console.log(`${emoji} [${streamerId}] Cliente unido a la sala.`);
+            // 2. VERIFICACIÓN DE LA LISTA BLANCA
+            if (VALID_STREAMER_IDS.includes(streamerId)) {
+                // ID VÁLIDO: Permite la conexión a la sala
+                socket.join(streamerId);
+                
+                // 3. Log con el emoji que te gustó
+                const emoji = '🔗';
+                console.log(`${emoji} [${streamerId}] Cliente unido a la sala.`);
+            } else {
+                // ID INVÁLIDO: Rechaza y notifica al cliente
+                console.log(`❌ ERROR: ID Inválido (${streamerId}) intentó unirse. Rechazado.`);
+                
+                // 4. Envía el evento de error al cliente para mostrar la alerta
+                socket.emit('id_invalido', {
+                    streamerId: streamerId,
+                    message: "ID no autorizado. Por favor, comunícate con el administrador."
+                });
+            }
         }
     });
+
+    // ... (el resto de tus eventos)
+});
     // 👆 FIN DEL BLOQUE 'join_room' 👆
   // Evento para iniciar la subasta (enviado desde el dashboard)
   socket.on("iniciar_subasta", (data) => {
@@ -87,7 +111,6 @@ io.on("connection", (socket) => {
         io.emit("limpiar_listas_clientes"); // Avisa a TODOS los clientes que limpien
     });
     // 👆 FIN DEL BLOQUE NUEVO 👆
-});
 
 // ===============================
 // 🚀 INICIAR SERVIDOR
