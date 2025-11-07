@@ -431,25 +431,25 @@ function conectarDashboard() {
 // ... (después de la función conectarDashboard() )
 
 function generarLinkWidget() {
-    // 1. Lee el ID del input
-    const idUnicoEl = document.getElementById('idUnico');
+    // 1. Lee el ID del input, que debe tener id="idUnico"
+    const idUnicoEl = document.getElementById('idUnico'); 
     const streamerId = idUnicoEl ? idUnicoEl.value.trim() : "";
 
-    // 2. Valida que no esté vacío
+    // 2. Si el campo está vacío, alerta y detiene.
     if (!streamerId) {
         alert("⚠️ ERROR: Debes escribir un ID Único en el campo de arriba antes de generar el link.");
         return;
     }
 
-    // 3. Construye la URL del Widget
-    // Esto toma la URL base de tu servidor (ej: https://tiktok-servidor.onrender.com/)
+    // 3. Construye la URL completa.
+    // window.location.origin es la URL base (Ej: https://tiktok-servidor.onrender.com)
     const baseURL = window.location.origin + window.location.pathname;
     const widgetURL = `${baseURL}?mode=widget&id=${streamerId}`;
-
-    // 4. Muestra la URL en un 'prompt' para que puedas copiarla
+    
+    // 4. Muestra la URL en un 'prompt'. ¡Esto la selecciona automáticamente!
     prompt(
         "¡Link del Widget generado! Cópialo y envíalo al streamer:",
-        widgetURL
+        widgetURL // Este valor se muestra y se selecciona para copiar
     );
 }
 
