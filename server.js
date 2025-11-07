@@ -38,12 +38,11 @@ const VALID_STREAMER_IDS = [
     "lorotecayt",   
     "otro_usuario_autorizado" 
 ];
-
-io.on("connection", (socket) => {
+// INICIO DEL BLOQUE io.on("connection") - TODOS LOS SOCKET.ON DEBEN IR AQUÍ DENTRO
+io.on("connection", (socket) => { 
     console.log("🟢 Cliente conectado:", socket.id);
 
-    // ... (otras funciones como 'iniciar_subasta', 'nuevo_regalo', etc.)
-
+    // 1. EVENTO JOIN_ROOM
     socket.on("join_room", (data) => { 
         if (data && data.streamerId) { 
             const streamerId = data.streamerId;
@@ -68,10 +67,9 @@ io.on("connection", (socket) => {
                 });
             }
         }
-    });
+    }); // <--- Cierre del socket.on("join_room")
 
     // ... (el resto de tus eventos)
-});
     // 👆 FIN DEL BLOQUE 'join_room' 👆
   // Evento para iniciar la subasta (enviado desde el dashboard)
   socket.on("iniciar_subasta", (data) => {
@@ -111,7 +109,7 @@ io.on("connection", (socket) => {
         io.emit("limpiar_listas_clientes"); // Avisa a TODOS los clientes que limpien
     });
     // 👆 FIN DEL BLOQUE NUEVO 👆
-
+}); // <-- CIERRE CORRECTO FINAL del io.on("connection")
 // ===============================
 // 🚀 INICIAR SERVIDOR
 // ===============================
