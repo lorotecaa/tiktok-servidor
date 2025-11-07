@@ -1138,7 +1138,7 @@ if (isWidgetMode) {
     streamerId = urlParams.get('id'); 
     
     // Ocultamos el dashboard principal y mostramos el contenedor del widget
-    ddocument.getElementById('dashboard-container').style.display = 'none'; // <-- ¡Cambia el ID!
+    document.getElementById('dashboard-container').style.display = 'none'; // <-- ¡Cambia el ID!
     document.getElementById('widget-container').style.display = 'flex';
     
     if (streamerId) {
