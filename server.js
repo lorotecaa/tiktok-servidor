@@ -42,7 +42,10 @@ io.on("connection", (socket) => {
             
             socket.join(streamerId);
             // Log modificado para mostrar el nombre
-            console.log(`[Sala] Cliente ${socket.id} (${tiktokUser}) unido a la sala: ${streamerId}`); 
+            const emoji = '🔗'; // Este emoji se verá azul/gris en Render
+        
+        // El log final: 🔗 [@yosoytoniu] Cliente unido a la sala.
+        console.log(`${emoji} [${streamerId}] Cliente unido a la sala.`);
         }
     });
     // 👆 FIN DEL BLOQUE 'join_room' 👆
