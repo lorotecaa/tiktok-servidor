@@ -194,7 +194,6 @@ body {
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
-        .widget-mode #main-dashboard-content { display: none !important; }
         .widget-mode #logDonaciones { display: none !important; } 
 
         /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET (INTACTO) */
@@ -512,6 +511,29 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+}
+/* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) */
+.widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
+
+/* OCULTAR TODO LO QUE NO SEA EL WIDGET */
+/* Oculta la barra lateral de la izquierda (Ganadores y Participantes del Dashboard) */
+.widget-mode #data-panels { 
+    display: none !important; 
+}
+
+/* Oculta el grupo central (Controles, ID Único, y Tiempo Restante) */
+.widget-mode #controles-group { 
+    display: none !important; 
+} 
+
+/* Oculta el log de donaciones (barra lateral derecha) */
+.widget-mode #logDonaciones { 
+    display: none !important; 
+} 
+
+/* Oculta el encabezado grande (Título SUBSTINI y subtítulo) si está fuera de los anteriores */
+.widget-mode #header-container { 
+    display: none !important; 
 }
         </style>
     </head>
