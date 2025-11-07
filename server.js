@@ -41,7 +41,8 @@ app.get("/", (req, res) => {
 // ===============================
 // 1. 🔑 DEFINE TU LISTA BLANCA DE IDS AQUÍ
 const VALID_STREAMER_IDS = [
-    "larahoenen",  
+    "larahoenen",
+    "flycare.sw",
     "lorotecayt",   
     "otro_usuario_autorizado" 
 ];
@@ -208,4 +209,5 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
+
 
