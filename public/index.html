@@ -1,471 +1,244 @@
-    <!DOCTYPE html>
+|<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subasta en Vivo</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* --- VARIABLES CSS --- */
-        :root {
-            --bg-dark: #1a1a2e;
-            --bg-medium: #2c3e50;
-            --bg-light: #3e5c76;
-            --text-light: #e0e0e0;
-            --text-dark: #ffffff;
-            --accent-yellow: #FFD700;
-            --accent-green: #2ecc71;
-            --accent-red: #e74c3c;
-            --accent-purple: #9b59b6;
-            --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            --border-radius: 12px;
-        }
-
-        /* --- ESTILOS BASE --- */
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-        }
+        /* ESTILOS BASE DEL DASHBOARD (INTACTO) */
+        body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        h1 { margin:20px 0; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 5px 0; font-size: 18px; }
+        .totales { margin-top: 10px; font-weight: bold; font-size: 16px; }
+        h2 { background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 5px; display: inline-block; margin-bottom: 10px; font-size: 18px; }
+        button { margin: 5px; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .start { background: green; color: white; }
+        .stop { background: red; color: white; }
+        #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
         
-        ul { list-style: none; padding: 0; margin: 0; }
+        /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) (INTACTO) */
+        /* Nota: Se han añadido los IDs 'ganadores' y 'participantes' a los divs principales abajo. */
+        #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
+        #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
+        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
+        #controles-group { width: 300px; padding: 0; margin: 20px 0 0 0; display: inline-block; vertical-align: top; }
+        #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
+
+        /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) (INTACTO) */
+        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
         
-        /* --- DASHBOARD ESTRUCTURA --- */
-        #main-dashboard-content {
-            width: 100%;
-            max-width: 1300px; /* Ancho base del dashboard */
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* Header (Título principal) */
-        .header {
-            background-color: var(--bg-medium);
-            padding: 20px 30px;
-            border-radius: var(--border-radius);
-            text-align: center;
-            box-shadow: var(--box-shadow);
-        }
-        .header h1 {
-            margin: 0;
-            color: var(--accent-yellow);
-            font-size: 3em;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-        }
-        .header p { color: var(--text-light); font-size: 1.1em; margin-top: 5px; }
-
-        /* Contenedor de las columnas usando Grid */
-        .dashboard-columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr; /* Tres columnas */
-            gap: 20px;
-            align-items: start;
-        }
-
-        /* Estilo general para las cajas de información/control */
-        .box {
-            background-color: var(--bg-medium);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
-        }
-        .box h2 {
-            margin-top: 0;
-            color: var(--text-dark);
-            font-size: 1.6em;
-            font-weight: 600;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .box h2 i { color: var(--accent-yellow); font-size: 1.2em; }
-        #participantes-box h2 i { color: var(--accent-green); }
-        #controles-config-box h2 i { color: var(--accent-purple); }
-        #log-box h2 i { color: #808080; }
-        #ganadores-box h2 i { color: var(--accent-yellow); }
-
-        /* Estilos de Controles y Tiempo */
-        #controles-config-box { /* Mapeado a #controles en el código original */
-            background-color: #34495e;
-            margin-bottom: 20px; 
-            min-height: unset;
-        }
-        #tiempo-restante-box { /* Mapeado a #tiempoBox en el código original */
-            background-color: #34495e;
-            text-align: center;
-            justify-content: center;
-            align-items: center;
-            padding: 30px;
-            min-height: 120px;
-        }
-        #tiempoRestante {
-            font-size: 4em;
-            font-weight: 700;
-            color: var(--accent-yellow);
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
-            margin-top: 15px;
-            display: block;
-        }
-        #tiempo-restante-box h2 {
-            border-bottom: none;
-            margin-bottom: 10px;
-            color: var(--accent-yellow);
-            font-size: 1.8em;
-        }
-
-        /* --- ESTILOS DE TABLAS (LISTAS) --- */
-
-        .list-container {
-            flex-grow: 1; 
-            overflow-y: auto; 
-            /* Estilo de la barra de desplazamiento */
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent-yellow) var(--bg-medium);
-        }
-        .list-container::-webkit-scrollbar { width: 8px; }
-        .list-container::-webkit-scrollbar-thumb { background-color: var(--accent-yellow); border-radius: 10px; }
-        .list-container::-webkit-scrollbar-track { background-color: var(--bg-medium); }
-
-        .list-container ul { padding: 0; margin: 0; }
-        
-        /* Estilo para cada item de las listas (Participantes y Ganadores) */
-        .list-container li {
-            background-color: #34495e;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.2s;
-        }
-
-        /* Estilo para el primer puesto (TOP 1) */
-        .list-container li:first-child { 
-            background-color: var(--accent-yellow);
-            color: var(--bg-dark);
-            font-weight: 700;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
-        }
-        .list-container li:first-child .username { color: var(--bg-dark); }
-        .list-container li:first-child .list-item-coins { color: var(--bg-dark); }
-        .list-container li:first-child .list-item-info img { border-color: var(--bg-dark); }
-
-        /* Información del item de la lista (Avatar, Nombre) */
-        .list-item-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-grow: 1;
-            overflow: hidden;
-        }
-        .list-item-info img {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-        .username {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
-
-        /* Diamantes donados */
-        .list-item-coins {
-            font-weight: 700;
-            color: var(--accent-green);
-            font-size: 1.1em;
-            display: flex;
-            align-items: center;
-        }
-        .list-item-coins i { margin-left: 5px; color: #3498db; } /* Icono de diamante */
-
-
-        /* Totales en Participantes */
-        .participantes-totales {
-            margin-top: auto; 
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 1.1em;
-            font-weight: 600;
-            color: var(--text-dark);
-            text-align: left;
-        }
-
-        /* Log de Donaciones */
-        #logDonaciones {
-            background-color: #1c2833;
-            height: 300px; /* Fijo para que se vea bien en la columna */
-            overflow-y: auto;
-            font-size: 0.9em;
-            line-height: 1.5;
-            color: #b0c4de; 
-            padding: 15px;
-        }
-        #logDonaciones p {
-            margin: 5px 0;
-            padding-left: 10px;
-            border-left: 3px solid rgba(255, 255, 255, 0.1);
-        }
-        #logDonaciones strong {
-            color: var(--accent-yellow);
-            display: block;
-            margin-bottom: 10px;
-        }
-        
-        /* --- ESTILOS DE CONTROLES (BOTONES, INPUTS) --- */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; color: var(--text-light); font-size: 0.95em; text-align: left; }
-        .form-group input[type="text"],
-        .form-group input[type="number"] {
-            width: calc(100% - 20px);
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--bg-light);
-            background-color: #34495e;
-            color: var(--text-dark);
-            font-size: 1em;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        .form-group input[type="number"] { width: 100%; } /* Ancho completo dentro del flex */
-
-        .control-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .control-buttons button {
-            padding: 12px 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .control-buttons button:hover { transform: translateY(-2px); }
-        .control-buttons .btn-start { background-color: var(--accent-green); color: var(--text-dark); }
-        .control-buttons .btn-pause { background-color: #f39c12; color: var(--text-dark); }
-        .control-buttons .btn-stop { background-color: var(--accent-red); color: var(--text-dark); }
-        .control-buttons .btn-restart { background-color: #7f8c8d; color: var(--text-dark); }
-        .control-buttons .btn-widget { background-color: #3498db; color: var(--text-dark); }
-        .control-buttons .btn-simulate { background-color: var(--accent-purple); color: var(--text-dark); }
-        .control-buttons .btn-generate-link { 
-            grid-column: span 2;
-            background-color: #34495e; 
-            color: var(--text-light); 
-            border: 1px dashed var(--accent-yellow);
-        }
-
-        /* --- WIDGET Y POPUP --- (Manteniendo estilos originales y IDs) */
-        .widget-mode body { background-color: transparent; padding: 0; min-height: 0; }
+        /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
         .widget-mode #main-dashboard-content { display: none !important; }
-        
+        .widget-mode #logDonaciones { display: none !important; } 
+
+        /* ESTILOS DEL CONTENEDOR PRINCIPAL DEL WIDGET (INTACTO) */
         #widget-container {
-            display: none; 
+            display: none; /* Por defecto oculto */
             flex-direction: column;
-            width: 360px;
+            width: 360px; /* Ancho fijo para el widget */
+            margin: 0 auto;
             background: linear-gradient(180deg, #0a0a0a 0%, #0f1626 100%);
             border-radius: 10px;
             overflow: hidden;
-            border: 4px solid var(--accent-yellow);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-            color: var(--text-light);
+            border: 4px solid #FFD700; /* Borde grueso, color oro */
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); /* Brillo dorado opcional */ 
         }
-        #tiempoBox-widget { 
-            background: #1a1a1a; width: 100%; padding: 10px 0; box-sizing: border-box; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            border-radius: 8px 8px 0 0; border-bottom: 2px solid var(--accent-yellow); 
-        }
-        #tiempoRestante-widget { font-size: 2.5em; color: var(--accent-yellow); font-weight: bold; text-shadow: 0 0 8px rgba(255, 215, 0, 0.7); }
-        .snipe-alert #tiempoRestante-widget { color: var(--accent-red) !important; text-shadow: 0 0 15px rgba(255, 77, 77, 1) !important; }
 
-        /* Estilo de la lista de participantes en el widget */
-        #listaParticipantes-widget { 
-            padding: 15px; 
-            background-color: #1a1a2e;
-            list-style: none;
-            margin: 0;
-        }
-        #listaParticipantes-widget li {
-            background-color: #2c3e50;
-            margin-bottom: 8px;
-            padding: 10px 15px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
+        /* ESTILOS INTERNOS DEL WIDGET (INTACTO) */
+        #tiempoBox-widget { background: #1a1a1a; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0;border-bottom: 2px solid #FFD700; }
+        #tiempoRestante-widget { font-size: 2.5em; color: #FFD700; font-weight: bold; text-shadow: 0 0 8px rgba(255, 215, 0, 0.7); }
+        #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
+        .snipe-alert #tiempoRestante-widget {  color: #FF4D4D !important; /* ROJO */ text-shadow: 0 0 15px rgba(255, 77, 77, 1) !important; /* Sombra ROJA más fuerte */}
+        .snipe-alert #subtext-widget {  color: #FF4D4D !important; /* ROJO */}
+
+
+        #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px;box-sizing: border-box; }
+        #participantes-widget h2, #participantes-widget .totales { display: none; }
+        #listaParticipantes-widget { padding: 0; margin: 0; list-style: none; }
+        #listaParticipantes-widget li { display: flex; align-items: center; justify-content: space-between; background: #2a3d5e; margin-bottom: 8px; padding: 10px 15px; border-radius: 12px; font-size: 16px; font-weight: bold; border: 2px solid #555; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+        #listaParticipantes-widget li .coins { color: #ffd700; font-size: 1.1em; margin-left: 10px; display: flex; align-items: center; }
+        /* #listaParticipantes-widget li .coins::before { content: '🪙'; margin-right: 5px; font-size: 0.9em; } */
+
+        /* --- INICIO: ESTILOS CORRECTOS PARA EL RANKING DEL WIDGET --- */
+        .rank-icon { 
+            font-size: 1.2em; 
+            color: #FFD700; /* Número de ranking en color oro */
+            margin-right: 10px; 
+            min-width: 25px; 
+            height: 25px;
+            text-align: center; 
+            background: #3a4d70; /* Fondo circular azul oscuro */
+            border-radius: 50%; /* Esto lo hace un círculo */
+            padding: 5px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            border: 2px solid #555; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            justify-content: center;
+            border: 1px solid #FFD700; /* Borde dorado */
+            box-sizing: border-box; /* Para que el padding no rompa el tamaño */
         }
-
-        /* Estilos del Popup de Ganador (Manteniendo los IDs originales) */
+        .user-info { 
+            display: flex; 
+            align-items: center; 
+            flex-grow: 1; 
+            overflow: hidden; 
+        }
+        .user-avatar { 
+            width: 30px; 
+            height: 30px; 
+            border-radius: 50%; 
+            overflow: hidden; 
+            margin-right: 10px; 
+            border: 2px solid #fff; 
+        }
+        .user-avatar img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        .username { 
+            color: #ecf0f1; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 150px; 
+        }
+        /* --- FIN: ESTILOS CORRECTOS --- */
         #winner-popup {
-            display: none; 
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85); 
+            display: none; /* Oculto por defecto */
+            position: fixed; /* Overlay que cubre todo */
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
             z-index: 100;
-            justify-content: center; align-items: center;
+            /* Usamos flex para centrar el contenido */
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            /* Para la animación de entrada/salida */
             opacity: 0;
             transition: opacity 0.5s ease;
         }
+
         #winner-content {
             background: linear-gradient(145deg, #1f2a3a, #1a2330);
-            border: 4px solid #FFD700;
+            border: 4px solid #FFD700; /* Borde Dorado */
             border-radius: 20px;
             padding: 40px;
             text-align: center;
             color: white;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.7); /* Brillo Dorado */
+            /* Animación "pop" de entrada */
             transform: scale(0.7);
             transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
         }
-        #winner-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #FFD700; margin: 20px auto; overflow: hidden; }
-        #winner-name { font-size: 48px; color: #FFD700; margin: 10px 0; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-        .felicidades { font-size: 28px !important; font-weight: bold; color: #FFD700 !important; }
 
-
-        /* Media Query para pantallas pequeñas */
-        @media (max-width: 1200px) {
-            .dashboard-columns {
-                grid-template-columns: 1fr; /* Una sola columna en pantallas pequeñas */
-            }
-            #main-dashboard-content { max-width: 600px; }
+        #winner-content h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #eee;
         }
-        
+
+        #winner-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #FFD700;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+        #winner-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        #winner-name {
+            font-size: 48px;
+            color: #FFD700;
+            margin: 10px 0;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        #winner-content p {
+            font-size: 20px;
+            color: #ccc;
+            margin: 10px 0;
+        }
+        #winner-content p span {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .felicidades {
+            font-size: 28px !important;
+            font-weight: bold;
+            color: #FFD700 !important;
+        }
     </style>
 </head>
 <body>
-    <div id="main-dashboard-content">
-        <div class="header">
-            <h1>⚡ SUBSTINI ⚡</h1>
-            <p>Interactive game powered by lorotecay!</p>
-        </div>
-
-        <div class="dashboard-columns">
-            
-            <div id="participantes-box" class="box">
-                <h2><i class="fas fa-users"></i> Participantes (Ronda Actual)</h2>
-                <div class="list-container">
-                    <ul id="listaParticipantes"> 
-                        <li style="display: none;"></li>
-                    </ul>
-                </div>
-                <div class="participantes-totales">
-                    <p>Total participantes: <span id="totalParticipantes">0</span></p>
-                    <p>Diamantes donados: <span id="totalDiamantes">0</span></p>
-                </div>
-            </div>
-
-            <div>
-                <div id="controles-config-box" class="box" style="margin-bottom: 20px;">
-                    <h2><i class="fas fa-cogs"></i> Controles</h2>
-                    
-                    <div class="form-group">
-                        <label for="idUnico">ID Único (para Widget):</label>
-                        <input type="text" id="idUnico" value="MI_STREAM_ID" placeholder="ID Único para la sala">
-                    </div>
-                    
-                    <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label for="tiempo">Tiempo inicial (segundos):</label>
-                            <input type="number" id="tiempo" value="200"> 
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
-                            <input type="number" id="tiempoSnipe" value="15">
-                        </div>
-                    </div>
-
-                    <div class="control-buttons">
-                        <button class="btn-start" onclick="iniciar()"><i class="fas fa-play"></i> Iniciar</button> 
-                        <button class="btn-pause" onclick="pausar()"><i class="fas fa-pause"></i> Pausar</button>
-                        <button class="btn-stop" onclick="finalizar()"><i class="fas fa-stop"></i> Finalizar</button>
-                        <button class="btn-restart" onclick="restart()"><i class="fas fa-redo"></i> Restart</button>
-                        <button class="btn-widget" onclick="abrirWidget()"><i class="fas fa-tv"></i> Ver Widget</button>
-                        <button class="btn-simulate" onclick="simularRegalo()" style="grid-column: span 1;"><i class="fas fa-gifts"></i> Simular Regalo</button>
-                        <button class="btn-generate-link" onclick="generarLinkWidget()"><i class="fas fa-link"></i> Generar Link Widget</button>
-                    </div>
-                </div>
-
-                <div id="tiempo-restante-box" class="box">
-                    <h2>⏳ Tiempo Restante</h2>
-                    <span id="tiempoRestante">00:00</span>
-                </div>
-            </div>
-
-            <div>
-                <div id="log-box" class="box" style="margin-bottom: 20px;">
-                    <h2><i class="fas fa-clipboard-list"></i> Historial de Eventos:</h2>
-                    <div id="logDonaciones" class="list-container">
-                        <strong>📝 Historial de Eventos:</strong><p style="color: cyan;">Esperando conexión...</p>
-                    </div>
-                </div>
-
-                <div id="ganadores-box" class="box">
-                    <h2><i class="fas fa-trophy"></i> Ganadores de Rondas</h2>
-                    <div class="list-container">
-                        <ul id="listaGanadores">
-                            <li style="display: none;"></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     
+    <div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
+        <h1>⚡ Subasta en Vivo ⚡</h1>
+        
+        <div id="participantes">
+            <h2>👥 Participantes (Ronda Actual)</h2>
+            <ul id="listaParticipantes"></ul>
+            <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
+            <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
+        </div>
+
+        <div id="controles-group">
+            <div id="controles">
+                <h2>🎮 Controles</h2>
+                <label for="idUnico">🔑 ID Único (para Widget):</label><br>
+                <input type="text" id="idUnico" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
+                <div class="subcuadro">
+                    <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
+                    <input type="number" id="tiempo" value="200"><br><br>
+                    <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
+                    <input type="number" id="tiempoSnipe" value="15" min="0">
+                    <button class="start" onclick="iniciar()">Iniciar</button>
+                    <button onclick="pausar()">Pausar</button>
+                    <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
+                    <button style="background:#2ecc71; color:white;" onclick="abrirWidget()">Ver Widget</button>
+                    <button onclick="simularRegalo()" style="background-color: #007bff; color: white; margin-top: 5px;">Simular Regalo</button>
+                </div>
+            </div>
+            <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
+        </div>
+
+        <div id="ganadores">
+            <h2>🏆 Ganadores de Rondas</h2>
+            <ul id="listaGanadores"></ul>
+        </div>
+
+        <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
+    </div> 
+
+    <div id="widget-container" style="display:none;">
+        
+        <div id="tiempoBox-widget">
+            <div id="tiempoRestante-widget">00:00</div>
+            <div id="subtext-widget">El sorteo/subasta termina en</div>
+        </div>
+        <div id="participantes-widget">
+            <ul id="listaParticipantes-widget"></ul>
+        </div>
+        
+    </div>
     <div id="winner-popup" style="display: none;">
         <div id="winner-content">
             <h2>¡Ganador de la Ronda!</h2>
-            <div id="winner-avatar"><img src="https://via.placeholder.com/100/555/FFFFFF?text=A" alt="Avatar Ganador"></div>
+            <div id="winner-avatar"><img></div>
             <h1 id="winner-name">@username</h1>
             <p>Donó un total de <span id="winner-amount">0</span> 💎</p>
             <p class="felicidades">¡Felicidades! 🏆</p>
         </div>
     </div>
-
-    <div id="widget-container" style="display:none;">
-        <div id="tiempoBox-widget">
-            <div id="subtext-widget">El sorteo/subasta termina en</div>
-            <div id="tiempoRestante-widget">00:00</div>
-        </div>
-        <hr style="width: 80%; border-color: var(--accent-yellow); margin: 15px auto;">
-        <ul id="listaParticipantes-widget">
-            <li style="display: none;"></li>
-        </ul>
-    </div>
-    
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    </body>
-</html>
     
-    <script> const socket = io("https://tiktok-servidor.onrender.com"); // tu URL real de Render
+    <script>
+        const socket = io("https://tiktok-servidor.onrender.com"); // tu URL real de Render
 
         const listaParticipantesEl = document.getElementById('listaParticipantes');
         const listaGanadoresEl = document.getElementById('listaGanadores');
