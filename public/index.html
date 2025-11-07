@@ -199,6 +199,7 @@
                     <button onclick="pausar()">Pausar</button>
                     <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
                     <button style="background:#2ecc71; color:white;" onclick="abrirWidget()">Ver Widget</button>
+                    <button style="background:#f39c12; color:white; margin-top: 5px;" onclick="generarLinkWidget()">🔗 Generar Link Widget</button>
                     <button onclick="simularRegalo()" style="background-color: #007bff; color: white; margin-top: 5px;">Simular Regalo</button>
                 </div>
             </div>
@@ -427,6 +428,32 @@ function conectarDashboard() {
 
     console.log(`DASHBOARD intentando unirse a sala: ${streamerIdActual}`);
 }
+// ... (después de la función conectarDashboard() )
+
+function generarLinkWidget() {
+    // 1. Lee el ID del input
+    const idUnicoEl = document.getElementById('idUnico');
+    const streamerId = idUnicoEl ? idUnicoEl.value.trim() : "";
+
+    // 2. Valida que no esté vacío
+    if (!streamerId) {
+        alert("⚠️ ERROR: Debes escribir un ID Único en el campo de arriba antes de generar el link.");
+        return;
+    }
+
+    // 3. Construye la URL del Widget
+    // Esto toma la URL base de tu servidor (ej: https://tiktok-servidor.onrender.com/)
+    const baseURL = window.location.origin + window.location.pathname;
+    const widgetURL = `${baseURL}?mode=widget&id=${streamerId}`;
+
+    // 4. Muestra la URL en un 'prompt' para que puedas copiarla
+    prompt(
+        "¡Link del Widget generado! Cópialo y envíalo al streamer:",
+        widgetURL
+    );
+}
+
+// ... (El resto de tus funciones: finalizar(), pausar(), etc.)
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) { 
