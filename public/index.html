@@ -1398,31 +1398,6 @@ function actualizarParticipantesUI(listaParaDibujar) {
         document.querySelector('#totalDiamantes').textContent = totalDiamantes;
     }
 }
-function renderizarTablaParticipantes(participantes) {
-    const tableBody = document.getElementById('participantes-widget');
-    if (!tableBody) return; // Asegúrate de que este elemento exista en tu HTML del Widget
-
-    // Ordenar participantes de mayor a menor donación
-    const listaOrdenada = participantes.sort((a, b) => b.cantidad - a.cantidad);
-
-    let html = '';
-    
-    // Generar las filas de la tabla
-    listaOrdenada.forEach((p, index) => {
-        html += `
-            <tr class="ranking-row" data-rank="${index + 1}">
-                <td class="rank-pos">${index + 1}</td>
-                <td class="rank-avatar">
-                    <img src="${p.avatar_url || 'default_avatar.png'}" alt="${p.usuario}">
-                </td>
-                <td class="rank-user">${p.usuario}</td>
-                <td class="rank-amount">${p.cantidad} 💎</td>
-            </tr>
-        `;
-    });
-
-    tableBody.innerHTML = html;
-}
 /* ================================== */
 /* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
 /* ================================== */
