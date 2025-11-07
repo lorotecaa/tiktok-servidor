@@ -33,7 +33,19 @@ app.get("/", (req, res) => {
 // ===============================
 io.on("connection", (socket) => {
   console.log("🟢 Cliente conectado:", socket.id);
-
+// 👇 AQUÍ DEBES AGREGAR EL BLOQUE 'join_room' 👇
+    socket.on("join_room", (data) => { 
+        if (data && data.streamerId) { 
+            const streamerId = data.streamerId;
+            // Obtiene el nombre de usuario para el log
+            const tiktokUser = data.tiktokUser || "Desconocido"; 
+            
+            socket.join(streamerId);
+            // Log modificado para mostrar el nombre
+            console.log(`[Sala] Cliente ${socket.id} (${tiktokUser}) unido a la sala: ${streamerId}`); 
+        }
+    });
+    // 👆 FIN DEL BLOQUE 'join_room' 👆
   // Evento para iniciar la subasta (enviado desde el dashboard)
   socket.on("iniciar_subasta", (data) => {
     console.log("🚀 Cliente solicitando inicio de subasta.");
@@ -65,15 +77,7 @@ io.on("connection", (socket) => {
     console.log("🏆 Anunciando ganador:", ganador);
     io.emit("anunciar_ganador", ganador); // 🔹 lo envía a todos los clientes (incluyendo el widget)
   });
-  // 🧹 Limpiar listas
-  socket.on("limpiar_listas", () => {
-    console.log("🧹 Solicitud para limpiar listas recibida desde el Dashboard.");
-    io.emit("limpiar_listas_clientes");
-  });
-  // Detectar desconexión
-  socket.on("disconnect", () => {
-    console.log("🔴 Cliente desconectado:", socket.id);
-  });
+
   // 👇 AÑADE ESTE BLOQUE NUEVO 👇
     socket.on("limpiar_listas", () => {
         console.log("🧹 Solicitud para limpiar listas recibida desde el Dashboard.");
