@@ -17,7 +17,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 10000;
 
 // ===========================================
-// 📦 CONTROL DE SALAS (AISLAMIENTO DE DATOS) <--- ¡NUEVO BLOQUE CRÍTICO!
+// 📦 CONTROL DE SALAS (AISLAMIENTO DE DATOS)
 // ===========================================
 // Variable global que contendrá los datos de CADA sala (streamerId)
 const salas = {}; 
@@ -26,8 +26,6 @@ const salas = {};
 // ===============================
 // 🌐 CONFIGURACIÓN EXPRESS
 // ===============================
-// ... (Tus configuraciones Express se mantienen sin cambios) ...
-
 // Servir archivos estáticos desde la carpeta "public"
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -41,10 +39,10 @@ app.get("/", (req, res) => {
 // ===============================
 // 1. 🔑 DEFINE TU LISTA BLANCA DE IDS AQUÍ
 const VALID_STREAMER_IDS = [
-    "larahoenen",
-    "flycare.sw",
+    "@yosoytoniu",  
     "lorotecayt",   
-    "otro_usuario_autorizado" 
+    "otro_usuario_autorizado",
+    "flycare.sw" // Agregué el ID que usas en los ejemplos
 ];
 
 io.on("connection", (socket) => { 
@@ -55,7 +53,7 @@ io.on("connection", (socket) => {
         if (!data || !data.streamerId) return; 
         
         const streamerId = data.streamerId;
-        const tiktokUser = data.tiktokUser || "Cliente"; 
+        const tiktokUser = data.tiktokUser || "Cliente No Requerido"; // Nombre de cliente más descriptivo
 
         // 2. VERIFICACIÓN DE LA LISTA BLANCA
         if (VALID_STREAMER_IDS.includes(streamerId)) {
@@ -71,7 +69,8 @@ io.on("connection", (socket) => {
                 salas[streamerId] = {
                     participantes: [],
                     tiempoActual: 0,
-                    subastaActiva: false
+                    subastaActiva: false,
+                    snipeTime: 15 // Valor por defecto
                 };
                 console.log(`Sala ${streamerId} inicializada.`);
             }
@@ -79,7 +78,8 @@ io.on("connection", (socket) => {
             const sala = salas[streamerId];
 
             // 5. Enviar el estado ACTUAL de la sala al cliente que se acaba de unir
-            socket.emit("update_participants", sala.participantes);
+            // NOTA: Cambié "update_participants" por el nombre que hemos usado: "actualizar_participantes"
+            socket.emit("actualizar_participantes", sala.participantes);
             socket.emit("update_time", sala.tiempoActual);
             socket.emit("update_subasta_status", sala.subastaActiva);
 
@@ -93,24 +93,38 @@ io.on("connection", (socket) => {
         }
     });
 
-    // 2. EVENTO INICIAR_SUBASTA (MODIFICADO)
+    // 2. EVENTO INICIAR_SUBASTA (CORREGIDO PARA EVITAR TypeError)
     socket.on("iniciar_subasta", (data) => {
-        const { streamerId, initialTime } = data; // Esperamos el streamerId y el tiempo inicial
+        // ✅ CORRECCIÓN CRÍTICA: Desestructuración segura para evitar el crash (TypeError)
+        const { streamerId, initialTime, snipeTime } = data || {}; 
+        
+        if (!streamerId) {
+            console.error("🛑 Error: iniciar_subasta recibido sin streamerId.");
+            return; // Detiene la ejecución si los datos son inválidos
+        }
+
         const sala = salas[streamerId];
 
         if (sala) {
-            console.log(`🚀 [${streamerId}] Cliente solicitando inicio de subasta.`);
+            console.log(`🚀 [${streamerId}] Cliente solicitando inicio de subasta. Tiempo: ${initialTime}s`);
             sala.subastaActiva = true;
             sala.tiempoActual = initialTime; // Almacenamos el tiempo inicial
-            
+            sala.snipeTime = snipeTime || sala.snipeTime; // Almacenamos el tiempo de snipe
+
             // Emitimos solo a la sala específica
-            io.to(streamerId).emit("subasta_iniciada", data);
+            io.to(streamerId).emit("subasta_iniciada", {
+                initialTime: sala.tiempoActual, 
+                snipeTime: sala.snipeTime 
+            });
             io.to(streamerId).emit("update_subasta_status", true); 
         }
     });
 
-    // 3. EVENTO SYNC_TIME (MODIFICADO)
-    socket.on("sync_time", ({ time, streamerId }) => { // Esperamos un objeto con 'time' y 'streamerId'
+    // 3. EVENTO SYNC_TIME (Manejo de seguridad en desestructuración)
+    socket.on("sync_time", (data) => { 
+        const { time, streamerId } = data || {};
+        if (!streamerId) return; // Validación simple
+
         const sala = salas[streamerId];
         if (sala) {
             sala.tiempoActual = time; // Guardamos el tiempo en la sala
@@ -119,8 +133,11 @@ io.on("connection", (socket) => {
         }
     });
 
-    // 4. EVENTO FINALIZAR_SUBASTA (MODIFICADO)
-    socket.on("finalizar_subasta", ({ streamerId }) => { // Esperamos un objeto con 'streamerId'
+    // 4. EVENTO FINALIZAR_SUBASTA (Manejo de seguridad en desestructuración)
+    socket.on("finalizar_subasta", (data) => {
+        const { streamerId } = data || {};
+        if (!streamerId) return; // Validación simple
+
         const sala = salas[streamerId];
         if (sala) {
             console.log(`⏹️ [${streamerId}] Subasta finalizada.`);
@@ -131,16 +148,25 @@ io.on("connection", (socket) => {
         }
     });
     
-    // 5. EVENTO ACTIVAR_ALERTA_SNIPE_VISUAL (MODIFICADO)
-    socket.on("activar_alerta_snipe_visual", ({ streamerId }) => { // Esperamos un objeto con 'streamerId'
+    // 5. EVENTO ACTIVAR_ALERTA_SNIPE_VISUAL (Manejo de seguridad en desestructuración)
+    socket.on("activar_alerta_snipe_visual", (data) => {
+        const { streamerId } = data || {};
+        if (!streamerId) return; // Validación simple
+
         console.log(`⚡ [${streamerId}] Señal de ALERTA SNIPE ACTIVO recibida. Reenviando a clientes.`);
         // Emitimos solo a la sala específica
         io.to(streamerId).emit("activar_alerta_snipe_visual");
     });
 
-    // 6. EVENTO NUEVO_REGALO (MODIFICADO Y CON LÓGICA DE ACUMULACIÓN) <--- ¡SOLUCIÓN DE BUG DE TIKFINITY!
+    // 6. EVENTO NUEVO_REGALO (Manejo de seguridad en desestructuración)
     socket.on("nuevo_regalo", (giftData) => {
-        const { usuario, cantidad, regalo, avatar_url, streamerId } = giftData;
+        // Desestructuración segura
+        const { usuario, cantidad, regalo, avatar_url, streamerId } = giftData || {};
+
+        if (!streamerId || !usuario || !cantidad) {
+            console.error("🛑 Error: nuevo_regalo recibido con datos incompletos.");
+            return;
+        }
 
         // 1. Validar que la sala exista y esté activa
         const sala = salas[streamerId];
@@ -166,7 +192,8 @@ io.on("connection", (socket) => {
         }
         
         // 3. Reemitir la lista ACTUALIZADA (solo a los clientes en esta sala)
-        io.to(streamerId).emit("update_participants", participantes);
+        // NOTA: Usando "actualizar_participantes" como acordamos
+        io.to(streamerId).emit("actualizar_participantes", participantes);
 
         // 4. Reenviar el regalo individual para efectos visuales (solo a clientes en esta sala)
         io.to(streamerId).emit("new_gift", { 
@@ -178,9 +205,9 @@ io.on("connection", (socket) => {
         });
     });
 
-    // 7. EVENTO ANUNCIAR_GANADOR (MODIFICADO)
+    // 7. EVENTO ANUNCIAR_GANADOR (Manejo de seguridad en desestructuración)
     socket.on("anunciar_ganador", (ganador) => {
-        const { streamerId } = ganador; // El objeto 'ganador' debe incluir el streamerId
+        const { streamerId } = ganador || {}; // El objeto 'ganador' debe incluir el streamerId
         if (streamerId) {
             console.log(`🏆 [${streamerId}] Anunciando ganador:`, ganador.usuario);
             // Emitimos solo a la sala específica
@@ -188,8 +215,11 @@ io.on("connection", (socket) => {
         }
     });
 
-    // 8. EVENTO LIMPIAR_LISTAS (MODIFICADO Y CRÍTICO)
-    socket.on("limpiar_listas", ({ streamerId }) => { // Esperamos un objeto con 'streamerId'
+    // 8. EVENTO LIMPIAR_LISTAS (Manejo de seguridad en desestructuración)
+    socket.on("limpiar_listas", (data) => {
+        const { streamerId } = data || {};
+        if (!streamerId) return; // Validación simple
+
         const sala = salas[streamerId];
         if (sala) {
             // 1. Limpiar la lista de participantes de ESTA sala
@@ -198,9 +228,16 @@ io.on("connection", (socket) => {
             
             // 2. Notificar a los clientes de ESTA sala que limpien (y actualizar la tabla)
             io.to(streamerId).emit("limpiar_listas_clientes");
-            io.to(streamerId).emit("update_participants", sala.participantes);
+            // NOTA: Usando "actualizar_participantes" como acordamos
+            io.to(streamerId).emit("actualizar_participantes", sala.participantes); 
         }
     });
+    
+    // 9. Manejo de desconexión
+    socket.on("disconnect", () => {
+        console.log("🔴 Cliente desconectado:", socket.id);
+        // Si tienes lógica para limpiar salas sin clientes, iría aquí.
+    });
 }); // <-- CIERRE CORRECTO FINAL del io.on("connection")
 
 // ===============================
@@ -209,5 +246,3 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
-
-
