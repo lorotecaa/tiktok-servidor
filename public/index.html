@@ -1147,13 +1147,13 @@ if (isWidgetMode) {
 
 } else {
     // ===============================
-    // 🖥️ MODO DASHBOARD (MAESTRO)
-    // ===============================
-    document.getElementById('widget-container').style.display = 'none';
-    
-    if (streamerId) { // Si hay ID Único ingresado
-        // El Dashboard se une a la sala
-        console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
+    // 🖥️ MODO DASHBOARD (MAESTRO)
+    // ===============================
+    document.getElementById('widget-container').style.display = 'none';
+    
+    if (streamerId) { // Si hay ID Único ingresado
+        // El Dashboard se une a la sala
+        console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
 
         // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- TU CÓDIGO COMIENZA AQUÍ
         // ... (El resto de tu lógica de conexión a TikFinity) ...
@@ -1162,130 +1162,128 @@ if (isWidgetMode) {
     }
 }
 
-             // ===============================
-             // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
-             // ===============================
-             try {
-                 const tiktokWS = new WebSocket("ws://localhost:21213/");
+             // ==========================================================
+        // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- ¡UBICACIÓN CORRECTA!
+        // ==========================================================
+        try {
+            const tiktokWS = new WebSocket("ws://localhost:21213/");
 
-                 tiktokWS.onopen = () => {
-                     console.log("✅ Conectado a TikFinity Event API");
-                     // Asegurarse de que logDonacionesEl exista antes de usarlo
-                     if (logDonacionesEl) {
-                         logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
-                     }
-                 };
+            tiktokWS.onopen = () => {
+                console.log("✅ Conectado a TikFinity Event API");
+                // Asegurarse de que logDonacionesEl exista antes de usarlo
+                if (logDonacionesEl) {
+                    logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
+                }
+            };
 
-                 tiktokWS.onmessage = (event) => {
-                     // Asegurarse de que logDonacionesEl exista antes de usarlo
-                     if (!logDonacionesEl) return; 
-                     if (!subastaActiva) {
-                        return; // Ignora todo si la subasta no está activa
-         }
+            tiktokWS.onmessage = (event) => {
+                // Asegurarse de que logDonacionesEl exista antes de usarlo
+                if (!logDonacionesEl) return; 
+                if (!subastaActiva) {
+                    return; // Ignora todo si la subasta no está activa
+                }
 
-                     try {
-                         const msg = JSON.parse(event.data);
-                         if (!msg.event) return;
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (!msg.event) return;
 
-                         switch (msg.event) {
-                             case "gift": { // 🌟 INICIO DE LA CORRECCIÓN FINAL 🌟
-                                 const gift = msg.data;
-                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
+                    switch (msg.event) {
+                        case "gift": {
+                            const gift = msg.data;
+                            console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
 
-                                 // 1️⃣ ID ÚNICO del evento
-                                 const giftEventId = gift.msgId;   
-                                 if (!giftEventId) {
-                                     console.log("Ignorando evento gift sin msgId");
-                                     break; // No podemos procesar sin ID de evento
-                                 }
+                            // 1️⃣ ID ÚNICO del evento
+                            const giftEventId = gift.msgId;   
+                            if (!giftEventId) {
+                                console.log("Ignorando evento gift sin msgId");
+                                break;
+                            }
 
-                                 // 2️⃣ Ignorar duplicados (por seguridad)
-                                 if (processedGiftIds.has(giftEventId)) {
-                                     console.log(`Regalo ya procesado: ${giftEventId}`);
-                                     break;
-                                 }
+                            // 2️⃣ Ignorar duplicados (por seguridad)
+                            if (processedGiftIds.has(giftEventId)) {
+                                console.log(`Regalo ya procesado: ${giftEventId}`);
+                                break;
+                            }
 
-                                 // 3️⃣ Filtro inteligente:
-                                 // - Si tiene repeatEnd: procesamos solo el final
-                                 // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
-                                 if (gift.repeatEnd === false) { 
-                                 
-                                 // 🛑 Excepción clave: Si el regalo vale 100 o más, lo procesamos.
-                                 if (gift.diamondCount >= 100) {
-                                     console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
-                                 } else {
-                                     console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
-                                     break;
-                                 }
-                             }
-                                 
-                                 // (Si repeatEnd es 'true' o 'undefined', el código continúa)
+                            // 3️⃣ Filtro inteligente:
+                            if (gift.repeatEnd === false) { 
+                                
+                                // 🛑 Excepción clave: Si el regalo vale 100 o más, lo procesamos.
+                                if (gift.diamondCount >= 100) {
+                                    console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
+                                } else {
+                                    console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
+                                    break;
+                                }
+                            }
+                            
+                            // 4️⃣ Marcamos el ID como procesado
+                            processedGiftIds.add(giftEventId);
 
-                                 // 4️⃣ Marcamos el ID como procesado
-                                 processedGiftIds.add(giftEventId);
+                            // 5️⃣ Calculamos el total de diamantes correctamente
+                            const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+                            
+                            // 5.1 No procesar regalos sin valor (por si acaso)
+                            if (totalDiamonds === 0) {
+                                console.log("Ignorando regalo con 0 diamantes.");
+                                break;
+                            }
 
-                                 // 5️⃣ Calculamos el total de diamantes correctamente
-                                 const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
-                                 
-                                 // 5.1 No procesar regalos sin valor (por si acaso)
-                                 if (totalDiamonds === 0) {
-                                     console.log("Ignorando regalo con 0 diamantes.");
-                                     break;
-                                 }
+                            // 6️⃣ Mostramos en pantalla y enviamos al servidor
+                            logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
+                            
+                            socket.emit("nuevo_regalo", {
+                                usuario: gift.uniqueId,
+                                cantidad: totalDiamonds,
+                                regalo: gift.giftName,
+                                avatar_url: gift.profilePictureUrl, 
+                                streamerId: streamerId 
+                            });
 
-                                 // 6️⃣ Mostramos en pantalla y enviamos al servidor
-                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
-                                 
-                                 socket.emit("nuevo_regalo", {
-    usuario: gift.uniqueId,
-    cantidad: totalDiamonds,
-    regalo: gift.giftName,
-    avatar_url: gift.profilePictureUrl, // ⬅️ ¡AGREGA ESTA COMA!
-    streamerId: streamerId // CRÍTICO: ANADE ESTA LINEA
-});
+                            break; 
+                        }
 
-                                 break; // ✅ Fin del case
-                             }
+                        case "chat":
+                            const chat = msg.data;
+                            logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
+                            break;
 
-                             case "chat":
-                                 const chat = msg.data;
-                                 logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
-                                 break;
+                        case "like":
+                            const like = msg.data;
+                            logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
+                            break;
 
-                             case "like":
-                                 const like = msg.data;
-                                 logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
-                                 break;
+                        case "follow":
+                            const follow = msg.data;
+                            logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
+                            break;
+                        
+                    // Se pueden añadir más cases aquí para otros eventos de TikFinity (share, join, etc.)
+                    }
 
-                             case "follow":
-                                 const follow = msg.data;
-                                 logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
-                                 break;
-                         }
+                    // Mantenemos el log visible siempre abajo
+                    logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
 
-                         // Mantenemos el log visible siempre abajo
-                         logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+                } catch (e) {
+                    console.error("Error al procesar mensaje TikFinity:", e);
+                    logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
+                }
+            };
 
-                     } catch (e) {
-                         console.error("Error al procesar mensaje TikFinity:", e);
-                         logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
-                     }
-                 };
+            tiktokWS.onclose = () => {
+                // Asegurarse de que logDonacionesEl exista antes de usarlo
+                if (logDonacionesEl) {
+                    logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
+                }
+            };
 
-                 tiktokWS.onclose = () => {
-                      // Asegurarse de que logDonacionesEl exista antes de usarlo
-                     if (logDonacionesEl) {
-                         logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
-                     }
-                 };
-
-             } catch (err) {
-                 console.error("Error al conectar con TikFinity:", err);
-                  // Asegurarse de que logDonacionesEl exista antes de usarlo
-                 if (logDonacionesEl) {
-                     logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
-                 }
-             }
+        } catch (err) {
+            console.error("Error al conectar con TikFinity:", err);
+            // Asegurarse de que logDonacionesEl exista antes de usarlo
+            if (logDonacionesEl) {
+                logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
+            }
+        }
 
         // ===============================
 // 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
@@ -1356,7 +1354,14 @@ socket.on("limpiar_listas_clientes", () => {
     subastaActiva = false;
     console.log("CLIENTE: Interruptor APAGADO.");
 });
-
+socket.on("update_participants", (participantes) => {
+    // ESTA FUNCIÓN ES CRÍTICA:
+    renderizarTablaParticipantes(participantes);
+    
+    // (Opcional, si tienes lógica en el cliente)
+    // También podrías actualizar la variable global de participantes si la usas localmente
+    // window.participantes = participantes; 
+});
 // ===============================
 // 🧭 Función para actualizar la UI (debe ir FUERA de socket.on)
 // ===============================
@@ -1391,7 +1396,31 @@ function actualizarParticipantesUI() {
         }
     });
 }
+function renderizarTablaParticipantes(participantes) {
+    const tableBody = document.getElementById('participantes-widget');
+    if (!tableBody) return; // Asegúrate de que este elemento exista en tu HTML del Widget
 
+    // Ordenar participantes de mayor a menor donación
+    const listaOrdenada = participantes.sort((a, b) => b.cantidad - a.cantidad);
+
+    let html = '';
+    
+    // Generar las filas de la tabla
+    listaOrdenada.forEach((p, index) => {
+        html += `
+            <tr class="ranking-row" data-rank="${index + 1}">
+                <td class="rank-pos">${index + 1}</td>
+                <td class="rank-avatar">
+                    <img src="${p.avatar_url || 'default_avatar.png'}" alt="${p.usuario}">
+                </td>
+                <td class="rank-user">${p.usuario}</td>
+                <td class="rank-amount">${p.cantidad} 💎</td>
+            </tr>
+        `;
+    });
+
+    tableBody.innerHTML = html;
+}
 /* ================================== */
 /* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
 /* ================================== */
@@ -1506,41 +1535,7 @@ style.innerHTML = `
   100% { transform: scale(1); opacity: 1; }
 }`;
 document.head.appendChild(style);
-// 🚨 LÓGICA DE INICIALIZACIÓN (INCLUYE EL WIDGET FIX) 🚨
-document.addEventListener('DOMContentLoaded', (event) => {
-    // 1. Detección del modo Widget en la URL (NECESARIO AQUÍ)
-    const urlParams = new URLSearchParams(window.location.search);
 
-    if (urlParams.get('mode') === 'widget') {
-        // MODO WIDGET
-        document.body.classList.add('widget-mode');
-        
-        const widgetContainer = document.getElementById('widget-container');
-        if (widgetContainer) {
-            widgetContainer.style.display = 'flex'; // Muestra el widget
-        }
-        
-        const dashboard = document.getElementById('main-content-wrapper');
-        if (dashboard) {
-             dashboard.style.display = 'none'; // Oculta el dashboard
-        }
-
-    } else {
-        // MODO DASHBOARD (Si no hay ?mode=widget)
-        document.body.classList.remove('widget-mode');
-        
-        const dashboard = document.getElementById('main-content-wrapper');
-        if (dashboard) {
-            // CRÍTICO: Devuelve el display a 'flex' para mantener el diseño
-            dashboard.style.display = 'flex'; 
-        }
-        
-        const widgetContainer = document.getElementById('widget-container');
-        if (widgetContainer) {
-            widgetContainer.style.display = 'none';
-        }
-    }
-    });
 // Widget (Cliente) - Recepción de eventos del Dashboard
 socket.on("activar_alerta_snipe_visual", () => {
     // Cuando el Dashboard dice que el Snipe comenzó, activamos la bandera visual
