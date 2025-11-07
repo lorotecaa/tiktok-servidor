@@ -1138,7 +1138,7 @@ if (isWidgetMode) {
     streamerId = urlParams.get('id'); 
     
     // Ocultamos el dashboard principal y mostramos el contenedor del widget
-    document.getElementById('main-dashboard-content').style.display = 'none';
+    ddocument.getElementById('dashboard-container').style.display = 'none'; // <-- ¡Cambia el ID!
     document.getElementById('widget-container').style.display = 'flex';
     
     if (streamerId) {
@@ -1191,59 +1191,51 @@ if (isWidgetMode) {
 
                     switch (msg.event) {
                         case "gift": {
-                            const gift = msg.data;
-                            console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
+    const gift = msg.data;
+    // console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
 
-                            // 1️⃣ ID ÚNICO del evento
-                            const giftEventId = gift.msgId;   
-                            if (!giftEventId) {
-                                console.log("Ignorando evento gift sin msgId");
-                                break;
-                            }
+    // 1️⃣ ID ÚNICO del evento
+    const giftEventId = gift.msgId;   
+    if (!giftEventId) {
+        console.log("Ignorando evento gift sin msgId");
+        break;
+    }
 
-                            // 2️⃣ Ignorar duplicados (por seguridad)
-                            if (processedGiftIds.has(giftEventId)) {
-                                console.log(`Regalo ya procesado: ${giftEventId}`);
-                                break;
-                            }
+    // 2️⃣ Ignorar duplicados (por seguridad)
+    if (processedGiftIds.has(giftEventId)) {
+        console.log(`Regalo ya procesado: ${giftEventId}`);
+        break;
+    }
+    
+    // ❌ ELIMINAMOS TODA LA LÓGICA COMPLEJA DE repeatEnd Y LA EXCEPCIÓN DE 100 DIAMANTES ❌
+    // Ahora procesamos cada evento 'gift' una sola vez.
 
-                            // 3️⃣ Filtro inteligente:
-                            if (gift.repeatEnd === false) { 
-                                
-                                // 🛑 Excepción clave: Si el regalo vale 100 o más, lo procesamos.
-                                if (gift.diamondCount >= 100) {
-                                    console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
-                                } else {
-                                    console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
-                                    break;
-                                }
-                            }
-                            
-                            // 4️⃣ Marcamos el ID como procesado
-                            processedGiftIds.add(giftEventId);
+    // 3️⃣ Marcamos el ID como procesado
+    processedGiftIds.add(giftEventId);
 
-                            // 5️⃣ Calculamos el total de diamantes correctamente
-                            const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
-                            
-                            // 5.1 No procesar regalos sin valor (por si acaso)
-                            if (totalDiamonds === 0) {
-                                console.log("Ignorando regalo con 0 diamantes.");
-                                break;
-                            }
+    // 4️⃣ Calculamos el total de diamantes (SOLO EL VALOR BASE del evento, la corrección clave)
+    const totalDiamonds = gift.diamondCount || 0; 
+    
+    // 4.1 No procesar regalos sin valor
+    if (totalDiamonds === 0) {
+        console.log("Ignorando regalo con 0 diamantes.");
+        break;
+    }
 
-                            // 6️⃣ Mostramos en pantalla y enviamos al servidor
-                            logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
-                            
-                            socket.emit("nuevo_regalo", {
-                                usuario: gift.uniqueId,
-                                cantidad: totalDiamonds,
-                                regalo: gift.giftName,
-                                avatar_url: gift.profilePictureUrl, 
-                                streamerId: streamerId 
-                            });
+    // 5️⃣ Mostramos en pantalla y enviamos al servidor
+    logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
+    
+    // Enviamos solo la cantidad base, para que el servidor la acumule
+    socket.emit("nuevo_regalo", {
+        usuario: gift.uniqueId,
+        cantidad: totalDiamonds, // ✅ Enviamos solo el valor del evento individual
+        regalo: gift.giftName,
+        avatar_url: gift.profilePictureUrl, 
+        streamerId: streamerId 
+    });
 
-                            break; 
-                        }
+    break; 
+}
 
                         case "chat":
                             const chat = msg.data;
