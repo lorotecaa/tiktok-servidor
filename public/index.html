@@ -389,30 +389,31 @@
     }
 }
 function conectarDashboard() {
-    // 1. Lee los inputs en el momento de la ejecución
+    // 1. Lee ÚNICAMENTE el input ID Único
     const idUnicoEl = document.getElementById('idUnico');
-    const tiktokUserEl = document.getElementById('tiktokUser');
+    let streamerIdActual = idUnicoEl ? idUnicoEl.value : ""; // Usamos "" para validar
 
-    // Asigna el valor del input, o un valor por defecto si no hay nada
-    let streamerIdActual = idUnicoEl ? idUnicoEl.value : "ID_POR_DEFECTO";
-    let tiktokUserActual = tiktokUserEl ? tiktokUserEl.value : "Desconocido";
+    if (!streamerIdActual) {
+        // Muestra el mensaje de error si el ID está vacío
+        alert("ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
+        return; 
+    }
+    
+    // 2. Establecer el TikTok User como fijo (ya no lo leemos del HTML)
+    let tiktokUserActual = "No Requerido"; // Valor fijo requerido por el servidor
+    
+    // 3. Emitir el evento de conexión
+    socket.emit("join_room", { 
+        streamerId: streamerIdActual, 
+        tiktokUser: tiktokUserActual 
+    }); 
+    
+    // 4. Actualizar las variables globales
+    streamerId = streamerIdActual; 
+    // tiktokUser ya no es tan importante, pero si es global, mantenla
+    tiktokUser = tiktokUserActual; 
 
-    // 2. Solo procede si el ID Único está completo
-    if (streamerIdActual && streamerIdActual !== "ID_POR_DEFECTO") {
-        
-        socket.emit("join_room", { 
-            streamerId: streamerIdActual, 
-            tiktokUser: tiktokUserActual 
-        }); 
-        
-        console.log(`DASHBOARD unido a sala: ${streamerIdActual} (${tiktokUserActual})`);
-
-        // ESTO ASEGURA QUE LA LÓGICA TIKFINITY DE ABAJO USE EL ID CORRECTO
-        streamerId = streamerIdActual; 
-        tiktokUser = tiktokUserActual;
-    } 
-    // Nota: El log de conexión a TikFinity ya debería ocurrir automáticamente en el bloque
-    // de conexión al final del script, que usa las variables globales actualizadas.
+    console.log(`DASHBOARD unido a sala: ${streamerIdActual} (ID fijo: ${tiktokUserActual})`);
 }
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
@@ -646,6 +647,7 @@ function conectarDashboard() {
 const urlParams = new URLSearchParams(window.location.search);
 const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global (ya existe)
 
+
 // 1. Obtener los valores de los inputs
 let streamerId = "ID_POR_DEFECTO"; // ⬅️ IMPORTANTE: ESTO DEBE CAMBIAR
 let tiktokUser = "USUARIO_POR_DEFECTO"; // ⬅️ ESTO DEBE CAMBIAR
@@ -867,7 +869,20 @@ socket.on("new_gift", (gift) => {
             // Ahora sí, actualiza la UI con la lista ya ordenada
             actualizarParticipantesUI();
         });
-
+socket.on('id_invalido', (data) => {
+    // 1. Muestra la ventana emergente de error solicitada
+    alert(`⚠️ ERROR: El ID "${data.streamerId}" no está en la lista autorizada. Por favor, comunícate con el administrador.`);
+    
+    // 2. Añade el error al log local del Dashboard
+    // Asegúrate de usar el ID correcto para tu contenedor de logs
+    const logDonacionesEl = document.getElementById('log_de_donaciones'); 
+    if (logDonacionesEl) {
+         logDonacionesEl.innerHTML += `<p style="color: red; font-weight: bold;">🛑 ID NO AUTORIZADO: "${data.streamerId}". Comunícate con el administrador.</p>`;
+    } else {
+         console.error(`ID NO AUTORIZADO: ${data.streamerId}`);
+    }
+});
+// 🛑 FIN DEL BLOQUE A AÑADIR 🛑
 // ===============================
 // 🧹 Limpiar listas cuando el servidor lo indique
 // ===============================
