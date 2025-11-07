@@ -247,673 +247,606 @@
 
     <script>
         // 1. FUNCIÓN DE UTILIDAD: Leer un parámetro de la URL
-        function getUrlParameter(name) {
-            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-            var results = regex.exec(location.search);
-            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-        };
+    function getUrlParameter(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        var results = regex.exec(location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    };
 
-        // 2. INICIALIZACIÓN DE ID Y CONEXIÓN
-// 🛑 CRÍTICO: Definir la variable global para que el scope funcione correctamente.
-let streamerId = ""; 
-
-const socket = io("https://tiktok-servidor.onrender.com");
-
-        // 3. VARIABLES GLOBALES
-        const listaParticipantesEl = document.getElementById('listaParticipantes');
-        const listaGanadoresEl = document.getElementById('listaGanadores');
-        const tiempoRestanteEl = document.getElementById('tiempoRestante');
-        const logDonacionesEl = document.getElementById('logDonaciones');
-        
-        let tiempoActual = 0;
-        let intervalo = null;
-        let participantes = [];
-        let ganadoresHistorial = [];
-        let isPaused = false; 
-        let snipeActivado = false; 
-        let subastaActiva = false;
-        let isSnipeModeVisual = false;
-
-        // 4. LÓGICA DE PROTECCIÓN (Mantenemos tu lógica de caché)
-        const processedGiftIds = new Set();
-        setInterval(() => {
-          processedGiftIds.clear();
-          // console.log("Limpiando caché de IDs de regalos procesados.");
-        }, 60000); 
-
-        // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
-        function abrirWidget() {
-    const streamerId = getCurrentStreamerId();
-    if (!streamerId) { alert("Introduce tu ID de Streamer antes de abrir el Widget."); return; }
-    const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${encodeURIComponent(streamerId)}`;
-    if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
-        window.electronAPI.abrirWidgetVentana(widgetUrl);
-    } else {
-        window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
+    // --- FUNCIÓN AUXILIAR ---
+    function getCurrentStreamerId() {
+        const streamerMasterInput = document.getElementById('streamerMasterId');
+        return streamerMasterInput ? streamerMasterInput.value.trim() : ""; 
     }
-}
+
+    // 2. INICIALIZACIÓN DE ID Y CONEXIÓN
+    // 🛑 CRÍTICO: Definir la variable global para que el scope funcione correctamente.
+    let streamerId = ""; 
+
+    const socket = io("https://tiktok-servidor.onrender.com");
+
+    // 3. VARIABLES GLOBALES
+    const listaParticipantesEl = document.getElementById('listaParticipantes');
+    const listaGanadoresEl = document.getElementById('listaGanadores');
+    const tiempoRestanteEl = document.getElementById('tiempoRestante');
+    const logDonacionesEl = document.getElementById('logDonaciones');
+    
+    let tiempoActual = 0;
+    let intervalo = null;
+    let participantes = [];
+    let ganadoresHistorial = [];
+    let isPaused = false; 
+    let snipeActivado = false; 
+    let subastaActiva = false;
+    let isSnipeModeVisual = false;
+
+    // 4. LÓGICA DE PROTECCIÓN (Mantenemos tu lógica de caché)
+    const processedGiftIds = new Set();
+    setInterval(() => {
+        processedGiftIds.clear();
+    }, 60000); 
+
+    // 5. Función para abrir el Widget (Asegura que la URL tenga el ID)
+    function abrirWidget() {
+        const idActual = getCurrentStreamerId(); 
+        if (!idActual) { 
+            alert("Introduce tu ID de Streamer antes de abrir el Widget."); 
+            return; 
+        }
+        const widgetUrl = `https://tiktok-servidor.onrender.com/?mode=widget&streamerId=${encodeURIComponent(idActual)}`;
         
-
-       // 6. Configuración Inicial del Dashboard
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // 1. Detección de modo
-    const isWidgetMode = getUrlParameter('mode') === 'widget'; 
-    
-    let initialStreamerId;
-
-    if (isWidgetMode) {
-        // 🛑 WIDGET: Debe leer el ID de la URL usando el nombre de parámetro correcto.
-        initialStreamerId = getUrlParameter('streamerId'); // 🛑 ¡CORREGIDO!
-    } else {
-        // DASHBOARD: Debe leer el ID del input.
-        initialStreamerId = getCurrentStreamerId();
+        if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
+            window.electronAPI.abrirWidgetVentana(widgetUrl);
+        } else {
+            window.open(widgetUrl, 'WidgetTikTok', 'width=350,height=600');
+        }
     }
-    
-    // 2. Lógica de unión a la sala
-    if (initialStreamerId) { 
-        // 🛑 CRÍTICO: Actualizar la variable global 'streamerId' aquí para que las demás funciones la usen
-        streamerId = initialStreamerId; 
         
-        socket.emit("join_room", streamerId); 
+    // 6. Configuración Inicial del Dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+        const isWidgetMode = getUrlParameter('mode') === 'widget'; 
+        let initialStreamerId;
 
         if (isWidgetMode) {
-            document.body.classList.add('widget-mode');
-            console.log(`WIDGET unido a la sala: ${streamerId}`);
+            // WIDGET: Lee el ID de la URL
+            initialStreamerId = getUrlParameter('streamerId');
         } else {
-            // ... (resto del código del Dashboard) ...
-        }
-    } else {
-        console.log("⚠️ ERROR: No se ha definido un ID de streamer. Funcionalidad deshabilitada.");
-    }
-});
-
-        // 🛑 Aquí va el resto del JavaScript (la Parte 2 que enviaste antes) 🛑
-
-// ...
-
-        // --- FUNCIONES DE UTILIDAD ---
-        function formatTime(totalSeconds) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-// Nota: La función actualizarParticipantesUI original que enviaste estaba duplicada
-// y usaba un mix de estilos. Usaremos la versión que incluye el ranking de widget.
-// Se recomienda mantener una única función de UI más limpia y flexible.
-function actualizarParticipantesUI() {
-    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
-
-    const isWidgetMode = document.body.classList.contains('widget-mode');
-
-    // 1. Apuntamos a las listas correctas
-    const listaDashboardEl = document.getElementById('listaParticipantes');
-    const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
-
-    // 2. Limpiamos ambas listas
-    if (listaDashboardEl) listaDashboardEl.innerHTML = "";
-    if (listaWidgetEl) listaWidgetEl.innerHTML = "";
-
-    let totalDiamantes = 0;
-
-    participantes.forEach((p, index) => {
-        const rango = index + 1;
-        const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A';
-
-        // --- Formato de Dashboard (Lista simple) ---
-        if (listaDashboardEl && !isWidgetMode) {
-            const liDashboard = document.createElement("li");
-            liDashboard.textContent = `${rango}. ${p.usuario} - ${p.cantidad} 💎`;
-            listaDashboardEl.appendChild(liDashboard);
-        }
-
-        // --- Formato de Widget (Top 5 con ranking) ---
-        if (index < 5 && listaWidgetEl) {
-            const liWidget = document.createElement("li");
-            
-            liWidget.innerHTML = `
-                <div class="rank-icon">${rango}</div>
-                <div class="user-info">
-                    <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
-                    <span class="username">${p.usuario}</span>
-                </div>
-                <span class="coins">${p.cantidad} 🪙</span>
-            `;
-            listaWidgetEl.appendChild(liWidget);
+            // DASHBOARD: Lee el ID del input
+            initialStreamerId = getCurrentStreamerId();
         }
         
-        totalDiamantes += parseInt(p.cantidad || 0);
-    });
-    
-    // Solo actualizamos totales en el Dashboard
-    if (!isWidgetMode) {
-        document.querySelector('#totalParticipantes').textContent = participantes.length;
-        document.querySelector('#totalDiamantes').textContent = totalDiamantes;
-    }
-}
-
-function actualizarGanadoresUI() {
-    const listaGanadoresEl = document.getElementById('listaGanadores');
-    listaGanadoresEl.innerHTML = "";
-    ganadoresHistorial.forEach(g => {
-        const li = document.createElement('li');
-        li.textContent = `🏆 ${g.usuario} - ${g.cantidad} 💎`;
-        listaGanadoresEl.appendChild(li);
-    });
-}
-// ---------------------------------------------
-
-
-// --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
-function iniciarTimerLogic() {
-    // 🛑 CRÍTICO: Usar la variable global 'streamerId' que ya se inicializó en DOMContentLoaded
-    const timerStreamerId = streamerId; // Usamos un nombre local claro
-    
-    if (!timerStreamerId) return; // Si el ID global no está seteado, salir.
-
-    if (intervalo) {
-        clearInterval(intervalo);
-    }
-    
-    if (tiempoActual <= 0) {
-        // Asumiendo que el ID del input de tiempo es "tiempo"
-        const tiempoInicialInput = document.getElementById("tiempo"); 
-        // CRÍTICO: Lee el valor del input y asigna un default si está vacío
-        tiempoActual = parseInt(tiempoInicialInput.value) || 200; 
-    }
-    
-    if (isPaused) {
-        return; 
-    }
-
-    intervalo = setInterval(() => {
-        if (!isPaused) {
-            tiempoActual--;
+        if (initialStreamerId) { 
+            // 🛑 CRÍTICO: Actualizar la variable global 'streamerId'
+            streamerId = initialStreamerId; 
             
-            const tiempoRestanteEl = document.getElementById('tiempoRestante');
-            if (tiempoRestanteEl) {
-                tiempoRestanteEl.textContent = formatTime(tiempoActual); 
+            socket.emit("join_room", streamerId); 
+
+            if (isWidgetMode) {
+                document.body.classList.add('widget-mode');
+                console.log(`WIDGET unido a la sala: ${streamerId}`);
+            } else {
+                console.log(`DASHBOARD unido a la sala: ${streamerId}`);
+                // Deshabilitar input después de conectar (opcional)
+                // const inputEl = document.getElementById('streamerMasterId'); 
+                // if (inputEl) inputEl.disabled = true;
+            }
+        } else {
+            console.log("⚠️ ERROR: No se ha definido un ID de streamer. Funcionalidad deshabilitada.");
+        }
+    });
+
+    // --- FUNCIONES DE UTILIDAD UI ---
+    function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function actualizarParticipantesUI() {
+        participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+        const isWidgetMode = document.body.classList.contains('widget-mode');
+
+        const listaDashboardEl = document.getElementById('listaParticipantes');
+        const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
+
+        if (listaDashboardEl) listaDashboardEl.innerHTML = "";
+        if (listaWidgetEl) listaWidgetEl.innerHTML = "";
+
+        let totalDiamantes = 0;
+
+        participantes.forEach((p, index) => {
+            const rango = index + 1;
+            const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A';
+
+            if (listaDashboardEl && !isWidgetMode) {
+                const liDashboard = document.createElement("li");
+                liDashboard.textContent = `${rango}. ${p.usuario} - ${p.cantidad} 💎`;
+                listaDashboardEl.appendChild(liDashboard);
             }
 
-            // Sincronizar el tiempo con el servidor para el Widget
+            if (index < 5 && listaWidgetEl) {
+                const liWidget = document.createElement("li");
+                liWidget.innerHTML = `
+                    <div class="rank-icon">${rango}</div>
+                    <div class="user-info">
+                        <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
+                        <span class="username">${p.usuario}</span>
+                    </div>
+                    <span class="coins">${p.cantidad} 🪙</span>
+                `;
+                listaWidgetEl.appendChild(liWidget);
+            }
+            totalDiamantes += parseInt(p.cantidad || 0);
+        });
+        
+        if (!isWidgetMode) {
+            document.querySelector('#totalParticipantes').textContent = participantes.length;
+            document.querySelector('#totalDiamantes').textContent = totalDiamantes;
+        }
+    }
+
+    function actualizarGanadoresUI() {
+        const listaGanadoresEl = document.getElementById('listaGanadores');
+        listaGanadoresEl.innerHTML = "";
+        ganadoresHistorial.forEach(g => {
+            const li = document.createElement('li');
+            li.textContent = `🏆 ${g.usuario} - ${g.cantidad} 💎`;
+            listaGanadoresEl.appendChild(li);
+        });
+    }
+
+    // --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
+    // 🛑 CORREGIDO: Acepta el ID como argumento
+    function iniciarTimerLogic(idParaUsar) {
+        const timerStreamerId = idParaUsar; 
+        
+        if (!timerStreamerId) {
+            console.error("iniciarTimerLogic falló: ID no proporcionado.");
+            return; 
+        }
+
+        if (intervalo) {
+            clearInterval(intervalo);
+        }
+        
+        if (tiempoActual <= 0) {
+            const tiempoInicialInput = document.getElementById("tiempo"); 
+            tiempoActual = (tiempoInicialInput && parseInt(tiempoInicialInput.value)) || 200; 
+        }
+        
+        if (isPaused) {
+            return; 
+        }
+
+        intervalo = setInterval(() => {
+            if (!isPaused) {
+                tiempoActual--;
+                
+                const tiempoRestanteEl = document.getElementById('tiempoRestante');
+                if (tiempoRestanteEl) {
+                    tiempoRestanteEl.textContent = formatTime(tiempoActual); 
+                }
+
+                socket.emit('sync_time', { 
+                    time: tiempoActual, 
+                    streamerId: timerStreamerId // Usa el ID que recibió
+                }); 
+
+                if (tiempoActual <= 0) {
+                    clearInterval(intervalo);
+                    intervalo = null;
+                    terminarTiempo(); 
+                }
+            }
+        }, 1000); 
+    }
+
+    // --- FUNCIONES DE CONTROL (BOTONES) ---
+
+    function iniciar() {
+        const currentStreamerId = getCurrentStreamerId(); 
+        if (!currentStreamerId) {
+            alert("¡Alerta! Por favor, introduce tu ID de Streamer antes de iniciar.");
+            return;
+        }
+        
+        if (document.body.classList.contains('widget-mode')) return;
+
+        // 🛑 CRÍTICO: Asignar el ID global AHORA
+        streamerId = currentStreamerId;
+
+        snipeActivado = false;
+        subastaActiva = true;
+        logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
+        
+        socket.emit("iniciar_subasta", { streamerId: currentStreamerId }); 
+        
+        isPaused = false;
+        tiempoActual = 0; 
+        
+        // 🛑 CORREGIDO: Pasa el ID al timer
+        iniciarTimerLogic(currentStreamerId); 
+
+        // Actualizar UI y Sincronizar Inmediatamente
+        const tiempoRestanteEl = document.getElementById('tiempoRestante');
+        if (tiempoRestanteEl) {
+            tiempoRestanteEl.textContent = formatTime(tiempoActual); 
+        }
+        if (tiempoActual > 0) {
             socket.emit('sync_time', { 
                 time: tiempoActual, 
-                streamerId: timerStreamerId // Usamos el ID validado/global
+                streamerId: currentStreamerId
             }); 
+        }
+    }
 
-            if (tiempoActual <= 0) {
-                clearInterval(intervalo);
+    function pausar() {
+        const currentStreamerId = getCurrentStreamerId(); 
+        if (!currentStreamerId) return;
+
+        if (!document.body.classList.contains('widget-mode')) {
+            isPaused = !isPaused;
+            if (isPaused) {
+                if (intervalo) clearInterval(intervalo);
                 intervalo = null;
-                terminarTiempo(); 
+                logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
+            } else {
+                // 🛑 CORREGIDO: Pasa el ID al timer
+                iniciarTimerLogic(currentStreamerId); 
+                logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
             }
         }
-    }, 1000); 
-}
-
-function iniciar() {
-    // 1. OBTENER Y VALIDAR EL ID DEL STREAMER (¡CRÍTICO!)
-    const currentStreamerId = getCurrentStreamerId(); 
-    
-    if (!currentStreamerId) {
-        alert("¡Alerta! Por favor, introduce tu ID de Streamer antes de iniciar.");
-        return;
-    }
-    
-    // 2. VERIFICAR QUE NO ESTAMOS EN MODO WIDGET
-    if (document.body.classList.contains('widget-mode')) {
-        return;
     }
 
-    // 3. INICIAR LA LÓGICA
-    snipeActivado = false;
-    subastaActiva = true;
-    logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
-    
-    // 4. Avisar al servidor
-    socket.emit("iniciar_subasta", { streamerId: currentStreamerId }); 
-    
-    isPaused = false;
-    tiempoActual = 0; // Se inicializa a 0 para que iniciarTimerLogic lo lea del input
-    
-    // 5. Iniciar el bucle de sincronización de tiempo (ESTO SETEA tiempoActual)
-    iniciarTimerLogic(); 
-
-    // 💡 AÑADIR: Sincronización inmediata para que el Widget arranque a la vez
-    if (tiempoActual > 0) {
-        socket.emit('sync_time', { 
-            time: tiempoActual, 
-            streamerId: currentStreamerId // Usa el ID validado para el emit
-        }); 
-    }
-}
-function pausar() {
-    // 🛑 CAMBIO: Obtener el ID del input, pero solo si es necesario
-    const currentStreamerId = getCurrentStreamerId(); 
-
-    if (!document.body.classList.contains('widget-mode')) {
-        isPaused = !isPaused;
-        if (isPaused) {
-            if (intervalo) clearInterval(intervalo);
-            intervalo = null;
-            logDonacionesEl.innerHTML += `<p style="color: orange;">⏸️ Temporizador en pausa.</p>`;
-        } else {
-            // Si reanudamos, volvemos a llamar a la lógica para reestablecer el intervalo
-            iniciarTimerLogic(); 
-            logDonacionesEl.innerHTML += `<p style="color: green;">▶️ Temporizador reanudado.</p>`;
-        }
-    }
-}
-
-function finalizar() {
-    // 🛑 CRÍTICO: Leer el ID al principio
-    const streamerId = getCurrentStreamerId(); 
-    
-    if (!document.body.classList.contains('widget-mode') && streamerId) {
-        if (intervalo) { 
-            clearInterval(intervalo); 
-            intervalo = null; 
-        }
-        
-        tiempoActual = 0;
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
-        if (document.getElementById('tiempoRestante')) {
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        }
-        
-        // Avisar al servidor que se finalizó
-        socket.emit('finalizar_subasta', { streamerId: streamerId }); 
-
-        logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
-
-        // Lógica de ganador
-        if (participantes.length > 0) {
-            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
-            const ganador = participantes[0];
-            ganadoresHistorial.unshift(ganador); 
-            logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
-            actualizarGanadoresUI();
+    function finalizar() {
+        const currentStreamerId = getCurrentStreamerId(); 
+        if (!document.body.classList.contains('widget-mode') && currentStreamerId) {
+            if (intervalo) { 
+                clearInterval(intervalo); 
+                intervalo = null; 
+            }
             
-            // 🛑 CRÍTICO: Usamos el ID recién leído
-            socket.emit("anunciar_ganador", { ...ganador, streamerId: streamerId });
-        } else {
-            logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-        }
-
-        // Limpiar listas y apagar interruptor
-        subastaActiva = false;
-        participantes = []; 
-        actualizarParticipantesUI(); 
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit("limpiar_listas", { streamerId: streamerId });
-    }
-}
-
-function restart() {
-    // 🛑 CRÍTICO: Leer el ID al principio
-    const streamerId = getCurrentStreamerId();
-    
-    if (!document.body.classList.contains('widget-mode') && streamerId) { 
-        // Llama a finalizar, lo que limpia listas y detiene el tiempo
-        finalizar(); 
-
-        // Limpia el historial de ganadores también
-        ganadoresHistorial = [];
-        actualizarGanadoresUI();
-        
-        snipeActivado = false;
-        
-        logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong><p style="color: cyan;">🔄 Sistema reiniciado. Listo para una nueva subasta.</p>';
-        
-        if (document.getElementById('tiempoRestante')) 
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit("limpiar_listas", { streamerId: streamerId });
-    }
-}
-
-// Nota: La función terminarTiempo se usa internamente por iniciarTimerLogic()
-function terminarTiempo() {
-    // 🛑 CRÍTICO: Leer el ID al principio
-    const streamerId = getCurrentStreamerId();
-    
-    if (!document.body.classList.contains('widget-mode') && streamerId) { 
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit("restaurar_widget", { streamerId: streamerId });
-
-        if (intervalo) { 
-            clearInterval(intervalo); 
-            intervalo = null; 
-        }
-
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit('finalizar_subasta', { streamerId: streamerId });
-        // 🛑 CRÍTICO: Usamos el ID recién leído
-        socket.emit('sync_time', { time: 0, streamerId: streamerId }); 
-        tiempoActual = 0; 
-        if (document.getElementById('tiempoRestante')) {
-            document.getElementById('tiempoRestante').textContent = formatTime(0);
-        }
-
-        const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
-
-        if (!snipeActivado && tiempoSnipe > 0) {
-            // A) AÚN QUEDA EL SNIPE
-            snipeActivado = true;
-            logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
-
-            // 🛑 CRÍTICO: Usamos el ID recién leído
-            socket.emit("iniciar_snipe_cliente", { time: tiempoSnipe, streamerId: streamerId });
-            // 🛑 CRÍTICO: Usamos el ID recién leído
-            socket.emit("activar_alerta_snipe_visual", { streamerId: streamerId });
-
-            tiempoActual = tiempoSnipe;
-            iniciarTimerLogic(); // Inicia el timer de nuevo con el tiempo Snipe
-        } else {
-            // B) NO HAY SNIPE (Lógica de finalización/ganador)
-            // ... (el resto de la lógica permanece igual) ...
+            tiempoActual = 0;
+            socket.emit('sync_time', { time: 0, streamerId: currentStreamerId }); 
+            if (document.getElementById('tiempoRestante')) {
+                document.getElementById('tiempoRestante').textContent = formatTime(0);
+            }
             
+            socket.emit('finalizar_subasta', { streamerId: currentStreamerId }); 
+            logDonacionesEl.innerHTML += `<p style="color: red;">⏹️ Ronda finalizada manualmente.</p>`;
+
             if (participantes.length > 0) {
-                // ... (lógica de ganador) ...
-                // 🛑 CRÍTICO: Usamos el ID recién leído
-                socket.emit("anunciar_ganador", { ...ganador, streamerId: streamerId });
+                participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+                const ganador = participantes[0];
+                ganadoresHistorial.unshift(ganador); 
+                logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador guardado: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+                actualizarGanadoresUI();
+                socket.emit("anunciar_ganador", { ...ganador, streamerId: currentStreamerId });
             } else {
                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
             }
+
+            subastaActiva = false;
+            participantes = []; 
+            actualizarParticipantesUI(); 
+            socket.emit("limpiar_listas", { streamerId: currentStreamerId });
         }
     }
-}
 
-function simularRegalo() {
-    // 🛑 CRÍTICO: Leer el ID al principio
-    const streamerId = getCurrentStreamerId();
-    
-    if (!streamerId) {
-        alert("Introduce un ID de Streamer para simular un regalo.");
-        return;
+    function restart() {
+        const currentStreamerId = getCurrentStreamerId();
+        if (!document.body.classList.contains('widget-mode') && currentStreamerId) { 
+            finalizar(); 
+
+            ganadoresHistorial = [];
+            actualizarGanadoresUI();
+            snipeActivado = false;
+            
+            logDonacionesEl.innerHTML = '<strong>📝 Historial de Eventos:</strong><p style="color: cyan;">🔄 Sistema reiniciado. Listo para una nueva subasta.</p>';
+            
+            if (document.getElementById('tiempoRestante')) 
+                document.getElementById('tiempoRestante').textContent = formatTime(0);
+            
+            socket.emit('sync_time', { time: 0, streamerId: currentStreamerId }); 
+            socket.emit("limpiar_listas", { streamerId: currentStreamerId });
+        }
     }
-    
-    // ... código de generación de usuario/cantidad ...
-    const randomUser = 'TestUser' + Math.floor(Math.random() * 100);
-    const randomAmount = Math.floor(Math.random() * 100) + 1;
-    const giftName = 'Rosa';
-    
-    // CRÍTICA: Usamos el ID recién leído
-    socket.emit("new_gift", { 
-        usuario: randomUser,
-        cantidad: randomAmount, 
-        regalo: giftName,
-        avatar_url: `https://via.placeholder.com/30/555/FFFFFF?text=${randomUser.charAt(0)}`,
-        streamerId: streamerId
-    });
-}
-// --- FUNCIÓN AUXILIAR ---
-function getCurrentStreamerId() {
-    const streamerMasterInput = document.getElementById('streamerMasterId');
-    return streamerMasterInput ? streamerMasterInput.value.trim() : ""; 
-}
-// 👆 FIN DE FUNCIÓN SIMULAR REGALO CORREGIDA 👆
 
-// ------------------------------------------------------------------
-// El Widget recibe la hora (Esta función también debe ser modificada)
-// 🛑 CORRECCIÓN: El servidor ahora envía un objeto, no solo el tiempo 🛑
-socket.on('update_time', (data) => {
-  if (!data || typeof data.time === 'undefined') return;
-  if (!document.body.classList.contains('widget-mode')) return;
-  tiempoActual = data.time;
-  const formatted = formatTime(data.time);
-  const el = document.getElementById('tiempoRestante-widget');
-  if (el) el.textContent = formatted;
-  // (resto de visual snipe)
-});
+    function terminarTiempo() {
+        const currentStreamerId = getCurrentStreamerId();
+        if (!document.body.classList.contains('widget-mode') && currentStreamerId) { 
+            socket.emit("restaurar_widget", { streamerId: currentStreamerId });
 
-// ===============================================
-// 🎁 CONEXIÓN A LA API DE TIKFINITY (localmente)
-// ===============================================
-const tikfinityWS = new WebSocket("ws://localhost:21213/");
-tikfinityWS.onopen = () => console.log("✅ Conectado a TikFinity WebSocket");
-tikfinityWS.onerror = err => console.error("❌ Error TikFinity WS:", err);
+            if (intervalo) { 
+                clearInterval(intervalo); 
+                intervalo = null; 
+            }
 
-// ===============================================
-// 🎁 CUANDO LLEGUE UN EVENTO DE TIKTOK
-// ===============================================
-tikfinityWS.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-    if (!data || !data.event) return;
+            socket.emit('finalizar_subasta', { streamerId: currentStreamerId });
+            socket.emit('sync_time', { time: 0, streamerId: currentStreamerId }); 
+            tiempoActual = 0; 
+            if (document.getElementById('tiempoRestante')) {
+                document.getElementById('tiempoRestante').textContent = formatTime(0);
+            }
 
-    if (data.event === "gift") {
-        const gift = data.data;
-        const totalDiamonds = gift.diamondCount || gift.repeatCount || 1;
-        const streamerId = getCurrentStreamerId(); // usa el input donde el streamer pone su ID
+            const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
 
-        if (!streamerId) {
-            console.warn("⚠️ No se encontró streamerId, no se enviará el regalo");
+            if (!snipeActivado && tiempoSnipe > 0) {
+                snipeActivado = true;
+                logDonacionesEl.innerHTML += `<p style="color: yellow;">⚡ Modo SNIPE activado (${tiempoSnipe}s extra)</p>`;
+                socket.emit("iniciar_snipe_cliente", { time: tiempoSnipe, streamerId: currentStreamerId });
+                socket.emit("activar_alerta_snipe_visual", { streamerId: currentStreamerId });
+
+                tiempoActual = tiempoSnipe;
+                // 🛑 CORREGIDO: Pasa el ID al timer
+                iniciarTimerLogic(currentStreamerId); 
+            } else {
+                if (participantes.length > 0) {
+                    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+                    const ganador = participantes[0];
+                    ganadoresHistorial.unshift(ganador);
+                    logDonacionesEl.innerHTML += `<p style="color: gold;">🏆 ¡Ganador: ${ganador.usuario} con ${ganador.cantidad} diamantes!</p>`;
+                    actualizarGanadoresUI();
+                    socket.emit("anunciar_ganador", { ...ganador, streamerId: currentStreamerId });
+                } else {
+                    logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+                }
+            }
+        }
+    }
+
+    function simularRegalo() {
+        const currentStreamerId = getCurrentStreamerId();
+        if (!currentStreamerId) {
+            alert("Introduce un ID de Streamer para simular un regalo.");
             return;
         }
-
-        // Armar el payload
-        const payload = {
-            usuario: gift.uniqueId || gift.nickname || "Anon",
-            cantidad: totalDiamonds,
-            regalo: gift.giftName || "Regalo",
-            avatar_url: gift.profilePictureUrl || null,
-            streamerId: streamerId
-        };
-
-        // Enviar al servidor (Render)
-        socket.emit("new_gift", payload);
-        console.log("🎁 Enviado al servidor new_gift:", payload);
-    }
-};
-
-// ===============================================
-// 🎁 NUEVOS REGALOS
-// ===============================================
-socket.on("new_gift", (giftData) => {
-    const { userId, nickname, profilePictureUrl, diamondCount, streamerId } = giftData;
-    const cantidadDelRegalo = diamondCount || 0;
-
-    // Si este widget no pertenece a este streamer, ignorar el evento
-    if (streamerId !== giftData.streamerId) return;
-
-    // Buscar si el usuario ya existe en la lista
-    let participante = participantes.find(p => p.userId === userId);
-
-    if (participante) {
-        // Si ya existe, sumar a su cantidad
-        participante.cantidad = (parseInt(participante.cantidad) + cantidadDelRegalo).toString();
-    } else {
-        // Si es nuevo, agregarlo
-        participantes.push({
-            userId,
-            nickname,
-            profilePictureUrl,
-            cantidad: cantidadDelRegalo.toString()
+        
+        const randomUser = 'TestUser' + Math.floor(Math.random() * 100);
+        const randomAmount = Math.floor(Math.random() * 100) + 1;
+        const giftName = 'Rosa';
+        
+        // Emite el evento "new_gift" al servidor (Render)
+        socket.emit("new_gift", { 
+            usuario: randomUser,
+            cantidad: randomAmount, 
+            regalo: giftName,
+            avatar_url: `https://via.placeholder.com/30/555/FFFFFF?text=${randomUser.charAt(0)}`,
+            streamerId: currentStreamerId
         });
     }
 
-    // 🔢 Ordenar el ranking por cantidad donada
-    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+    // ===============================================
+    // 🎁 CONEXIÓN A LA API DE TIKFINITY (localmente)
+    // ===============================================
+    const tikfinityWS = new WebSocket("ws://localhost:21213/");
+    tikfinityWS.onopen = () => console.log("✅ Conectado a TikFinity WebSocket");
+    tikfinityWS.onerror = err => console.error("❌ Error TikFinity WS:", err);
 
-    // 📢 Actualizar el ranking en pantalla
-    actualizarListaParticipantes();
+    tikfinityWS.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        if (!data || !data.event) return;
 
-    // 🕒 Si el modo snipe está activo (solo para el dashboard, no widgets)
-    if (!document.body.classList.contains('widget-mode') && snipeActivado && cantidadDelRegalo > 0 && streamerId) {
-        const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
+        if (data.event === "gift") {
+            const gift = data.data;
+            const totalDiamonds = gift.diamondCount || gift.repeatCount || 1;
+            const currentStreamerId = getCurrentStreamerId(); // usa el input
 
-        if (tiempoActual <= tiempoSnipe) {
-            tiempoActual = tiempoSnipe;
+            if (!currentStreamerId) {
+                console.warn("⚠️ No se encontró streamerId, no se enviará el regalo");
+                return;
+            }
 
-            // 🔄 Avisar al servidor que se sincronice el tiempo
-            socket.emit('sync_time', { time: tiempoActual, streamerId: streamerId });
+            const payload = {
+                usuario: gift.uniqueId || gift.nickname || "Anon",
+                cantidad: totalDiamonds,
+                regalo: gift.giftName || "Regalo",
+                avatar_url: gift.profilePictureUrl || null,
+                streamerId: currentStreamerId
+            };
 
-            // Log visual
-            logDonacionesEl.innerHTML += `<p style="color: red;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
+            // Enviar al servidor (Render)
+            socket.emit("new_gift", payload);
+            console.log("🎁 Enviado al servidor new_gift:", payload);
         }
-    }
+    };
 
-    // ✨ Log visual de donación
-    if (logDonacionesEl) {
-        logDonacionesEl.innerHTML += `<p>💎 ${nickname} donó ${cantidadDelRegalo}!</p>`;
-    }
-});
-// ===============================================
-// ⏱️ SINCRONIZACIÓN DE TIEMPO
-// ===============================================
-socket.on("sync_time", (data) => {
-  if (!data || !data.streamerId) return;
-  io.to(data.streamerId).emit("update_time", { time: data.time });
-});
-    // 📢 ¡LÍNEA DE SINCRONIZACIÓN!
-    // Enviamos la lista final (ordenada y sumada) al servidor
-    // 🛑 CORRECCIÓN: Incluir streamerId
-    if (streamerId) {
-        socket.emit('sync_participantes', { participantes: participantes, streamerId: streamerId }); 
-    }
+    // ===============================================
+    // 🎧 LISTENERS DE SOCKET.IO (Eventos del Servidor)
+    // ===============================================
 
-    // Ahora sí, actualiza la UI con la lista ya ordenada
-    actualizarParticipantesUI();
+    // ⏱️ El Widget recibe la hora
+    socket.on('update_time', (data) => {
+        if (!data || typeof data.time === 'undefined') return;
+        if (!document.body.classList.contains('widget-mode')) return;
+        
+        tiempoActual = data.time;
+        const formatted = formatTime(data.time);
+        const el = document.getElementById('tiempoRestante-widget');
+        if (el) el.textContent = formatted;
+        
+        // Lógica visual de snipe
+        if (isSnipeModeVisual && data.time > 0) {
+            document.body.classList.add('snipe-alert');
+            const subtextEl = document.getElementById('subtext-widget');
+            if (subtextEl) subtextEl.textContent = "Tiempo por delay de live";
+        } else {
+            document.body.classList.remove('snipe-alert');
+            const subtextEl = document.getElementById('subtext-widget');
+            if (subtextEl) subtextEl.textContent = "El sorteo/subasta termina en";
+        }
+    });
 
-// ===============================
-// 🧹 Limpiar listas cuando el servidor lo indique
-// ===============================
-socket.on("limpiar_listas_clientes", () => {
-    console.log("🧹 Recibido comando para limpiar lista local.");
-    participantes = [];
-    actualizarParticipantesUI();
-    subastaActiva = false;
-    isSnipeModeVisual = false; // Reset visual snipe
-    document.body.classList.remove('snipe-alert');
-    const subtextElWidget = document.getElementById('subtext-widget');
-    if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
-    console.log("CLIENTE: Interruptor APAGADO.");
-});
+    // 🎁 El Servidor envía un nuevo regalo (Dashboard y Widget escuchan)
+    // 🛑 CORREGIDO: Un solo handler para "new_gift"
+    socket.on("new_gift", (data) => {
+        // Asegurarse de que 'data' exista y contenga 'gift'
+        // (Asumimos que el servidor envía el payload completo en 'data')
+        const gift = data; 
 
+        if (!gift || !gift.usuario) {
+             console.error("Error: 'new_gift' recibido sin datos de regalo válidos", data);
+             return;
+        }
 
-/* ================================================== */
-/* 👑 BLOQUE ÚNICO PARA MOSTRAR GANADOR (Dashboard + Widget) 👑 */
-/* 🛑 CORRECCIÓN: El servidor ahora envía un objeto que contiene 'streamerId' 🛑 */
-/* ================================================== */
-socket.on("anunciar_ganador", (data) => {
-    if (typeof data !== 'object' || data === null || !data.usuario) {
-        console.log("⚠️ No hubo ganador en esta ronda.");
-        return;
-    }
-    const ganador = data; // Data ahora contiene los datos del ganador más el streamerId
-    const isWidget = document.body.classList.contains('widget-mode');
+        // Si este cliente no pertenece a este streamer, ignorar el evento
+        if (streamerId !== gift.streamerId) return;
 
-    if (!isWidget) {
-        // ===========================
-        // 🖥️ MOSTRAR EN DASHBOARD
-        // ===========================
-        console.log("🎬 Mostrando popup de ganador en el Dashboard:", ganador.usuario);
+        const cantidadDelRegalo = parseInt(gift.cantidad) || 0;
+        let participante = participantes.find(p => p.usuario === gift.usuario);
 
-        const popup = document.getElementById('winner-popup');
-        const nameEl = document.getElementById('winner-name');
-        const amountEl = document.getElementById('winner-amount');
-        const avatarImgEl = document.getElementById('winner-avatar').querySelector('img');
-        const contentEl = document.getElementById('winner-content');
-
-        nameEl.textContent = ganador.usuario;
-        amountEl.textContent = ganador.cantidad + " 🪙";
-        avatarImgEl.src = ganador.avatar_url || 'https://via.placeholder.com/100/555/FFFFFF?text=A';
-
-        requestAnimationFrame(() => {
-            popup.style.display = 'flex';
-            requestAnimationFrame(() => {
-                popup.style.opacity = '1';
-                contentEl.style.transform = 'scale(1)';
+        if (participante) {
+            participante.cantidad = (parseInt(participante.cantidad) + cantidadDelRegalo);
+            participante.avatar_url = gift.avatar_url; // Actualizar avatar
+        } else {
+            participantes.push({
+                usuario: gift.usuario,
+                cantidad: cantidadDelRegalo,
+                avatar_url: gift.avatar_url
             });
-        });
+        }
 
-        setTimeout(() => {
-            popup.style.opacity = '0';
-            contentEl.style.transform = 'scale(0.7)';
-            setTimeout(() => {
-                popup.style.display = 'none';
-                // 🛑 CORRECCIÓN: El Dashboard limpia localmente, pero avisa al servidor con ID
-                if (streamerId) {
-                    socket.emit("limpiar_listas", { streamerId: streamerId });
-                }
-            }, 500);
-        }, 10000);
+        participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+        
+        // Sincronizar la lista de participantes (solo el Dashboard lo hace)
+        if (!document.body.classList.contains('widget-mode')) {
+             socket.emit('sync_participantes', { participantes: participantes, streamerId: streamerId });
+        }
 
-    } else {
-        // ===========================
-        // 📺 MOSTRAR EN WIDGET (TIKTOK STUDIO)
-        // ===========================
-        console.log("👑 Mostrando ganador en el widget:", ganador.usuario);
+        actualizarParticipantesUI();
 
-        // 1️⃣ Limpiar el ranking localmente (el servidor enviará la orden de limpieza global)
-        const rankingList = document.getElementById("listaParticipantes-widget");
-        if (rankingList) rankingList.innerHTML = "";
+        // Lógica de Snipe (solo el Dashboard)
+        if (!document.body.classList.contains('widget-mode') && snipeActivado && cantidadDelRegalo > 0) {
+            const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
+            if (tiempoActual <= tiempoSnipe) {
+                tiempoActual = tiempoSnipe;
+                socket.emit('sync_time', { time: tiempoActual, streamerId: streamerId });
+                logDonacionesEl.innerHTML += `<p style="color: red;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
+            }
+        }
+
+        // Log visual de donación (solo el Dashboard)
+        if (logDonacionesEl && !document.body.classList.contains('widget-mode')) {
+            logDonacionesEl.innerHTML += `<p>💎 ${gift.usuario} donó ${cantidadDelRegalo}!</p>`;
+        }
+    });
+
+    // 🧹 Limpiar listas
+    socket.on("limpiar_listas_clientes", () => {
+        console.log("🧹 Recibido comando para limpiar lista local.");
         participantes = [];
+        actualizarParticipantesUI();
+        subastaActiva = false;
+        isSnipeModeVisual = false; 
+        document.body.classList.remove('snipe-alert');
+        const subtextElWidget = document.getElementById('subtext-widget');
+        if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
+    });
 
-        // 2️⃣ Crear un banner flotante encima del widget
-        const container = document.createElement("div");
-        container.id = "widget-winner-popup";
-        container.style.position = "fixed";
-        container.style.top = "10%";
-        container.style.left = "50%";
-        container.style.transform = "translateX(-50%)";
-        container.style.zIndex = "9999";
-        container.style.background = "rgba(0,0,0,0.85)";
-        container.style.color = "#fff";
-        container.style.padding = "25px 50px";
-        container.style.borderRadius = "20px";
-        container.style.textAlign = "center";
-        container.style.fontSize = "1.6em";
-        container.style.backdropFilter = "blur(6px)";
-        container.style.boxShadow = "0 0 20px rgba(255, 215, 0, 0.8)";
-        container.style.animation = "popIn 0.4s ease";
+    // 👑 Mostrar Ganador
+    socket.on("anunciar_ganador", (data) => {
+        if (typeof data !== 'object' || data === null || !data.usuario) {
+            console.log("⚠️ No hubo ganador en esta ronda.");
+            return;
+        }
+        
+        const ganador = data;
+        const isWidget = document.body.classList.contains('widget-mode');
 
-        container.innerHTML = `
-            <div style="display:flex; align-items:center; justify-content:center; gap:15px;">
-                <img src="${ganador.avatar_url || 'https://via.placeholder.com/60/000/fff?text=?'}"
-                    style="width:60px; height:60px; border-radius:50%; border:3px solid gold;">
-                <div>
-                    <div style="font-weight:bold; color:#FFD700;">🏆 ¡GANADOR DE LA SUBASTA! 🏆</div>
-                    <div>${ganador.usuario}</div>
-                    <div style="font-size:1.2em;">${ganador.cantidad} 🪙</div>
-                </div>
-            </div>
-        `;
+        if (!isWidget) {
+            // MOSTRAR EN DASHBOARD
+            console.log("🎬 Mostrando popup de ganador en el Dashboard:", ganador.usuario);
 
-        document.body.appendChild(container);
+            const popup = document.getElementById('winner-popup');
+            const nameEl = document.getElementById('winner-name');
+            const amountEl = document.getElementById('winner-amount');
+            const avatarImgEl = document.getElementById('winner-avatar').querySelector('img');
+            const contentEl = document.getElementById('winner-content');
 
-        // 3️⃣ Quitar banner después de 10 segundos
-        setTimeout(() => {
-            container.style.transition = "opacity 0.5s ease";
-            container.style.opacity = "0";
+            if (nameEl) nameEl.textContent = ganador.usuario;
+            if (amountEl) amountEl.textContent = ganador.cantidad + " 🪙";
+            if (avatarImgEl) avatarImgEl.src = ganador.avatar_url || 'https://via.placeholder.com/100/555/FFFFFF?text=A';
+
+            requestAnimationFrame(() => {
+                if(popup) popup.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    if(popup) popup.style.opacity = '1';
+                    if(contentEl) contentEl.style.transform = 'scale(1)';
+                });
+            });
+
             setTimeout(() => {
-                container.remove();
-                // ✅ CORRECCIÓN FINAL: Se elimina la llamada a limpiar_listas desde el Widget. 
-                // La limpieza final la hará el Dashboard/Maestro.
-            }, 500);
-        }, 10000);
-    }
-});
+                if(popup) popup.style.opacity = '0';
+                if(contentEl) contentEl.style.transform = 'scale(0.7)';
+                setTimeout(() => {
+                    if(popup) popup.style.display = 'none';
+                    if (streamerId) {
+                        socket.emit("limpiar_listas", { streamerId: streamerId });
+                    }
+                }, 500);
+            }, 10000);
 
-/* Animación del popup */
-const style = document.createElement("style");
-style.innerHTML = `
-@keyframes popIn {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}`;
-document.head.appendChild(style);
-// Widget (Cliente) - Recepción de eventos del Dashboard
-socket.on("activar_alerta_snipe_visual", () => {
-    // Cuando el Dashboard dice que el Snipe comenzó, activamos la bandera visual
-    isSnipeModeVisual = true;
-});
+        } else {
+            // MOSTRAR EN WIDGET
+            console.log("👑 Mostrando ganador en el widget:", ganador.usuario);
+            const rankingList = document.getElementById("listaParticipantes-widget");
+            if (rankingList) rankingList.innerHTML = "";
+            participantes = [];
 
+            const container = document.createElement("div");
+            container.id = "widget-winner-popup";
+            // ... (estilos y contenido del popup del widget) ...
+            container.style.position = "fixed";
+            container.style.top = "10%";
+            container.style.left = "50%";
+            container.style.transform = "translateX(-50%)";
+            container.style.zIndex = "9999";
+            container.style.background = "rgba(0,0,0,0.85)";
+            container.style.color = "#fff";
+            container.style.padding = "25px 50px";
+            container.style.borderRadius = "20px";
+            container.style.textAlign = "center";
+            container.style.fontSize = "1.6em";
+            container.style.backdropFilter = "blur(6px)";
+            container.style.boxShadow = "0 0 20px rgba(255, 215, 0, 0.8)";
+            container.style.animation = "popIn 0.4s ease";
+            container.innerHTML = `
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px;">
+                    <img src="${ganador.avatar_url || 'https://via.placeholder.com/60/000/fff?text=?'}"
+                        style="width:60px; height:60px; border-radius:50%; border:3px solid gold;">
+                    <div>
+                        <div style="font-weight:bold; color:#FFD700;">🏆 ¡GANADOR DE LA SUBASTA! 🏆</div>
+                        <div>${ganador.usuario}</div>
+                        <div style="font-size:1.2em;">${ganador.cantidad} 🪙</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(container);
+
+            setTimeout(() => {
+                container.style.transition = "opacity 0.5s ease";
+                container.style.opacity = "0";
+                setTimeout(() => {
+                    container.remove();
+                }, 500);
+            }, 10000);
+        }
+    });
+
+    /* Animación del popup */
+    const style = document.createElement("style");
+    style.innerHTML = `
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }`;
+    document.head.appendChild(style);
+    
+    // Alertas de Snipe
+    socket.on("activar_alerta_snipe_visual", () => {
+        isSnipeModeVisual = true;
+    });
 socket.on('finalizar_subasta', () => {
     // Cuando la subasta termina, la bandera se apaga (además de la limpieza)
     isSnipeModeVisual = false; 
