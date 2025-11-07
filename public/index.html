@@ -388,16 +388,19 @@ function conectarDashboard() {
     // 2. Solo procede si el ID Único está completo
     if (streamerIdActual && streamerIdActual !== "ID_POR_DEFECTO") {
         
-        // El socket ya está inicializado, solo le decimos que se una a la sala
         socket.emit("join_room", { 
             streamerId: streamerIdActual, 
             tiktokUser: tiktokUserActual 
         }); 
-        console.log(`DASHBOARD unido a sala: ${streamerIdActual} (${tiktokUserActual})`);
         
-        // **OPCIONAL:** Aquí podrías poner tu lógica de conexión a TikFinity
-        // si la moviste del final del script. Si ya la tienes en otro lado, ignora este punto.
+        console.log(`DASHBOARD unido a sala: ${streamerIdActual} (${tiktokUserActual})`);
+
+        // ESTO ASEGURA QUE LA LÓGICA TIKFINITY DE ABAJO USE EL ID CORRECTO
+        streamerId = streamerIdActual; 
+        tiktokUser = tiktokUserActual;
     } 
+    // Nota: El log de conexión a TikFinity ya debería ocurrir automáticamente en el bloque
+    // de conexión al final del script, que usa las variables globales actualizadas.
 }
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
