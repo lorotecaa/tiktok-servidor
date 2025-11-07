@@ -879,7 +879,7 @@ function generarLinkWidget() {
 }
 
 // ... (El resto de tus funciones: finalizar(), pausar(), etc.)
-        function terminarTiempo() {
+       function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) { 
         socket.emit("restaurar_widget");
@@ -899,7 +899,6 @@ function generarLinkWidget() {
         }
 
         // 4. Revisa si hay que activar el SNIPE
-        // (Nota: cambié el default de 15 a 0 para más seguridad)
         const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
 
         if (!snipeActivado && tiempoSnipe > 0) {
@@ -911,7 +910,7 @@ function generarLinkWidget() {
             socket.emit("iniciar_snipe_cliente", tiempoSnipe);
 
             // 🛑 NUEVA EMISIÓN: Avisamos a los Widgets que inicien la ALERTA ROJA 🛑
-            socket.emit("activar_alerta_snipe_visual"); // <--- AÑADE ESTA LÍNEA
+            socket.emit("activar_alerta_snipe_visual"); 
 
             // Reiniciamos el temporizador local solo con el tiempo de snipe
             tiempoActual = tiempoSnipe;
@@ -936,11 +935,19 @@ function generarLinkWidget() {
                 actualizarGanadoresUI();
                 socket.emit("anunciar_ganador", ganador);
             } else {
-                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
-            }
+                 logDonacionesEl.innerHTML += `<p style="color: gray;">ℹ️ No hubo participantes en esta ronda.</p>`;
+            }
+            
+            // ✅ LIMPIEZA FINAL (Después de la finalización automática)
+            // ----------------------------------------------------
+            subastaActiva = false; // ¡Corregido el error de deletreo!
+            participantes = []; 
+            actualizarParticipantesUI(); 
+            socket.emit("limpiar_listas"); // Ordena al servidor que limpie su lista y el widget
+            // ----------------------------------------------------
+        }
     }
 }
-} 
         function finalizar() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) {
@@ -986,11 +993,6 @@ function generarLinkWidget() {
         socket.emit("limpiar_listas"); // (Esta es la única llamada que debe estar)
     }
 }
-        // --- 👇 ¡AQUÍ ESTÁ EL ARREGLO! 👇 ---
-        // Manda la orden de limpiar SIEMPRE, 
-        // sin importar si hubo ganador o no.
-        socket.emit("limpiar_listas");
-        // --- 👆 FIN DEL ARREGLO 👆 ---
           
         function restart() {
     if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede reiniciar
