@@ -1091,6 +1091,24 @@ function simularRegalo() {
         streamerId: streamerId // ✅ CRÍTICO: Envía el ID para que el servidor lo enrute
     });
 }
+function desactivarModoSubasta() {
+    const splashScreen = document.getElementById('splash-screen-id');
+    const mainUI = document.getElementById('main-ui-id'); 
+    
+    if (mainUI) {
+        // Oculta la interfaz activa
+        mainUI.style.display = 'none';
+    }
+    if (splashScreen) {
+        // Muestra la pantalla de carga del logo
+        splashScreen.style.display = 'block'; 
+    }
+}
+// Puedes llamar a esta función en socket.on("limpiar_listas_clientes")
+socket.on("limpiar_listas_clientes", () => {
+    // ... (Lógica de limpieza) ...
+    desactivarModoSubasta(); // Llamada al finalizar/limpiar
+});
 // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
 // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
@@ -1143,23 +1161,24 @@ if (isWidgetMode) {
     // ===============================
     document.body.classList.add('widget-mode');
 
-    // Si estamos en widget, el streamerId debe venir de la URL
-    streamerId = urlParams.get('id'); 
+    // ... (otras lógicas de URL y streamerId) ...
     
-    // ✅ CRÍTICO: MOSTRAR LA INTERFAZ COMPLETA DEL WIDGET AL CARGAR
     // Ocultamos el dashboard principal y mostramos el contenedor del widget
     document.getElementById('dashboard-container').style.display = 'none'; 
     document.getElementById('widget-container').style.display = 'flex';
-    // Oculta el splash screen y muestra la UI (resuelve el problema de la tabla negra)
+    
+    // CRÍTICO: MOSTRAR LA INTERFAZ COMPLETA DEL WIDGET AL CARGAR
+    // (Ahora que 'activarModoSubasta' está revisada, esta llamada es correcta)
     activarModoSubasta(); 
     
     if (streamerId) {
-        // El Widget se une a la sala
         socket.emit("join_room", { streamerId: streamerId, tiktokUser: "WidgetCliente" }); 
         console.log(`WIDGET unido a la sala: ${streamerId} (WidgetCliente)`);
     }
 
-} else {
+
+
+ else {
     // ===============================
     // 🖥️ MODO DASHBOARD (MAESTRO)
     // ===============================
@@ -1366,20 +1385,21 @@ socket.on("subasta_iniciada", (data) => {
     // Aquí puedes iniciar o actualizar el reloj del Widget si lo necesita
     // ...
 });
-function activarModoSubasta() {
-    // Busca el div que contiene el logo SUBASTINI (o la pantalla de carga)
-    const splashScreen = document.getElementById('splash-screen-id'); 
+// 1. Busca el div que contiene el logo SUBASTINI (o la pantalla de carga)
+    const splashScreen = document.getElementById('splash-screen-id'); // Reemplaza con tu ID real
     
-    // Busca el div que contiene las tablas y el reloj (la interfaz activa)
-    const mainUI = document.getElementById('main-ui-id'); 
+    // 2. Busca el div que contiene las tablas y el reloj (la interfaz activa)
+    const mainUI = document.getElementById('main-ui-id'); // Reemplaza con tu ID real
 
+    // Si los elementos existen, los manipulamos
     if (splashScreen) {
-        splashScreen.style.display = 'none'; // Oculta la pantalla de carga
+        // ✅ Oculta la pantalla de carga del logo
+        splashScreen.style.display = 'none'; 
     }
     if (mainUI) {
-        mainUI.style.display = 'block'; // Muestra la interfaz activa
+        // ✅ Muestra la interfaz activa (reloj, tabla vacía)
+        mainUI.style.display = 'block'; // O 'flex', dependiendo de tu CSS original
     }
-    // ... (otras lógicas visuales si las hay)
 }
 socket.on("update_subasta_status", (isActive) => {
     // Este evento se envía en join_room. Si es 'true', activa la vista.
