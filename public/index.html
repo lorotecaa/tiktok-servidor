@@ -364,15 +364,27 @@
         function iniciar() {
     if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
         
-        // 🛑 AÑADE ESTA LÍNEA AQUÍ 🛑
+        // 🛑 NUEVA VALIDACIÓN CRÍTICA 🛑
+        const idUnicoEl = document.getElementById('idUnico');
+        const streamerIdActual = idUnicoEl ? idUnicoEl.value.trim() : "";
+        
+        if (!streamerIdActual) {
+            // Muestra una advertencia si el campo ID Único está vacío
+            alert("⚠️ ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
+            logDonacionesEl.innerHTML += `<p style="color: red;">🛑 ERROR: ID Único no especificado. No se puede iniciar la subasta.</p>`;
+            return; // Detiene la función aquí, impidiendo que continúe
+        }
+        // 🛑 FIN DE VALIDACIÓN 🛑
+        
+        // Llama a la conexión con el ID Único verificado
         conectarDashboard(); 
         
         snipeActivado = false; // reiniciamos la bandera al empezar una nueva ronda
-        subastaActiva = true; // <-- AÑADE ESTA LÍNEA (¡Encendemos el interruptor!)
+        subastaActiva = true; 
         logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
         socket.emit("iniciar_subasta"); 
-        isPaused = false; // Aseguramos que no esté en pausa
-        tiempoActual = 0; // Forzar reseteo del tiempo al valor del input
+        isPaused = false; 
+        tiempoActual = 0; 
         iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
     }
 }
