@@ -783,18 +783,33 @@ body {
         conectarDashboard(); 
 
         // 🛑 VALIDACIÓN 2: CRÍTICA. SOLO INICIAR SI EL ID ES VÁLIDO EN EL SERVIDOR
+        // NOTA: Esta validación es débil porque la conexión es asíncrona. 
+        // Por ahora, la dejamos, pero el servidor es el que debe tener la última palabra.
         if (!isConnectedValid) {
             alert("⚠️ ERROR: El ID no ha sido validado por el servidor. Revisa si hay un mensaje de error.");
             return; // Detiene la función si el servidor ya marcó el ID como inválido
         }
         
+        // --- 🔑 LECTURA DE VALORES ADICIONALES ---
+        // Leemos el tiempo inicial y el tiempo de snipe
+        const tiempoInput = document.getElementById("tiempo");
+        const tiempoInicial = parseInt(tiempoInput ? tiempoInput.value : 200);
+
+        const tiempoSnipeEl = document.getElementById("tiempoSnipe");
+        const tiempoSnipe = parseInt(tiempoSnipeEl ? tiempoSnipeEl.value : 15);
+        // ----------------------------------------
+
         // --- Lógica de inicio (SOLO se ejecuta si isConnectedValid es true) ---
         snipeActivado = false; 
         subastaActiva = true; 
         logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
         
-        // Si el servidor valida el ID y llegamos aquí, entonces enviamos el evento
-        socket.emit("iniciar_subasta"); 
+        // ✅ CRÍTICO: Enviamos los datos que el servidor espera
+        socket.emit("iniciar_subasta", {
+            streamerId: streamerIdActual,
+            initialTime: tiempoInicial,
+            snipeTime: tiempoSnipe // Enviamos el tiempo de snipe por si el servidor lo usa
+        }); 
         
         isPaused = false; 
         tiempoActual = 0; 
