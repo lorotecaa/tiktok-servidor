@@ -362,17 +362,43 @@
 
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
-             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
-                snipeActivado = false; // reiniciamos la bandera al empezar una nueva ronda
-                subastaActiva = true; // <-- AÑADE ESTA LÍNEA (¡Encendemos el interruptor!)
-                logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
-                socket.emit("iniciar_subasta"); 
-                isPaused = false; // Aseguramos que no esté en pausa
-                tiempoActual = 0; // Forzar reseteo del tiempo al valor del input
-                iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
-            }
-        }
+    if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
+        
+        // 🛑 AÑADE ESTA LÍNEA AQUÍ 🛑
+        conectarDashboard(); 
+        
+        snipeActivado = false; // reiniciamos la bandera al empezar una nueva ronda
+        subastaActiva = true; // <-- AÑADE ESTA LÍNEA (¡Encendemos el interruptor!)
+        logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
+        socket.emit("iniciar_subasta"); 
+        isPaused = false; // Aseguramos que no esté en pausa
+        tiempoActual = 0; // Forzar reseteo del tiempo al valor del input
+        iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
+    }
+}
+function conectarDashboard() {
+    // 1. Lee los inputs en el momento de la ejecución
+    const idUnicoEl = document.getElementById('idUnico');
+    const tiktokUserEl = document.getElementById('tiktokUser');
 
+    // Asigna el valor del input, o un valor por defecto si no hay nada
+    let streamerIdActual = idUnicoEl ? idUnicoEl.value : "ID_POR_DEFECTO";
+    let tiktokUserActual = tiktokUserEl ? tiktokUserEl.value : "Desconocido";
+
+    // 2. Solo procede si el ID Único está completo
+    if (streamerIdActual && streamerIdActual !== "ID_POR_DEFECTO") {
+        
+        // El socket ya está inicializado, solo le decimos que se una a la sala
+        socket.emit("join_room", { 
+            streamerId: streamerIdActual, 
+            tiktokUser: tiktokUserActual 
+        }); 
+        console.log(`DASHBOARD unido a sala: ${streamerIdActual} (${tiktokUserActual})`);
+        
+        // **OPCIONAL:** Aquí podrías poner tu lógica de conexión a TikFinity
+        // si la moviste del final del script. Si ya la tienes en otro lado, ignora este punto.
+    } 
+}
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) { 
@@ -507,8 +533,6 @@
     }
 }
 
-let streamerId = "ID_POR_DEFECTO"; // ⬅️ IMPORTANTE: Define aquí tu ID único para la sala
-let tiktokUser = "USUARIO_POR_DEFECTO"; // ⬅️ Nuevo: Tu nombre para el log de Render
 
         function pausar() {
             if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede pausar
@@ -608,16 +632,16 @@ const urlParams = new URLSearchParams(window.location.search);
 const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global (ya existe)
 
 // 1. Obtener los valores de los inputs
-// let streamerId = ""; ⬅️ QUITA ESTA LÍNEA O EL 'LET'
-// let tiktokUser = ""; ⬅️ QUITA ESTA LÍNEA O EL 'LET'
+let streamerId = "ID_POR_DEFECTO"; // ⬅️ IMPORTANTE: ESTO DEBE CAMBIAR
+let tiktokUser = "USUARIO_POR_DEFECTO"; // ⬅️ ESTO DEBE CAMBIAR
 const idUnicoEl = document.getElementById('idUnico');
 const tiktokUserEl = document.getElementById('tiktokUser');
 
 if (idUnicoEl) {
-    streamerId = idUnicoEl.value; // ⬅️ SOLO ASIGNACIÓN
+    streamerId = idUnicoEl.value; // Lee el valor
 }
 if (tiktokUserEl) {
-    tiktokUser = tiktokUserEl.value; // ⬅️ SOLO ASIGNACIÓN
+    tiktokUser = tiktokUserEl.value; // Lee el valor
 }
 // ...
 
@@ -648,7 +672,6 @@ if (isWidgetMode) {
     
     if (streamerId) { // Si hay ID Único ingresado
         // El Dashboard se une a la sala
-        socket.emit("join_room", { streamerId: streamerId, tiktokUser: tiktokUser }); // Envía el nombre del TikTok User
         console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
 
         // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- TU CÓDIGO COMIENZA AQUÍ
