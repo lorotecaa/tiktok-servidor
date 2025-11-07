@@ -9,13 +9,11 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-// 🚨 Dependencia de TikFinity
-const { TikTokIOConnection } = require('tiktok-livestream-chat-connector'); 
 
 // Crear aplicación Express y servidor HTTP
 const app = express();
 const server = http.createServer(app);
-// Permitir CORS desde cualquier origen (necesario para el widget y TikFinity)
+// Permitir CORS (necesario para el widget y la comunicación)
 const io = new Server(server, {
     cors: {
         origin: "*", 
@@ -23,20 +21,19 @@ const io = new Server(server, {
     }
 });
 
-// Puerto asignado por Render o localmente (por defecto: 3000 es más común)
-const PORT = process.env.PORT || 3000;
+// Puerto asignado por Render o localmente (por defecto: 10000)
+const PORT = process.env.PORT || 10000;
 
 // ===========================================
 // 🌐 CONFIGURACIÓN EXPRESS
 // ===========================================
 
-// Servir archivos estáticos (Asumo que tu index.html está en la raíz o en /public)
+// Servir archivos estáticos desde la carpeta "public"
 app.use(express.static(path.join(__dirname, "public")));
-// Si tu index.html está en la raíz, usa: app.use(express.static(__dirname));
 
 // Ruta principal para renderizar index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html")); // Ajusta la ruta si es necesario
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // ===========================================
@@ -44,55 +41,49 @@ app.get("/", (req, res) => {
 // ===========================================
 
 // Estructura de datos para manejar múltiples subastas/salas
-// { 'MI_STREAM_ID': { auctionState: 'espera', currentTime: 60, interval: null, participants: {}, config: {}, connection: null } }
+// { 'MI_STREAM_ID': { auctionState: 'espera', currentTime: 60, interval: null, participants: {}, config: {initialTime: 60, snipeTime: 15} } }
 const auctionRooms = {};
 
-// Objeto para almacenar la conexión activa de TikFinity por streamerId
-const activeTikTokConnections = {};
-
-// 1. 🔑 DEFINE TU LISTA BLANCA DE IDs AQUÍ (Únicamente los IDs que pueden iniciar la conexión TikFinity)
+// 1. 🔑 DEFINE TU LISTA BLANCA DE IDS AQUÍ
 const VALID_STREAMER_IDS = [
-    "MI_STREAM_ID", // El ID por defecto que usas en el cliente
-    "lorotecayt",   // Tu ID de prueba
-    "otro_usuario_autorizado" 
+    "@yosoytoniu",  
+    "lorotecayt",   
+    "otro_usuario_autorizado",
+    "MI_STREAM_ID" // Añade el ID por defecto si lo usas
 ];
 
+
 // ===========================================
-// 🛠️ FUNCIONES DE CONTROL DE SUBASTA
+// 🛠️ FUNCIONES DE CONTROL DE SUBASTA (Lógica del Timer y Snipe)
 // ===========================================
 
 /**
- * Función CRÍTICA: Aplica la solución al bug de TikFinity.
- * Limpia la lista de participantes y el estado de la subasta.
+ * Aplica la solución al bug: Limpia participantes y reinicia el estado.
  */
 function resetAuction(streamerId) {
     const room = auctionRooms[streamerId];
     if (!room) return;
     
-    // Detener el temporizador si está activo
     if (room.interval) {
         clearInterval(room.interval);
     }
     
-    // Limpiar la lista de participantes (SOLUCIÓN AL BUG de TikFinity)
-    room.participants = {};
+    // 🔥 SOLUCIÓN AL BUG: Limpiar la lista de participantes 🔥
+    room.participants = {}; 
     
-    // Reiniciar el estado
     room.auctionState = 'espera';
-    room.currentTime = room.config.initialTime;
+    room.currentTime = room.config.initialTime || 60; // Usa el tiempo inicial configurado
 
-    // Emitir el nuevo estado
     io.to(streamerId).emit('update_state', { 
         participants: room.participants, 
         currentTime: room.currentTime,
         auctionState: room.auctionState
     });
-    
-    console.log(`[SERVER] 🧹 Subasta reiniciada en la sala: ${streamerId}`);
+    console.log(`[SERVER] 🧹 Subasta reiniciada/limpiada en: ${streamerId}`);
 }
 
 /**
- * Función principal del temporizador, gestiona el tiempo y el snipe.
+ * Inicia el temporizador de la sala.
  */
 function startTimer(streamerId) {
     const room = auctionRooms[streamerId];
@@ -105,33 +96,29 @@ function startTimer(streamerId) {
     room.interval = setInterval(() => {
         room.currentTime--;
 
-        // Comprobar si ha terminado
         if (room.currentTime <= 0) {
             clearInterval(room.interval);
             room.auctionState = 'finalizado';
             endAuction(streamerId);
         } else {
-            // Emitir actualización de tiempo y estado cada segundo
             io.to(streamerId).emit('update_state', { 
                 currentTime: room.currentTime,
                 auctionState: room.auctionState 
             });
-            // Lógica de alerta de snipe visual (opcional)
+            // Alerta de snipe visual (ejemplo)
             if (room.currentTime === room.config.snipeTime - 1) { 
                  io.to(streamerId).emit("activar_alerta_snipe_visual");
             }
         }
     }, 1000);
-    
-    console.log(`[SERVER] ⏱️ Temporizador iniciado en ${streamerId}.`);
 }
 
 /**
- * Finaliza la subasta, determina el ganador y notifica a los clientes.
+ * Finaliza la subasta, determina el ganador.
  */
 function endAuction(streamerId, manual = false) {
     const room = auctionRooms[streamerId];
-    if (!room) return;
+    if (!room || room.auctionState === 'finalizado') return;
     
     if (room.interval) {
         clearInterval(room.interval);
@@ -142,190 +129,131 @@ function endAuction(streamerId, manual = false) {
     const participantsArray = Object.values(room.participants);
     
     if (participantsArray.length > 0) {
-        // Encontrar el ganador (el de más diamantes)
         winner = participantsArray.sort((a, b) => b.totalDiamonds - a.totalDiamonds)[0];
-        console.log(`[SERVER] 🏆 Ganador de ${streamerId}: ${winner.nickname}`);
-    } else {
-        console.log(`[SERVER] Subasta finalizada sin participantes en ${streamerId}.`);
     }
     
-    // Emitir el evento de finalización
     io.to(streamerId).emit('auction_ended', { winner: winner || { nickname: "Nadie", totalDiamonds: 0 } });
-    
-    // Enviar log de finalización
     io.to(streamerId).emit('update_state', { 
-         logMessage: `<p style="color: #e74c3c; font-weight: bold;">${manual ? '🛑 FIN MANUAL' : '⏱️ TIEMPO AGOTADO'}: Subasta Finalizada. Ganador: **${winner ? winner.nickname : 'Nadie'}**.</p>`
+         logMessage: `<p style="color: #e74c3c; font-weight: bold;">${manual ? '🛑 FIN MANUAL' : '⏱️ TIEMPO AGOTADO'}: Ganador: **${winner ? winner.nickname : 'Nadie'}**.</p>`
     });
 }
 
 /**
  * Procesa el regalo, actualiza participantes y aplica lógica de snipe.
+ * (Usado por incoming_gift y simularRegalo)
  */
 function handleGift(streamerId, data) {
     const room = auctionRooms[streamerId];
     if (!room || room.auctionState !== 'iniciado') {
-        return; // Ignorar regalos si la subasta no está activa
+        return; 
     }
     
-    // **SOLUCIÓN BUG TIKFINITY:** data ya viene solo con regalos, simplificamos.
+    // **CRÍTICO:** Solo procesamos regalos (esto asegura la solución al bug)
+    if (data.type !== 'gift') return;
     
-    const giftValue = data.giftValue * data.repeatCount;
+    const giftValue = (data.giftValue || 1) * (data.repeatCount || 1);
     const nickname = data.nickname;
     
-    // Añadir o actualizar el participante
+    // Actualizar o añadir participante
     if (room.participants[nickname]) {
         room.participants[nickname].totalDiamonds += giftValue;
     } else {
         room.participants[nickname] = {
             nickname: nickname,
-            profilePictureUrl: data.profilePictureUrl,
+            profilePictureUrl: data.profilePictureUrl || '',
             totalDiamonds: giftValue,
         };
     }
     
-    // ----------------------------------------
-    // Lógica del SNIPE (CRÍTICA)
-    // ----------------------------------------
+    // Lógica del SNIPE
     if (room.currentTime <= room.config.snipeTime) {
-        // Si el tiempo es menor o igual al tiempo de snipe, lo reiniciamos.
         room.currentTime = room.config.snipeTime;
         io.to(streamerId).emit('update_state', { 
-            logMessage: `<p style="color: #ff4d4d; font-weight: bold;">🚨 SNIPE: **${nickname}** reinició el tiempo a ${room.config.snipeTime}s con ${giftValue}💎.</p>`,
+            logMessage: `<p style="color: #ff4d4d; font-weight: bold;">🚨 SNIPE: **${nickname}** reinició a ${room.config.snipeTime}s con ${giftValue}💎.</p>`,
             currentTime: room.currentTime 
         });
     } else {
         io.to(streamerId).emit('update_state', { 
-             logMessage: `<p style="color: #2ecc71;">🎁 Regalo: **${nickname}** donó ${giftValue} Diamantes.</p>`,
+             logMessage: `<p style="color: #2ecc71;">🎁 Regalo: **${nickname}** donó ${giftValue} Diamantes. Total: ${room.participants[nickname].totalDiamonds}💎</p>`,
         });
     }
 
-    // Emitir el estado actualizado de participantes
+    // Emitir el estado actualizado
     io.to(streamerId).emit('update_state', { 
-        participants: room.participants
+        participants: room.participants,
+        currentTime: room.currentTime
     });
 }
 
-// ===========================================
-// 🌐 CONEXIÓN TIKFINITY
-// ===========================================
-
-function connectToTikTok(streamerId) {
-    // 1. Limpiar conexión anterior si existe
-    if (activeTikTokConnections[streamerId]) {
-        activeTikTokConnections[streamerId].close();
-        delete activeTikTokConnections[streamerId];
-    }
-
-    console.log(`[TikFinity] Intentando conectar a @${streamerId}...`);
-    const connection = new TikTokIOConnection(streamerId, { enableExtendedGiftInfo: true });
-    
-    connection.connect().then(state => {
-        activeTikTokConnections[streamerId] = connection;
-        
-        io.to(streamerId).emit('update_state', { 
-             logMessage: `<p style="color: #2ecc71;">🌐 Conexión TikFinity/TikTok ÉXITO a **@${state.uniqueId}**.</p>` 
-        });
-    }).catch(err => {
-        console.error(`[TikFinity] ❌ Error al conectar a @${streamerId}: ${err.message}`);
-        io.to(streamerId).emit('update_state', { 
-             logMessage: `<p style="color: #e74c3c;">❌ ERROR TikFinity: No se pudo conectar a **@${streamerId}**. Revise el ID.</p>` 
-        });
-    });
-
-    // -----------------------------------------------------
-    // Manejo de Eventos de TikTok (solo procesamos 'gift')
-    // -----------------------------------------------------
-    connection.on('gift', data => {
-        // Llamar a handleGift con los datos de TikFinity
-        handleGift(streamerId, {
-            type: 'gift',
-            nickname: data.nickname,
-            profilePictureUrl: data.profilePictureUrl,
-            giftValue: data.diamondCount,
-            repeatCount: data.repeatCount,
-            giftName: data.giftName,
-            uniqueId: data.uniqueId
-        });
-    });
-}
 
 // ===========================================
 // ⚡ EVENTOS SOCKET.IO
 // ===========================================
-
 io.on("connection", (socket) => { 
-    console.log("🟢 Cliente conectado:", socket.id);
+    console.log("🟢 Cliente conectado:", socket.id);
 
-    // ---------------------------------------
-    // 1. JOIN_ROOM (Dashboard y Conexión TikFinity)
-    // ---------------------------------------
-    socket.on("join_room", (data) => { 
-        const streamerId = data?.streamerId;
-
-        if (!streamerId) return;
-        
-        // 2. VERIFICACIÓN DE LA LISTA BLANCA
-        if (VALID_STREAMER_IDS.includes(streamerId)) {
-            socket.join(streamerId);
+    // ---------------------------------------
+    // 1. JOIN_ROOM (Dashboard y Widget)
+    // ---------------------------------------
+    socket.on("join_room", (data) => { 
+        const streamerId = data?.streamerId;
+        if (!streamerId) return;
+        
+        // 2. VERIFICACIÓN DE LA LISTA BLANCA
+        if (VALID_STREAMER_IDS.includes(streamerId)) {
+            socket.join(streamerId);
             
-            // 3. Inicializar o obtener la sala
+            // Inicializar la sala si no existe
             if (!auctionRooms[streamerId]) {
                 auctionRooms[streamerId] = {
                     auctionState: 'espera',
                     currentTime: 60,
                     interval: null,
                     participants: {},
-                    config: { initialTime: 60, snipeTime: 15 } // Configuración inicial por defecto
+                    config: { initialTime: 60, snipeTime: 15 } // Configuración por defecto
                 };
             }
-            
             const room = auctionRooms[streamerId];
             
-            // 4. Conectar a TikTok (solo si no está conectado ya)
-            if (!activeTikTokConnections[streamerId] || !activeTikTokConnections[streamerId].connected) {
-                 connectToTikTok(streamerId);
-            }
-            
-            // 5. Enviar el estado actual al cliente que acaba de entrar
+            // Enviar el estado actual al cliente que se une
             socket.emit('update_state', {
                 participants: room.participants,
                 currentTime: room.currentTime,
-                auctionState: room.auctionState
+                auctionState: room.auctionState,
+                logMessage: `<p style="color: #3498db;">🔗 Unido a la sala **${streamerId}**.</p>`
             });
             
-            console.log(`🔗 [${streamerId}] Dashboard unido a la sala.`);
-        } else {
-            // ID INVÁLIDO: Rechaza y notifica al cliente
-            socket.emit('id_invalido', {
-                streamerId: streamerId,
-                message: "ID no autorizado. Por favor, comunícate con el administrador."
-            });
-            console.log(`❌ ERROR: ID Inválido (${streamerId}) intentó unirse. Rechazado.`);
-        }
-    });
-    
+            console.log(`🔗 [${streamerId}] Cliente unido a la sala.`);
+        } else {
+            console.log(`❌ ERROR: ID Inválido (${streamerId}) intentó unirse. Rechazado.`);
+            socket.emit('id_invalido', {
+                streamerId: streamerId,
+                message: "ID no autorizado. Por favor, comunícate con el administrador."
+            });
+        }
+    });
+
     // ---------------------------------------
-    // 2. INICIAR SUBASTA
+    // 2. INICIAR SUBASTA (Botón Iniciar)
     // ---------------------------------------
+    // **CORREGIDO** para usar 'start_auction' y gestionar la lógica
     socket.on("start_auction", (data) => {
         const streamerId = data?.streamerId;
         const room = auctionRooms[streamerId];
         
         if (room && room.auctionState !== 'iniciado') {
-            // Asegurar que la configuración sea la enviada por el cliente
             room.config.initialTime = data.initialTime;
             room.config.snipeTime = data.snipeTime;
             room.currentTime = data.initialTime;
             room.auctionState = 'iniciado';
             
-            // Si viene de 'finalizado', asegura una limpieza antes de iniciar
+            // Si la sala no está limpia, la reiniciamos antes de empezar
             if (Object.keys(room.participants).length > 0) {
-                 resetAuction(streamerId);
+                 resetAuction(streamerId); 
             }
 
             startTimer(streamerId);
             
-            // Notificar a todos los clientes de la sala
             io.to(streamerId).emit("update_state", {
                 auctionState: room.auctionState,
                 currentTime: room.currentTime,
@@ -336,20 +264,17 @@ io.on("connection", (socket) => {
     });
 
     // ---------------------------------------
-    // 3. FINALIZAR SUBASTA (Botón de STOP)
+    // 3. FINALIZAR SUBASTA (Botón Finalizar)
     // ---------------------------------------
+    // **CORREGIDO** para usar 'end_auction' y gestionar la lógica
     socket.on("end_auction", (data) => {
         const streamerId = data?.streamerId;
-        const room = auctionRooms[streamerId];
-        
-        if (room && room.auctionState !== 'finalizado') {
-            endAuction(streamerId, true); // Pasar 'true' para loguear como finalización manual
-            console.log(`⏹️ [${streamerId}] Subasta finalizada manualmente.`);
-        }
+        endAuction(streamerId, true); // True = finalización manual
+        console.log(`⏹️ [${streamerId}] Subasta finalizada manualmente.`);
     });
     
     // ---------------------------------------
-    // 4. PAUSAR SUBASTA
+    // 4. PAUSAR SUBASTA (Botón Pausar)
     // ---------------------------------------
     socket.on("pause_auction", (data) => {
         const streamerId = data?.streamerId;
@@ -365,12 +290,11 @@ io.on("connection", (socket) => {
                 auctionState: room.auctionState,
                 logMessage: `<p style="color: #f39c12;">⏸️ Subasta Pausada.</p>`
             });
-            console.log(`⏸️ [${streamerId}] Subasta pausada.`);
         }
     });
     
     // ---------------------------------------
-    // 5. REINICIAR SUBASTA (Borrar todo, botón de Restart)
+    // 5. REINICIAR SUBASTA (Botón Restart)
     // ---------------------------------------
     socket.on("restart_auction", (data) => {
         const streamerId = data?.streamerId;
@@ -379,11 +303,21 @@ io.on("connection", (socket) => {
         io.to(streamerId).emit("update_state", {
              logMessage: `<p style="color: #7f8c8d;">🔄 Reinicio completo. En espera de inicio.</p>`
         });
-        console.log(`🔄 [${streamerId}] Solicitud de reinicio procesada.`);
     });
 
     // ---------------------------------------
-    // 6. SIMULAR REGALO
+    // 6. RECEPCIÓN DE REGALOS (Desde el Dashboard cliente TikFinity Local)
+    // ---------------------------------------
+    socket.on("incoming_gift", (giftData) => {
+         const streamerId = giftData?.streamerId;
+         if (auctionRooms[streamerId]) {
+             // Usa la función central para actualizar la subasta/snipe
+             handleGift(streamerId, giftData); 
+         }
+    });
+    
+    // ---------------------------------------
+    // 7. SIMULAR REGALO (Para el botón Simular Regalo)
     // ---------------------------------------
     socket.on("simulate_gift", (giftData) => {
          const streamerId = giftData?.streamerId;
@@ -392,35 +326,29 @@ io.on("connection", (socket) => {
     });
 
     // ---------------------------------------
-    // 7. WIDGET JOIN (Unión del widget)
+    // 8. Eventos Antiguos (DEBES REEMPLAZARLOS O ELIMINARLOS)
     // ---------------------------------------
-    socket.on("join_room_widget", (data) => {
-        const streamerId = data?.streamerId;
-         if (VALID_STREAMER_IDS.includes(streamerId)) {
-             socket.join(streamerId);
-             const room = auctionRooms[streamerId] || { participants: {}, currentTime: 60, auctionState: 'espera' };
-             
-             // Enviar el estado actual al widget
-             socket.emit('update_state', {
-                participants: room.participants,
-                currentTime: room.currentTime,
-                auctionState: room.auctionState
-            });
-            console.log(`📺 [${streamerId}] Widget unido a la sala.`);
-         }
-    });
+    // ESTOS DEBEN SER REEMPLAZADOS POR start_auction y end_auction:
+    // socket.on("iniciar_subasta", (data) => { ... }); // REEMPLAZAR
+    // socket.on("finalizar_subasta", () => { ... }); // REEMPLAZAR
+    // socket.on("nuevo_regalo", (giftData) => { ... }); // REEMPLAZAR por incoming_gift
     
+    // Puedes dejar estos si los usas en el cliente
+    socket.on("sync_time", (time) => { socket.broadcast.emit("update_time", time); });
+    socket.on("activar_alerta_snipe_visual", () => { io.emit("activar_alerta_snipe_visual"); });
+    socket.on("anunciar_ganador", (ganador) => { io.to(ganador.streamerId).emit("anunciar_ganador", ganador); });
+    socket.on("limpiar_listas", (data) => { io.to(data.streamerId).emit("limpiar_listas_clientes"); });
+
     // ---------------------------------------
-    // 8. Desconexión
+    // 9. Desconexión
     // ---------------------------------------
     socket.on("disconnect", () => {
         console.log("🔴 Cliente desconectado:", socket.id);
     });
 });
-
-// ===========================================
+// ===============================
 // 🚀 INICIAR SERVIDOR
-// ===========================================
+// ===============================
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
