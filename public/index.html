@@ -1506,6 +1506,41 @@ style.innerHTML = `
   100% { transform: scale(1); opacity: 1; }
 }`;
 document.head.appendChild(style);
+// 🚨 LÓGICA DE INICIALIZACIÓN (INCLUYE EL WIDGET FIX) 🚨
+document.addEventListener('DOMContentLoaded', (event) => {
+    // 1. Detección del modo Widget en la URL (NECESARIO AQUÍ)
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if (urlParams.get('mode') === 'widget') {
+        // MODO WIDGET
+        document.body.classList.add('widget-mode');
+        
+        const widgetContainer = document.getElementById('widget-container');
+        if (widgetContainer) {
+            widgetContainer.style.display = 'flex'; // Muestra el widget
+        }
+        
+        const dashboard = document.getElementById('main-content-wrapper');
+        if (dashboard) {
+             dashboard.style.display = 'none'; // Oculta el dashboard
+        }
+
+    } else {
+        // MODO DASHBOARD (Si no hay ?mode=widget)
+        document.body.classList.remove('widget-mode');
+        
+        const dashboard = document.getElementById('main-content-wrapper');
+        if (dashboard) {
+            // CRÍTICO: Devuelve el display a 'flex' para mantener el diseño
+            dashboard.style.display = 'flex'; 
+        }
+        
+        const widgetContainer = document.getElementById('widget-container');
+        if (widgetContainer) {
+            widgetContainer.style.display = 'none';
+        }
+    }
+    });
 // Widget (Cliente) - Recepción de eventos del Dashboard
 socket.on("activar_alerta_snipe_visual", () => {
     // Cuando el Dashboard dice que el Snipe comenzó, activamos la bandera visual
@@ -1521,6 +1556,7 @@ socket.on('finalizar_subasta', () => {
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
 });
+
     </script>
 </body>
 </html>
