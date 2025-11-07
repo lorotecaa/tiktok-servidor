@@ -1256,17 +1256,11 @@ socket.on("new_gift", (gift) => {
 
 // Maneja la actualización constante o la respuesta inicial del servidor
 socket.on("actualizar_participantes", (participantesRecibidos) => { 
-    console.log("🔥 Recibida lista de participantes del servidor. Actualizando UI...");
+    // ... (Tu lógica de reemplazo y actualización de UI) ...
     
-    // 1. IMPORTANTE: Reemplazamos la variable global
-    window.participantes = participantesRecibidos;
-    
-    // 2. LLAMADA: Llamamos a la función de dibujo
-    actualizarParticipantesUI(participantesRecibidos);
-    
-    // 3. CRÍTICO: Asegurarse de que el Widget oculte el logo de carga si tiene datos
+    // **Asegúrate que la llamada a activarModoSubasta está aquí:**
     if (document.body.classList.contains('widget-mode')) {
-        activarModoSubasta(); // Forzamos la visualización si hay datos de estado
+        activarModoSubasta(); // Esto quita la pantalla negra/logo
     }
 });
 
@@ -1324,6 +1318,48 @@ socket.on("update_subasta_status", (isActive) => {
     } else {
         // Si el estado es falso, asegura que se muestre el logo de carga.
         desactivarModoSubasta();
+    }
+});
+// ==========================================================
+// 🚀 SOLICITAR ESTADO AL SERVIDOR CUANDO EL WIDGET SE CONECTA
+// ==========================================================
+socket.on('connect', () => {
+    // ⚠️ CRÍTICO: Solo ejecuta esto si estamos en modo Widget
+    if (document.body.classList.contains('widget-mode')) {
+        // 1. Obtener el ID único de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const streamerId = urlParams.get('id');
+
+        if (streamerId) {
+            // 2. Emitir el evento de solicitud al servidor
+            socket.emit("solicitar_estado_subasta", { streamerId: streamerId });
+            console.log(`WIDGET: Solicitando estado de subasta al servidor para ID: ${streamerId}`);
+        }
+    }
+});
+socket.on("solicitar_estado_subasta", (data) => {
+    // Aquí, 'global' es CORRECTO, porque estás en el entorno del servidor
+    const streamerId = data.streamerId;
+    
+    // 1. Verificar si la subasta existe para ese streamer
+    if (global.subastasActivas && global.subastasActivas[streamerId]) {
+        const subasta = global.subastasActivas[streamerId];
+        
+        // 2. Enviar la data al socket que la solicitó
+        socket.emit("actualizar_tiempo", {
+            tiempo: subasta.tiempoRestante,
+            isSnipe: subasta.isSnipe 
+        });
+
+        // 3. Enviar la lista de participantes para que se dibuje
+        socket.emit("actualizar_participantes", subasta.participantes);
+
+        // 4. (Opcional pero útil) Enviar la señal de que está activa
+        socket.emit("update_subasta_status", true);
+        
+    } else {
+        // Enviar el estado de que NO está activa
+        socket.emit("update_subasta_status", false);
     }
 });
 socket.on("update_participants", (participantes) => {
