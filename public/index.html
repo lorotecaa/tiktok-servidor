@@ -409,16 +409,18 @@ function actualizarGanadoresUI() {
 // --- LÓGICA DEL TEMPORIZADOR (DASHBOARD MAESTRO) ---
 function iniciarTimerLogic() {
     // 🛑 CRÍTICO: Usar la variable global 'streamerId' que ya se inicializó en DOMContentLoaded
-    const currentId = streamerId; 
+    const timerStreamerId = streamerId; // Usamos un nombre local claro
     
-    if (!currentId) return; // Si el ID global no está seteado, salir.
+    if (!timerStreamerId) return; // Si el ID global no está seteado, salir.
 
     if (intervalo) {
         clearInterval(intervalo);
     }
     
     if (tiempoActual <= 0) {
+        // Asumiendo que el ID del input de tiempo es "tiempo"
         const tiempoInicialInput = document.getElementById("tiempo"); 
+        // CRÍTICO: Lee el valor del input y asigna un default si está vacío
         tiempoActual = parseInt(tiempoInicialInput.value) || 200; 
     }
     
@@ -438,7 +440,7 @@ function iniciarTimerLogic() {
             // Sincronizar el tiempo con el servidor para el Widget
             socket.emit('sync_time', { 
                 time: tiempoActual, 
-                streamerId: currentId // Usamos el ID global/inicializado
+                streamerId: timerStreamerId // Usamos el ID validado/global
             }); 
 
             if (tiempoActual <= 0) {
@@ -459,15 +461,33 @@ function iniciar() {
         return;
     }
     
-    // ...
-    // 4. Avisar al servidor (Usamos el ID local y VALIDADO)
+    // 2. VERIFICAR QUE NO ESTAMOS EN MODO WIDGET
+    if (document.body.classList.contains('widget-mode')) {
+        return;
+    }
+
+    // 3. INICIAR LA LÓGICA
+    snipeActivado = false;
+    subastaActiva = true;
+    logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
+    
+    // 4. Avisar al servidor
     socket.emit("iniciar_subasta", { streamerId: currentStreamerId }); 
     
-    // ...
-    // 5. Iniciar el bucle de sincronización de tiempo
-    iniciarTimerLogic(); // <- Esta función ahora usa el ID global 'streamerId'
-}
+    isPaused = false;
+    tiempoActual = 0; // Se inicializa a 0 para que iniciarTimerLogic lo lea del input
+    
+    // 5. Iniciar el bucle de sincronización de tiempo (ESTO SETEA tiempoActual)
+    iniciarTimerLogic(); 
 
+    // 💡 AÑADIR: Sincronización inmediata para que el Widget arranque a la vez
+    if (tiempoActual > 0) {
+        socket.emit('sync_time', { 
+            time: tiempoActual, 
+            streamerId: currentStreamerId // Usa el ID validado para el emit
+        }); 
+    }
+}
 function pausar() {
     // 🛑 CAMBIO: Obtener el ID del input, pero solo si es necesario
     const currentStreamerId = getCurrentStreamerId(); 
