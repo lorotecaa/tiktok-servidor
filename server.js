@@ -74,26 +74,59 @@ io.on("connection", (socket) => {
     io.to(data.streamerId).emit(event, data);
   }
 
-  // ===============================================
-  // 🎁 NUEVOS REGALOS
-  // ===============================================
-  socket.on("new_gift", (giftData) => {
-    if (!giftData || !giftData.streamerId) return;
-    const room = giftData.streamerId;
+  // ===================================================
+// 🎁 RECIBIR REGALOS DEL SERVIDOR
+// ===================================================
+socket.on("new_gift", (giftData) => {
+    console.log("📥 Regalo recibido en cliente:", giftData);
 
-    const individualGift = {
-      usuario: giftData.usuario,
-      cantidad: giftData.cantidad,
-      regalo: giftData.regalo,
-      avatar_url: giftData.avatar_url,
-    };
+    // Agregar participante si no existe
+    const existente = participantes.find(p => p.usuario === giftData.usuario);
 
-    io.to(room).emit("new_gift", individualGift);
-    console.log(
-      `🎁 [${room}] -> ${individualGift.usuario} envió ${individualGift.regalo} (${individualGift.cantidad})`
-    );
-  });
+    if (existente) {
+        existente.cantidad += parseInt(giftData.cantidad);
+    } else {
+        participantes.push({
+            usuario: giftData.usuario,
+            cantidad: parseInt(giftData.cantidad),
+            regalo: giftData.regalo,
+            avatar_url: giftData.avatar_url
+        });
+    }
 
+    // Ordenar la lista de mayor a menor cantidad
+    participantes.sort((a, b) => b.cantidad - a.cantidad);
+
+    // Actualizar el contador total
+    const totalDiamantes = participantes.reduce((sum, p) => sum + p.cantidad, 0);
+    document.getElementById("totalParticipantes").textContent = participantes.length;
+    document.getElementById("totalDiamantes").textContent = totalDiamantes;
+
+    // Actualizar la tabla o lista en pantalla
+    actualizarParticipantesUI();
+
+    // 🔁 Si tienes un widget abierto, reenviar los datos al iframe
+    if (window.widgetSocket) {
+        window.widgetSocket.emit("update_participantes", {
+            participantes,
+            streamerId
+        });
+    }
+});
+function actualizarParticipantesUI() {
+    const contenedor = document.getElementById("listaParticipantes");
+    if (!contenedor) return;
+    contenedor.innerHTML = "";
+
+    participantes.forEach((p, i) => {
+        contenedor.innerHTML += `
+            <div class="participante">
+                <span>${i + 1}. ${p.usuario}</span>
+                <span>💎 ${p.cantidad}</span>
+            </div>
+        `;
+    });
+}
   // ==========================================================
   // 🚀 INICIO DE SUBASTA
   // ==========================================================
