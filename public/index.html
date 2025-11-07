@@ -1092,16 +1092,35 @@ function simularRegalo() {
     });
 }
 function desactivarModoSubasta() {
-    const splashScreen = document.getElementById('splash-screen-id');
-    const mainUI = document.getElementById('main-ui-id'); 
-    
-    if (mainUI) {
-        // Oculta la interfaz activa
-        mainUI.style.display = 'none';
+    // 1. Muestra el Splash Screen (el logo SUBASTINI)
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+        splash.style.display = 'block'; 
     }
-    if (splashScreen) {
-        // Muestra la pantalla de carga del logo
-        splashScreen.style.display = 'block'; 
+    
+    // 2. Oculta la Interfaz Activa (reloj y ranking)
+    const activeUI = document.getElementById('widget-ui-active');
+    if (activeUI) {
+        activeUI.style.display = 'none';
+    }
+}
+function activarModoSubasta() {
+    // 1. Oculta el Splash Screen (el logo SUBASTINI)
+    const splash = document.getElementById('splash-screen'); // ¡USA ESTE ID EN TU HTML!
+    if (splash) {
+        splash.style.display = 'none'; 
+    }
+    
+    // 2. Muestra la Interfaz Activa (reloj y ranking)
+    const activeUI = document.getElementById('widget-ui-active'); // ¡USA ESTE ID EN TU HTML!
+    if (activeUI) {
+        activeUI.style.display = 'block'; // O 'flex', si ese es tu layout
+    }
+    
+    // También aseguramos que el contenedor general del widget esté visible
+    const widgetContainer = document.getElementById('widget-container'); 
+    if (widgetContainer) {
+        widgetContainer.style.display = 'flex'; 
     }
 }
 // Puedes llamar a esta función en socket.on("limpiar_listas_clientes")
@@ -1352,8 +1371,13 @@ socket.on("limpiar_listas_clientes", () => {
     participantes = [];
     actualizarParticipantesUI();
     subastaActiva = false;
-    isSnipeModeVisual = false; // Reinicia el modo visual de snipe
+    isSnipeModeVisual = false; 
     console.log("CLIENTE: Interruptor APAGADO.");
+    
+    // ✅ CRÍTICO: Al limpiar la subasta, volvemos a mostrar el logo
+    if (document.body.classList.contains('widget-mode')) {
+        desactivarModoSubasta(); 
+    }
 });
 // ===============================
 // 🎁 ESCUCHAR ACTUALIZACIONES DESDE EL SERVIDOR (CRÍTICO)
