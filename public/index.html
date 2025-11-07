@@ -246,6 +246,7 @@
         let snipeActivado = false; // <-- AÑADE ESTA LÍNEA
         let subastaActiva = false;
         let isSnipeModeVisual = false;
+        let isConnectedValid = false;
 
         // 👇 INICIO: AÑADIDO BLOQUE (PROTECCIÓN ANTI-DUPLICADOS) 👇
         const processedGiftIds = new Set();
@@ -362,27 +363,35 @@
 
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
-    if (!document.body.classList.contains('widget-mode')) { // Solo el dashboard puede iniciar
+    if (!document.body.classList.contains('widget-mode')) { 
         
-        // 🛑 NUEVA VALIDACIÓN CRÍTICA 🛑
+        // 🛑 VALIDACIÓN 1: Verificar si el ID está en el input
         const idUnicoEl = document.getElementById('idUnico');
         const streamerIdActual = idUnicoEl ? idUnicoEl.value.trim() : "";
         
         if (!streamerIdActual) {
-            // Muestra una advertencia si el campo ID Único está vacío
             alert("⚠️ ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
             logDonacionesEl.innerHTML += `<p style="color: red;">🛑 ERROR: ID Único no especificado. No se puede iniciar la subasta.</p>`;
-            return; // Detiene la función aquí, impidiendo que continúe
+            return; // Detiene la función aquí
         }
-        // 🛑 FIN DE VALIDACIÓN 🛑
         
-        // Llama a la conexión con el ID Único verificado
+        // Llama a la conexión. La lógica de inicio debe ir DESPUÉS de la conexión.
         conectarDashboard(); 
+
+        // 🛑 VALIDACIÓN 2: CRÍTICA. SOLO INICIAR SI EL ID ES VÁLIDO EN EL SERVIDOR
+        if (!isConnectedValid) {
+            alert("⚠️ ERROR: El ID no ha sido validado por el servidor. Revisa si hay un mensaje de error.");
+            return; // Detiene la función si el servidor ya marcó el ID como inválido
+        }
         
-        snipeActivado = false; // reiniciamos la bandera al empezar una nueva ronda
+        // --- Lógica de inicio (SOLO se ejecuta si isConnectedValid es true) ---
+        snipeActivado = false; 
         subastaActiva = true; 
         logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
+        
+        // Si el servidor valida el ID y llegamos aquí, entonces enviamos el evento
         socket.emit("iniciar_subasta"); 
+        
         isPaused = false; 
         tiempoActual = 0; 
         iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
@@ -391,16 +400,20 @@
 function conectarDashboard() {
     // 1. Lee ÚNICAMENTE el input ID Único
     const idUnicoEl = document.getElementById('idUnico');
-    let streamerIdActual = idUnicoEl ? idUnicoEl.value : ""; // Usamos "" para validar
+    let streamerIdActual = idUnicoEl ? idUnicoEl.value : "";
 
     if (!streamerIdActual) {
-        // Muestra el mensaje de error si el ID está vacío
         alert("ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
+        isConnectedValid = false; // ❌ Asegura que sea falso si falta el ID
         return; 
     }
     
-    // 2. Establecer el TikTok User como fijo (ya no lo leemos del HTML)
-    let tiktokUserActual = "No Requerido"; // Valor fijo requerido por el servidor
+    // 🆕 AÑADE ESTA LÍNEA CLAVE 🆕
+    // ASUMIMOS que el ID será válido. SOLO el evento 'id_invalido' la pondrá en 'false'.
+    isConnectedValid = true; 
+
+    // 2. Establecer el TikTok User
+    let tiktokUserActual = "No Requerido";
     
     // 3. Emitir el evento de conexión
     socket.emit("join_room", { 
@@ -410,10 +423,9 @@ function conectarDashboard() {
     
     // 4. Actualizar las variables globales
     streamerId = streamerIdActual; 
-    // tiktokUser ya no es tan importante, pero si es global, mantenla
     tiktokUser = tiktokUserActual; 
 
-    console.log(`DASHBOARD unido a sala: ${streamerIdActual} (ID fijo: ${tiktokUserActual})`);
+    console.log(`DASHBOARD intentando unirse a sala: ${streamerIdActual}`);
 }
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
@@ -870,17 +882,16 @@ socket.on("new_gift", (gift) => {
             actualizarParticipantesUI();
         });
 socket.on('id_invalido', (data) => {
-    // 1. Muestra la ventana emergente de error solicitada
-    alert(`⚠️ ERROR: El ID "${data.streamerId}" no está en la lista autorizada. Por favor, comunícate con el administrador.`);
+    // 🛑 1. Establecer la bandera como inválida
+    isConnectedValid = false; 
+
+    // 🛑 2. Detener la lógica de la subasta/tiempo
+    subastaActiva = false;
+    clearInterval(intervalo);
+    logDonacionesEl.innerHTML += `<p style="color: red;">🛑 ERROR: Conexión rechazada. ID Inválido: ${data.streamerId}</p>`;
     
-    // 2. Añade el error al log local del Dashboard
-    // Asegúrate de usar el ID correcto para tu contenedor de logs
-    const logDonacionesEl = document.getElementById('log_de_donaciones'); 
-    if (logDonacionesEl) {
-         logDonacionesEl.innerHTML += `<p style="color: red; font-weight: bold;">🛑 ID NO AUTORIZADO: "${data.streamerId}". Comunícate con el administrador.</p>`;
-    } else {
-         console.error(`ID NO AUTORIZADO: ${data.streamerId}`);
-    }
+    // Muestra la alerta (como ya lo tienes)
+    alert(`❌ ERROR: El ID '${data.streamerId}' no está en la lista autorizada. Por favor, comunícate con el administrador.`);
 });
 // 🛑 FIN DEL BLOQUE A AÑADIR 🛑
 // ===============================
