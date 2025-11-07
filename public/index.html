@@ -6,23 +6,189 @@
     <style>
         /* ESTILOS BASE DEL DASHBOARD (INTACTO) */
         body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        h1 { margin:20px 0; }
+        h1 { 
+    /* Estilo del nuevo logo "SUBASTINI" */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    font-size: 3.5em; /* Tamaño grande para el título principal */
+    font-weight: 900; 
+    color: #FFD700; /* Dorado para el impacto */
+    margin: 20px 0 5px 0; 
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    display: block; /* Asegura que la línea sea completa */
+    width: 100%;
+}
         ul { list-style: none; padding: 0; }
         li { margin: 5px 0; font-size: 18px; }
-        .totales { margin-top: 10px; font-weight: bold; font-size: 16px; }
+        .totales { 
+    margin-top: 10px; /* Si esta es muy grande, afectará a la separación */
+    font-weight: bold; 
+    font-size: 16px; 
+}
         h2 { background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 5px; display: inline-block; margin-bottom: 10px; font-size: 18px; }
-        button { margin: 5px; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .start { background: green; color: white; }
-        .stop { background: red; color: white; }
-        #logDonaciones { background: #333; color: #ccc; width: 740px; height: 150px; overflow-y: auto; margin: 20px auto; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; }
-        
+        button { 
+    /* Elimina el margin general de 5px para que button-group lo controle */
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+}   
+.control-btn {
+    flex-grow: 1; /* Permite que los botones crezcan para llenar el espacio */
+    margin: 0 5px; /* Margen horizontal entre botones, 0 vertical */
+    padding: 10px 5px; 
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px #00000033;
+    transition: background 0.3s;
+}
+        .start, .align-green { background: #2ecc71; color: white; } /* Verde brillante */
+        .stop, .align-red { background: #e74c3c; color: white; } /* Rojo fuerte */
+        /* La barra lateral derecha (LogDonaciones) */
+/* La barra lateral derecha (LogDonaciones) - ESTILO BASE (VENTANA NORMAL) */
+/* --- NUEVOS ESTILOS PARA ALINEACIÓN Y COLOR --- */
+.button-group {
+    display: flex;
+    justify-content: space-between; /* Espacia los botones dentro del grupo */
+    width: 100%;
+    margin-top: 15px; /* Espacio entre las filas de botones */
+    box-sizing: border-box;
+}
+
+.align-orange {
+    background: #f39c12; /* Naranja */
+    color: white;
+}
+.align-orange:hover {
+    background: #e67e22;
+}
+#logDonaciones { 
+    background: #2c3e50; 
+    color: #ccc; 
+    width: 300px; /* Ancho más pequeño para ventana normal */
+    height: 90vh; /* Alto para ventana normal */
+    overflow-y: auto; 
+    margin: 20px 20px 20px 0; 
+    padding: 15px; 
+    border-radius: 12px; 
+    text-align: left; 
+    font-family: monospace; 
+    box-sizing: border-box;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+#sub-title { /* Nuevo estilo para el subtítulo pequeño */
+    font-size: 1.1em;
+    color: #ccc;
+    display: block;
+    width: 100%;
+    margin-bottom: 20px;
+    font-weight: normal;
+}
         /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) (INTACTO) */
-        #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
-        #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
-        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
-        #controles-group { width: 300px; padding: 0; margin: 20px 0 0 0; display: inline-block; vertical-align: top; }
-        #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
+       #ganadores, #participantes {
+    padding: 15px; 
+    border-radius: 12px;
+    overflow-y: auto;
+    width: 100%; /* Ocupan todo el ancho de #data-panels */
+    min-height: 250px; 
+    height: 30vh; /* Altura basada en la vista para que quepa */
+    margin: 0 0 20px 0; /* Margen solo inferior para apilar */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+}
+#ganadores { background: #34495e; } /* Azul oscuro elegante */
+#participantes { background: #2ecc71; } /* Verde brillante */
+
+
+/* Controles Group (Centro) */
+#controles-group { 
+    width: 380px; /* Ancho fijo para alineación */
+    padding: 0; 
+    margin: 20px; 
+    display: flex; 
+    flex-direction: column;
+}
+        #ganadores { 
+    background: #2c3e50; 
+    width: 350px; 
+    height: 400px; 
+    overflow-y: auto;
+    margin: 20px; 
+    padding: 20px; 
+    border-radius: 10px; 
+    display: inline-block; 
+    vertical-align: top;
+    box-sizing: border-box;
+}
+        #participantes { 
+    background: #27ae60; 
+    width: 350px; 
+    height: 400px; 
+    overflow-y: auto;
+    margin: 20px; 
+    padding: 20px; 
+    border-radius: 10px; 
+    display: inline-block; 
+    vertical-align: top;
+    box-sizing: border-box;
+}
+        #controles-group { 
+    width: 350px; /* Ancho total del grupo para alinearse con Log */
+    padding: 0; 
+    margin: 20px; 
+    display: flex; 
+    flex-direction: column;
+}
+       #controles { 
+    background: #9b59b6; /* Púrpura */
+    width: 100%; 
+    padding: 20px; 
+    border-radius: 12px; 
+    margin-bottom: 20px; 
+    box-sizing: border-box;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+#tiempoBox { 
+    background: #e67e22; /* Naranja */
+    width: 100%; 
+    height: 120px; 
+    /* Mantener flexbox para centrado */
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+body { 
+    font-family: Arial, sans-serif; 
+    background: #1e1e2d; /* Fondo azul oscuro/gris */
+    color: white; 
+    text-align: center; 
+    margin:0; 
+    padding:0; 
+    /* Alineación de 3 columnas */
+    display: flex; 
+    justify-content: center; 
+    align-items: flex-start; 
+    min-height: 100vh; 
+    flex-wrap: wrap; /* Permite que el título ocupe la fila superior */
+}
+#main-content-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    /* ANCHO MÁXIMO EXTREMO: Permitirá que el header-container se estire mucho */
+    max-width: 9999px; 
+}
+
+/* Contenedor flexible para Ganadores y Participantes (Lado Izquierdo) */
+#data-panels {
+    display: flex;
+    flex-direction: column; /* Apila Ganadores y Participantes */
+    width: 380px; /* Ancho fijo para los paneles de la izquierda */
+    height: auto;
+    margin-left: 20px;
+}
 
         /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) (INTACTO) */
         .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
@@ -172,62 +338,277 @@
     font-weight: bold;
     color: #FFD700 !important;
 }
-    </style>
-</head>
-<body>
+#copy-notification {
+    position: absolute;
+    top: 50%; /* Se centrará verticalmente en el contenedor */
+    left: 50%; /* Se centrará horizontalmente en el contenedor */
+    transform: translate(-50%, -50%); /* Ajuste fino del centrado */
+    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 16px;
+    opacity: 0; /* Por defecto invisible */
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none; /* Permite hacer clic a través de él */
+    z-index: 1000; /* Asegura que esté encima de todo */
+}
+
+/* Modificación necesaria para que la posición absoluta funcione correctamente en el botón */
+#controles-group {
+    /* ... otros estilos ... */
+    position: relative; /* CRUCIAL: Necesita un contenedor padre con posición */
+}
+#copy-success-popup {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Overlay que cubre todo */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
+    z-index: 101; /* Un poco más alto que el de ganador si ambos pudieran aparecer */
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+#copy-success-content {
+    background: linear-gradient(145deg, #1f2a3a, #1a2330);
+    border: 4px solid #2ecc71; /* Borde verde para indicar éxito */
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 0 30px rgba(46, 204, 113, 0.7); /* Brillo verde */
+    transform: scale(0.7);
+    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    max-width: 600px; /* Para que no sea demasiado ancho */
+    width: 90%;
+}
+
+#copy-success-content h2 {
+    margin: 0;
+    font-size: 36px;
+    color: #2ecc71; /* Texto verde para éxito */
+}
+
+#copy-success-content p {
+    font-size: 18px;
+    color: #eee;
+    margin: 15px 0;
+}
+#header-container {
+    /* CRÍTICO: Ancho casi total para tocar los bordes laterales */
+    width: 98%; 
+    /* Eliminamos max-width para que se estire sin límite */
+    /* max-width: 1200px; <--- ELIMINAR ESTA LÍNEA */
     
-    <div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
-        <h1>⚡ Subasta en Vivo ⚡</h1>
+    background: #2c3e50; 
+    border-radius: 15px; 
+    padding: 20px 0; 
+    /* Ajustamos el margen para que los 2% restantes se vean como un borde muy fino */
+    margin: 20px auto 40px auto; 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+}
+
+/* Ajustes para el h1 y sub-title dentro del nuevo contenedor */
+#header-container h1, #header-container #sub-title {
+    width: auto; /* Permite que el texto determine su ancho */
+    margin-bottom: 5px; /* Espacio entre título y subtítulo */
+}
+
+#header-container h1 {
+    font-size: 4em; /* Ligeramente más grande en el header-container */
+    margin-top: 0;
+}
+#header-container #sub-title {
+    font-size: 1.2em; /* Ligeramente más grande */
+    margin-bottom: 0;
+}
+
+/* Ajustar el margen superior de los data-panels para que no choquen con el header */
+#data-panels {
+    margin-top: 0; /* Elimina el margen superior que tenía */
+}
+@media (min-width: 1400px) {
+    
+    /* 1. LogDonaciones: Más ancho y más corto (Solo en pantalla grande) */
+    #logDonaciones {
+        width: 400px; /* Más ancho para estirarse a la derecha */
+        height: 60vh; /* Más corto para no ir tan abajo */
+    }
+    
+    /* 2. Header: Máxima expansión (Asegurar que se aplique sobre el estilo base) */
+    #header-container {
+        width: 98%; 
+    }
+}
+/* Nuevo estilo para hacer los totales más pequeños y moverlos al final del panel */
+.totales-mini { 
+    font-size: 13px; 
+    opacity: 0.8; 
+    margin: 0 0; /* Sin margen propio */
+}
+/* Opcional: Para asegurar que se peguen abajo si la lista está vacía */
+#participantes { 
+    background: #2ecc71; 
+    padding: 15px; 
+    /* Modifica o añade: */
+    padding-bottom: 5px; /* Reducido a 5px para pegarlo más al borde */
+    /* El resto de las reglas flex deben permanecer: */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* ... otros estilos como border-radius, box-shadow, etc. */
+}
+/* Fuerza a la lista de participantes a tomar todo el espacio disponible */
+#listaParticipantes {
+    flex-grow: 1; 
+    min-height: 100px; /* Asegura un mínimo de altura si está vacía */
+    margin-bottom: 10px; 
+}
+
+/* 2. Estilo para el contenedor que envuelve los totales (El sub-cuadro) */
+#totales-wrapper {
+    background: rgba(0, 0, 0, 0.1); /* Fondo muy sutilmente oscuro (casi transparente) */
+    
+    /* Último ajuste: Borde de 4px, visible y semitransparente */
+    border: 4px solid rgba(200, 200, 200, 0.5); 
+    
+    border-radius: 8px; 
+    margin: 10px auto 5px auto; 
+    padding: 5px 12px; 
+    display: inline-block; /* Crucial para que se ajuste al tamaño del texto */
+}
+
+/* Sombra opcional (como pediste en la duplicación) */
+#totales-wrapper:hover {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* 3. Estilo para los textos internos de los totales (ahora en el sub-cuadro) */
+#totales-wrapper .totales-mini {
+    color: white; /* Texto blanco para resaltar */
+    font-weight: bold; 
+    opacity: 1.0; 
+    margin: 2px 0; /* Margen muy pequeño entre las dos líneas */
+    font-size: 13px; /* Mantenemos el tamaño pequeño */
+}
+
+/* 4. Estilo del Panel de Participantes (Contenedor Padre) */
+#participantes {
+    text-align: center; /* Crucial para centrar el elemento #totales-wrapper (inline-block) */
+    padding-bottom: 15px; /* Deja espacio debajo del cuadro de totales */
+    
+    /* Las propiedades flex deben estar aquí (si no lo están en tu CSS base) */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+        </style>
+    </head>
+    <body>
         
-        <div id="ganadores"><h2>🏆 Ganadores de Rondas</h2><ul id="listaGanadores"></ul></div>
-        <div id="participantes"><h2>👥 Participantes (Ronda Actual)</h2><ul id="listaParticipantes"></ul>
-            <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
-            <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
+        <div id="main-content-wrapper">
+        <div id="header-container">
+            <h1 style="width: 100%; text-align: center;">⚡ SUBASTINI ⚡</h1>
+            <div id="sub-title" style="width: 100%; text-align: center;">interactive game tiktok by lorotecayt</div>
+        </div>
+        <div id="data-panels">
+                
+               <div id="participantes">
+    <h2>👥 Participantes (Ronda Actual)</h2>
+    <ul id="listaParticipantes"></ul> 
+
+    <div id="totales-wrapper"> 
+        <div class="totales totales-mini">Total participantes: <span id="totalParticipantes">0</span></div>
+        <div class="totales totales-mini">Diamantes donados: <span id="totalDiamantes">0</span></div>
+    </div>
+</div>
+                
+                <div id="ganadores">
+            <h2>🏆 Ganadores de Rondas</h2><ul id="listaGanadores"></ul>
         </div>
 
-        <div id="controles-group">
+    </div>
+
+            <div id="controles-group">
             <div id="controles">
+                
                 <h2>🎮 Controles</h2>
                 <label for="idUnico">🔑 ID Único (para Widget):</label><br>
-<input type="text" id="idUnico" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
+                <input type="text" id="idUnico" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
+                
                 <div class="subcuadro">
-                    <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
-                    <input type="number" id="tiempo" value="200"><br><br>
-                    <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
-                    <input type="number" id="tiempoSnipe" value="15" min="0">
-                    <button class="start" onclick="iniciar()">Iniciar</button>
-                    <button onclick="pausar()">Pausar</button>
-                    <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
-                    <button style="background:#2ecc71; color:white;" onclick="abrirWidget()">Ver Widget</button>
-                    <button style="background:#f39c12; color:white; margin-top: 5px;" onclick="generarLinkWidget()">🔗 Generar Link Widget</button>
-                    <button onclick="simularRegalo()" style="background-color: #007bff; color: white; margin-top: 5px;">Simular Regalo</button>
-                </div>
+    
+    <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
+    <input type="number" id="tiempo" value="200" style="width: 90%; margin-bottom: 10px; padding: 5px;"><br>
+    
+    <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
+    <input type="number" id="tiempoSnipe" value="15" min="0" style="width: 90%; margin-bottom: 15px; padding: 5px;">
+
+    <div class="button-group">
+        <button class="control-btn start" onclick="iniciar()">Iniciar</button> 
+        <button class="control-btn align-green" onclick="pausar()">Pausar</button>
+        <button class="control-btn align-green" onclick="finalizar()">Finalizar</button> 
+    </div>
+
+    <div class="button-group">
+        <button class="control-btn align-red" onclick="restart()">Restart</button>
+        <button class="control-btn align-red" onclick="abrirWidget()">Ver Widget</button>
+    </div>
+
+    <div class="button-group">
+        <button class="control-btn align-orange" onclick="generarLinkWidget()">🔗 Generar Link Widget</button>
+        <button class="control-btn align-orange" onclick="simularRegalo()">Simular Regalo</button>
+    </div>
+    
+    <div id="copy-notification"></div>
+                    
+                </div> </div> <div id="tiempoBox">
+                <h2>⏳ Tiempo Restante</h2>
+                <div id="tiempoRestante" style="font-size: 2.5em;">0</div>
             </div>
-            <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
-        </div>
+            
+        </div> <div id="logDonaciones">
+        <strong>📝 Historial de Eventos:</strong>
+        <div style="font-size:12px; color:red; margin-top:10px;">❌ Desconectado de TikFinity Event API</div>
+    </div> </div> ```
 
-        <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
-    </div> 
-
-    <div id="widget-container" style="display:none;">
-        
-        <div id="tiempoBox-widget">
-            <div id="tiempoRestante-widget">00:00</div>
-            <div id="subtext-widget">El sorteo/subasta termina en</div>
+        <div id="widget-container" style="display:none;">
+            
+            <div id="tiempoBox-widget">
+                <div id="tiempoRestante-widget">00:00</div>
+                <div id="subtext-widget">El sorteo/subasta termina en</div>
+            </div>
+            <div id="participantes-widget">
+                <ul id="listaParticipantes-widget"></ul>
+            </div>
+            
         </div>
-        <div id="participantes-widget">
-            <ul id="listaParticipantes-widget"></ul>
+        <div id="copy-success-popup" style="display: none;">
+        <div id="copy-success-content">
+            <h2 id="copy-success-message">✅ ¡Link Copiado!</h2>
+            <p>El enlace ha sido guardado en tu portapapeles.</p>
+            <p id="copy-success-url" style="font-size: 1.1em; color: #ccc; word-break: break-all; margin-top: 15px;"></p>
         </div>
-        
     </div>
-    <div id="winner-popup" style="display: none;">
-    <div id="winner-content">
-        <h2>¡Ganador de la Ronda!</h2>
-        <div id="winner-avatar"><img></div>
-        <h1 id="winner-name">@username</h1>
-        <p>Donó un total de <span id="winner-amount">0</span> 💎</p>
-        <p class="felicidades">¡Felicidades! 🏆</p>
-    </div>
+        <div id="winner-popup" style="display: none;">
+        <div id="winner-content">
+            <h2>¡Ganador de la Ronda!</h2>
+            <div id="winner-avatar"><img></div>
+            <h1 id="winner-name">@username</h1>
+            <p>Donó un total de <span id="winner-amount">0</span> 💎</p>
+            <p class="felicidades">¡Felicidades! 🏆</p>
+        </div>
 </div>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
@@ -430,27 +811,71 @@ function conectarDashboard() {
 }
 // ... (después de la función conectarDashboard() )
 
+function mostrarNotificacion(mensaje, exito) {
+    const notifEl = document.getElementById('copy-notification');
+    notifEl.textContent = mensaje;
+    notifEl.style.background = exito ? 'rgba(46, 204, 113, 0.85)' : 'rgba(231, 76, 60, 0.85)'; // Verde para éxito, Rojo para error
+    notifEl.style.opacity = 1;
+
+    // Ocultar la notificación después de 2 segundos
+    setTimeout(() => {
+        notifEl.style.opacity = 0;
+    }, 2000);
+}
+
 function generarLinkWidget() {
-    // 1. Lee el ID del input, que debe tener id="idUnico"
-    const idUnicoEl = document.getElementById('idUnico'); 
+    const idUnicoEl = document.getElementById('idUnico');
     const streamerId = idUnicoEl ? idUnicoEl.value.trim() : "";
 
-    // 2. Si el campo está vacío, alerta y detiene.
     if (!streamerId) {
         alert("⚠️ ERROR: Debes escribir un ID Único en el campo de arriba antes de generar el link.");
-        return;
+        return; 
     }
 
-    // 3. Construye la URL completa.
-    // window.location.origin es la URL base (Ej: https://tiktok-servidor.onrender.com)
     const baseURL = window.location.origin + window.location.pathname;
     const widgetURL = `${baseURL}?mode=widget&id=${streamerId}`;
-    
-    // 4. Muestra la URL en un 'prompt'. ¡Esto la selecciona automáticamente!
-    prompt(
-        "¡Link del Widget generado! Cópialo y envíalo al streamer:",
-        widgetURL // Este valor se muestra y se selecciona para copiar
-    );
+
+    const tempTextarea = document.createElement('textarea');
+    tempTextarea.value = widgetURL;
+    document.body.appendChild(tempTextarea);
+    tempTextarea.select();
+    tempTextarea.setSelectionRange(0, 99999);
+
+    try {
+        const successful = document.execCommand('copy');
+        
+        if (successful) {
+            const popup = document.getElementById('copy-success-popup');
+            const messageEl = document.getElementById('copy-success-message');
+            // const urlEl = document.getElementById('copy-success-url'); // ELIMINA ESTA DECLARACIÓN
+            
+            messageEl.textContent = '✅ ¡Link Copiado!';
+            // urlEl.textContent = widgetURL; // ELIMINA ESTA LÍNEA
+            
+            popup.style.display = 'flex';
+            setTimeout(() => {
+                popup.style.opacity = 1;
+                document.getElementById('copy-success-content').style.transform = 'scale(1)';
+            }, 10);
+            
+            setTimeout(() => {
+                document.getElementById('copy-success-content').style.transform = 'scale(0.7)';
+                popup.style.opacity = 0;
+                setTimeout(() => {
+                    popup.style.display = 'none';
+                }, 500);
+            }, 1000); // 1 segundo
+            
+        } else {
+            // Fallback si el copiado automático no funciona
+            alert(`⚠️ Error al copiar automáticamente. Por favor, cópialo manualmente:\n\n${widgetURL}`);
+        }
+        
+    } catch (err) {
+        alert(`⚠️ Error al intentar copiar el link. Por favor, cópialo manualmente:\n\n${widgetURL}`);
+    } finally {
+        document.body.removeChild(tempTextarea);
+    }
 }
 
 // ... (El resto de tus funciones: finalizar(), pausar(), etc.)
