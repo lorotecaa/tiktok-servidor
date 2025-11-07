@@ -1391,16 +1391,55 @@ socket.on("limpiar_listas_clientes", () => {
 // ===============================
 
 // Maneja la actualización constante o la respuesta inicial del servidor
-socket.on("actualizar_participantes", (participantesRecibidos) => {
+socket.on("actualizar_participantes", (participantesRecibidos) => { 
     console.log("🔥 Widget recibió lista de participantes. Actualizando UI...");
     
     // 1. IMPORTANTE: Reemplazamos la variable global
-    // Esto es necesario porque la función de dibujo que tienes usa la variable global 'participantes'
     participantes = participantesRecibidos;
     
-    // 2. LLAMADA: Llamamos a la función de dibujo (que ahora debe aceptar el argumento)
-    // Usaremos la función con el argumento, aunque internamente también usa la global.
-    actualizarParticipantesUI(participantesRecibidos); 
+    // 2. LLAMADA: Llamamos a la función de dibujo
+    actualizarParticipantesUI(participantesRecibidos);
+    
+    // 3. CRÍTICO: Asegurarse de que el Widget oculte el logo de carga si tiene datos
+    if (participantesRecibidos && participantesRecibidos.length > 0) {
+        activarModoSubasta(); // <-- Debes tener una función que hace esto
+    }
+});
+socket.on("subasta_iniciada", (data) => {
+    // Al recibir esta señal, activamos la vista activa del widget
+    console.log("🚀 Subasta Iniciada recibida. Activando modo Subasta.");
+    subastaActiva = true;
+    
+    // Función que oculta el logo SUBASTINI y muestra el contenido real (tiempo/tablas)
+    activarModoSubasta(); 
+
+    // Aquí puedes iniciar o actualizar el reloj del Widget si lo necesita
+    // ...
+});
+function activarModoSubasta() {
+    // Busca el div que contiene el logo SUBASTINI (o la pantalla de carga)
+    const splashScreen = document.getElementById('splash-screen-id'); 
+    
+    // Busca el div que contiene las tablas y el reloj (la interfaz activa)
+    const mainUI = document.getElementById('main-ui-id'); 
+
+    if (splashScreen) {
+        splashScreen.style.display = 'none'; // Oculta la pantalla de carga
+    }
+    if (mainUI) {
+        mainUI.style.display = 'block'; // Muestra la interfaz activa
+    }
+    // ... (otras lógicas visuales si las hay)
+}
+socket.on("update_subasta_status", (isActive) => {
+    // Este evento se envía en join_room. Si es 'true', activa la vista.
+    if (isActive) {
+        console.log("✅ Estado de subasta TRUE recibido. Activando modo Subasta.");
+        activarModoSubasta();
+    } else {
+        // Si el estado es falso, asegura que se muestre el logo de carga.
+        desactivarModoSubasta();
+    }
 });
 socket.on("update_participants", (participantes) => {
     // ESTA FUNCIÓN ES CRÍTICA:
