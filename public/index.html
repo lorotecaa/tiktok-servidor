@@ -1536,7 +1536,30 @@ function renderizarTablaParticipantes(participantes) {
 /* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
 /* ================================== */
 function abrirWidget() {
-    window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
+    // 1. Obtener la URL base y el streamerId
+    const urlBase = "https://tiktok-servidor.onrender.com/?mode=widget";
+    // Asumimos que 'idUnico' es el ID de entrada en el Dashboard
+    const streamerIdEl = document.getElementById('idUnico'); 
+    const streamerId = streamerIdEl ? streamerIdEl.value : "DEFAULT_ID"; 
+
+    if (!streamerId || streamerId.length === 0 || streamerId === "DEFAULT_ID") {
+        alert("Por favor, ingresa el ID Único para el Widget (en el campo del medio) antes de abrirlo.");
+        return;
+    }
+
+    const widgetUrl = `${urlBase}&id=${streamerId}`;
+
+    // 2. Intentar usar la API de Electron (si existe)
+    if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
+        console.log("Abriendo Widget con Electron API...");
+        window.electronAPI.abrirWidgetVentana(widgetUrl);
+    } 
+    // 3. Si no existe la API de Electron, usar el navegador (SOLUCIÓN AL ERROR)
+    else {
+        console.log("Abriendo Widget en nueva ventana del navegador...");
+        // Abre una nueva ventana sin barras de navegación, tamaño optimizado para Widget
+        window.open(widgetUrl, 'WidgetSubastini', 'width=400,height=600,toolbar=no,menubar=no,status=no,resizable=yes');
+    }
 }
 
 /* ================================================== */
