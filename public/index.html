@@ -854,9 +854,14 @@ function generarLinkWidget() {
         return; 
     }
 
-    const baseURL = window.location.origin + window.location.pathname;
+    // Usamos window.location.origin para asegurarnos de que el servidor sea el correcto (render.com)
+    const baseURL = window.location.origin + window.location.pathname; 
     const widgetURL = `${baseURL}?mode=widget&id=${streamerId}`;
 
+    // ✅ LÍNEA CLAVE AÑADIDA: Abrir el Widget en una nueva pestaña
+    window.open(widgetURL, '_blank'); 
+
+    // --- Lógica de Copiado ---
     const tempTextarea = document.createElement('textarea');
     tempTextarea.value = widgetURL;
     document.body.appendChild(tempTextarea);
@@ -867,29 +872,16 @@ function generarLinkWidget() {
         const successful = document.execCommand('copy');
         
         if (successful) {
+            // Muestra la notificación de éxito de copiado (tu código existente)
             const popup = document.getElementById('copy-success-popup');
             const messageEl = document.getElementById('copy-success-message');
-            // const urlEl = document.getElementById('copy-success-url'); // ELIMINA ESTA DECLARACIÓN
             
             messageEl.textContent = '✅ ¡Link Copiado!';
-            // urlEl.textContent = widgetURL; // ELIMINA ESTA LÍNEA
             
             popup.style.display = 'flex';
-            setTimeout(() => {
-                popup.style.opacity = 1;
-                document.getElementById('copy-success-content').style.transform = 'scale(1)';
-            }, 10);
-            
-            setTimeout(() => {
-                document.getElementById('copy-success-content').style.transform = 'scale(0.7)';
-                popup.style.opacity = 0;
-                setTimeout(() => {
-                    popup.style.display = 'none';
-                }, 500);
-            }, 1000); // 1 segundo
+            // ... (el resto de tu lógica para mostrar y ocultar el popup)
             
         } else {
-            // Fallback si el copiado automático no funciona
             alert(`⚠️ Error al copiar automáticamente. Por favor, cópialo manualmente:\n\n${widgetURL}`);
         }
         
@@ -1379,6 +1371,22 @@ socket.on("limpiar_listas_clientes", () => {
     subastaActiva = false;
     console.log("CLIENTE: Interruptor APAGADO.");
 });
+// ===============================
+// 🎁 ESCUCHAR ACTUALIZACIONES DESDE EL SERVIDOR (CRÍTICO)
+// ===============================
+
+// Maneja la actualización constante o la respuesta inicial del servidor
+socket.on("actualizar_participantes", (participantesRecibidos) => {
+    console.log("🔥 Widget recibió lista de participantes. Actualizando UI...");
+    
+    // 1. IMPORTANTE: Reemplazamos la variable global
+    // Esto es necesario porque la función de dibujo que tienes usa la variable global 'participantes'
+    participantes = participantesRecibidos;
+    
+    // 2. LLAMADA: Llamamos a la función de dibujo (que ahora debe aceptar el argumento)
+    // Usaremos la función con el argumento, aunque internamente también usa la global.
+    actualizarParticipantesUI(participantesRecibidos); 
+});
 socket.on("update_participants", (participantes) => {
     // ESTA FUNCIÓN ES CRÍTICA:
     renderizarTablaParticipantes(participantes);
@@ -1390,36 +1398,66 @@ socket.on("update_participants", (participantes) => {
 // ===============================
 // 🧭 Función para actualizar la UI (debe ir FUERA de socket.on)
 // ===============================
-function actualizarParticipantesUI() {
-    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+// Acepta 'listaParaDibujar' como un argumento
+function actualizarParticipantesUI(listaParaDibujar) {
+    // Si la función se llama sin argumentos (como en el Dashboard), usa la lista global
+    const listaFinal = listaParaDibujar || participantes;
+    
+    // Si la lista final está vacía, salimos
+    if (!listaFinal || listaFinal.length === 0) {
+        if (document.getElementById('listaParticipantes')) document.getElementById('listaParticipantes').innerHTML = "";
+        if (document.getElementById('listaParticipantes-widget')) document.getElementById('listaParticipantes-widget').innerHTML = "";
+        return;
+    }
 
-    const listaDashboard = document.getElementById("listaParticipantes");
-    const listaWidget = document.getElementById("listaParticipantes-widget");
-    if (listaDashboard) listaDashboard.innerHTML = "";
-    if (listaWidget) listaWidget.innerHTML = "";
+    // El resto del código usa listaFinal en lugar de 'participantes'
+    listaFinal.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+    
+    const isWidgetMode = document.body.classList.contains('widget-mode');
+    
+    // 1. Apuntamos a las listas correctas
+    const listaDashboardEl = document.getElementById('listaParticipantes');
+    const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
 
-    participantes.forEach((p, index) => {
-        const itemHTML = `
-            <li>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span>${index + 1}.</span>
-                    <img src="${p.avatar_url || 'https://via.placeholder.com/40/000/fff?text=?'}"
-                         alt="avatar"
-                         style="width:40px; height:40px; border-radius:50%;">
-                    <span>${p.usuario}</span>
+    // 2. Limpiamos ambas listas
+    if (listaDashboardEl) listaDashboardEl.innerHTML = "";
+    if (listaWidgetEl) listaWidgetEl.innerHTML = "";
+    
+    let totalDiamantes = 0;
+
+    // Aquí usamos listaFinal
+    listaFinal.forEach((p, index) => {
+        const liDashboard = document.createElement("li");
+        
+        // Formato de Dashboard
+        liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
+        if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
+
+        // Formato de Widget (Solo el Top 5)
+        if (index < 5 && listaWidgetEl) {
+            const liWidget = document.createElement("li");
+            const rango = index + 1;
+            
+            const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A'; 
+
+            liWidget.innerHTML = `
+                <div class="rank-icon">${rango}</div>
+                <div class="user-info">
+                    <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
+                    <span class="username">${p.usuario}</span>
                 </div>
-                <div class="coins">${p.cantidad} 💎</div>
-            </li>
-        `;
-
-        if (listaDashboard && !document.body.classList.contains('widget-mode')) {
-            listaDashboard.innerHTML += itemHTML;
+                <span class="coins">${p.cantidad} 🪙</span>
+            `;
+            listaWidgetEl.appendChild(liWidget);
         }
-
-        if (listaWidget && document.body.classList.contains('widget-mode')) {
-            listaWidget.innerHTML += itemHTML;
-        }
+        
+        totalDiamantes += p.cantidad;
     });
+    
+    if (!isWidgetMode) {
+        document.querySelector('#totalParticipantes').textContent = listaFinal.length;
+        document.querySelector('#totalDiamantes').textContent = totalDiamantes;
+    }
 }
 function renderizarTablaParticipantes(participantes) {
     const tableBody = document.getElementById('participantes-widget');
