@@ -1576,6 +1576,29 @@ socket.on('finalizar_subasta', () => {
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
 });
+socket.on("solicitar_estado_subasta", (data) => {
+    const streamerId = data.streamerId;
+    
+    // 1. Verificar si el ID existe y si hay participantes activos
+    if (global.subastasActivas[streamerId]) {
+        const subasta = global.subastasActivas[streamerId];
+        
+        // 2. Enviar el tiempo restante al Widget que lo solicitó
+        // (Esto asegura que el cronómetro se muestre inmediatamente)
+        socket.emit("actualizar_tiempo", {
+            tiempo: subasta.tiempoRestante,
+            isSnipe: subasta.isSnipe 
+        });
+
+        // 3. Enviar la lista de participantes al Widget que lo solicitó
+        // (Esto asegura que la tabla se llene inmediatamente)
+        socket.emit("actualizar_participantes", subasta.participantes);
+        
+    } else {
+        // Opcional: Loggear si el Widget se conectó con un ID inactivo
+        console.log(`Widget con ID ${streamerId} solicitó estado, pero la subasta no está activa en el servidor.`);
+    }
+});
 
     </script>
 </body>
