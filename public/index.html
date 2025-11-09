@@ -18,22 +18,10 @@
         
         /* CONTENEDORES PRINCIPALES (MODO DASHBOARD: TRES COLUMNAS) (INTACTO) */
         /* Nota: Se han añadido los IDs 'ganadores' y 'participantes' a los divs principales abajo. */
-        #ganadores, #participantes, #controles-group { 
-    margin: 20px; 
-    padding: 20px; 
-    border-radius: 10px; 
-    display: inline-block; 
-    vertical-align: top; 
-}
-#ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
-#participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
-#controles-group { 
-    width: 300px; 
-    padding: 0; 
-    margin: 20px 40px 20px 20px; /* Incrementa el margen derecho a 40px */
-    display: inline-block; 
-    vertical-align: top; 
-}
+        #ganadores, #participantes, #controles-group { margin: 20px; padding: 20px; border-radius: 10px; display: inline-block; vertical-align: top; }
+        #ganadores { background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; }
+        #participantes { background: #27ae60; width: 350px; height: 400px; overflow-y: auto; }
+        #controles-group { width: 300px; padding: 0; margin: 20px 0 0 0; display: inline-block; vertical-align: top; }
         #controles { background: #8e44ad; width: 300px; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
 
@@ -61,8 +49,8 @@
         #tiempoBox-widget { background: #1a1a1a; width: 100%; padding: 10px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 8px 0 0;border-bottom: 2px solid #FFD700; }
         #tiempoRestante-widget { font-size: 2.5em; color: #FFD700; font-weight: bold; text-shadow: 0 0 8px rgba(255, 215, 0, 0.7); }
         #subtext-widget { font-size: 14px; color: #ccc; margin-top: 5px; }
-        .snipe-alert #tiempoRestante-widget { color: #FF4D4D !important; /* ROJO */ text-shadow: 0 0 15px rgba(255, 77, 77, 1) !important; /* Sombra ROJA más fuerte */}
-        .snipe-alert #subtext-widget { color: #FF4D4D !important; /* ROJO */}
+        .snipe-alert #tiempoRestante-widget {  color: #FF4D4D !important; /* ROJO */ text-shadow: 0 0 15px rgba(255, 77, 77, 1) !important; /* Sombra ROJA más fuerte */}
+        .snipe-alert #subtext-widget {  color: #FF4D4D !important; /* ROJO */}
 
 
         #participantes-widget { background: #1c2b3e; width: 100%; height: auto; min-height: 200px; padding: 10px; border-radius: 0 0 8px 8px;box-sizing: border-box; }
@@ -109,14 +97,12 @@
             object-fit: cover; 
         }
         .username { 
-    color: #ecf0f1; 
-    
-    /* 🛑 CAMBIOS APLICADOS: Permitir que el texto fluya libremente */
-    white-space: normal; /* Permitir saltos de línea si es necesario */
-    overflow: visible; 
-    text-overflow: clip; /* Deshabilita los '...' */
-    max-width: none; /* Permite que el ancho sea el que necesite el nombre */
-}
+            color: #ecf0f1; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 150px; 
+        }
         /* --- FIN: ESTILOS CORRECTOS --- */
         #winner-popup {
             display: none; /* Oculto por defecto */
@@ -187,80 +173,57 @@
             font-weight: bold;
             color: #FFD700 !important;
         }
-        #titulo-principal-contenedor {
-    width: 100%; /* Asegura que ocupe todo el ancho */
-    text-align: center; /* Centra el texto */
-    margin-bottom: 20px; /* Espacio debajo del título */
-}
-#main-dashboard-content h1 { 
-    width: 100%;        /* CRÍTICO: Hace que el título ocupe toda la fila disponible */
-    text-align: center; /* Centra el texto horizontalmente dentro del h1 */
-    margin: 20px 0;     /* Mantiene el espaciado vertical que ya tenías */
-}
-.widget-mode #widget-container {
-    display: flex !important; 
-    position: fixed; 
-    top: 0;
-    left: 0;
-    width: 100%; /* ¡CRÍTICO! */
-    height: 100%; /* ¡CRÍTICO! */
-    margin: 0;
-}
     </style>
 </head>
 <body>
     
     <div id="main-dashboard-content" style="display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
-    <h1>⚡ Subasta en Vivo ⚡</h1>
-    
-    <div id="controles-group">
-        <div id="controles">
-            <h2>🎮 Controles</h2>
-            <label for="idUnico">🔑 ID Único (para Widget):</label><br>
-            <input type="text" id="idUnico" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
-            <label>Usuario de TikTok:</label>
-<input id="tiktokUser" placeholder="Ej: felipe_rivas" />
-            <div class="subcuadro">
-                <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
-                <input type="number" id="tiempo" value="200"><br><br>
-                <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
-                <input type="number" id="tiempoSnipe" value="15" min="0">
-                <button class="start" onclick="iniciar()">Iniciar</button>
-                <button onclick="pausar()">Pausar</button>
-                <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
-                <button style="background:#2ecc71; color:white;" onclick="abrirWidget()">Ver Widget</button>
-                <button onclick="simularRegalo()" style="background-color: #007bff; color: white; margin-top: 5px;">Simular Regalo</button>
-            </div>
+        <h1>⚡ Subasta en Vivo ⚡</h1>
+        
+        <div id="participantes">
+            <h2>👥 Participantes (Ronda Actual)</h2>
+            <ul id="listaParticipantes"></ul>
+            <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
+            <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
         </div>
-        <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
-    </div>
 
-    <div id="logDonaciones" style="background: #333; color: #ccc; width: 350px; height: 400px; overflow-y: auto; margin: 20px; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; display: inline-block; vertical-align: top;">
-        <strong>📝 Historial de Eventos:</strong>
-    </div>
+        <div id="controles-group">
+            <div id="controles">
+                <h2>🎮 Controles</h2>
+                <label for="idUnico">🔑 ID Único (para Widget):</label><br>
+                <input type="text" id="idUnico" placeholder="Ej: MiNombreDeUsuario" style="width: 90%; margin-bottom: 15px; padding: 5px;"><br>
+                <div class="subcuadro">
+                    <label for="tiempo">⏱ Tiempo inicial (segundos):</label><br>
+                    <input type="number" id="tiempo" value="200"><br><br>
+                    <label for="tiempoSnipe">Tiempo de snipe (segundos):</label>
+                    <input type="number" id="tiempoSnipe" value="15" min="0">
+                    <button class="start" onclick="iniciar()">Iniciar</button>
+                    <button onclick="pausar()">Pausar</button>
+                    <button class="stop" onclick="finalizar()">Finalizar</button> <button onclick="restart()">Restart</button>
+                    <button style="background:#2ecc71; color:white;" onclick="abrirWidget()">Ver Widget</button>
+                    <button onclick="simularRegalo()" style="background-color: #007bff; color: white; margin-top: 5px;">Simular Regalo</button>
+                </div>
+            </div>
+            <div id="tiempoBox"><h2>⏳ Tiempo Restante</h2><div id="tiempoRestante" style="font-size: 2.5em;">0</div></div>
+        </div>
 
-    <div id="participantes" style="background: #27ae60; width: 350px; height: 400px; overflow-y: auto; margin: 20px;">
-        <h2>👥 Participantes (Ronda Actual)</h2>
-        <ul id="listaParticipantes"></ul>
-        <div class="totales">Total participantes: <span id="totalParticipantes">0</span></div>
-        <div class="totales">Diamantes donados: <span id="totalDiamantes">0</span></div>
-    </div>
+        <div id="ganadores">
+            <h2>🏆 Ganadores de Rondas</h2>
+            <ul id="listaGanadores"></ul>
+        </div>
 
-    <div id="ganadores" style="background: #2c3e50; width: 350px; height: 400px; overflow-y: auto; margin: 20px;">
-        <h2>🏆 Ganadores de Rondas</h2>
-        <ul id="listaGanadores"></ul>
+        <div id="logDonaciones"><strong>📝 Historial de Eventos:</strong></div>
     </div> 
 
-    <div id="widget-container">
-    <div id="tiempoBox-widget">
-        <div id="tiempoRestante-widget">--:--</div>
-        <div id="subtext-widget">El sorteo/subasta termina en</div>
-    </div>
-
-    <div id="participantes-widget">
-        <ul id="listaParticipantes-widget"></ul>
-    </div>
-</div>
+    <div id="widget-container" style="display:none;">
+        
+        <div id="tiempoBox-widget">
+            <div id="tiempoRestante-widget">00:00</div>
+            <div id="subtext-widget">El sorteo/subasta termina en</div>
+        </div>
+        <div id="participantes-widget">
+            <ul id="listaParticipantes-widget"></ul>
+        </div>
         
     </div>
     <div id="winner-popup" style="display: none;">
@@ -275,7 +238,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
-        const socket = io("https://tiktok-servidor2.onrender.com"); // tu URL real de Render
+        const socket = io("https://tiktok-servidor.onrender.com"); // tu URL real de Render
 
         const listaParticipantesEl = document.getElementById('listaParticipantes');
         const listaGanadoresEl = document.getElementById('listaGanadores');
@@ -308,54 +271,54 @@
         }
         
         function actualizarParticipantesUI() {
-    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
-    
-    const isWidgetMode = document.body.classList.contains('widget-mode');
-    
-    // 1. Apuntamos a las listas correctas
-    const listaDashboardEl = document.getElementById('listaParticipantes');
-    const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
-
-    // 2. Limpiamos ambas listas
-    if (listaDashboardEl) listaDashboardEl.innerHTML = "";
-    if (listaWidgetEl) listaWidgetEl.innerHTML = "";
-    
-    let totalDiamantes = 0;
-    const topN = participantes.slice(0, 5); // Tomamos el Top 5 para el widget
-
-    participantes.forEach((p, index) => {
-        const liDashboard = document.createElement("li");
-        
-        // Formato de Dashboard
-        liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
-        if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
-
-        // Formato de Widget (Solo el Top 5)
-        if (index < 5 && listaWidgetEl) {
-            const liWidget = document.createElement("li");
-            const rango = index + 1;
+            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
             
-            const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A'; 
+            const isWidgetMode = document.body.classList.contains('widget-mode');
+            
+            // 1. Apuntamos a las listas correctas
+            const listaDashboardEl = document.getElementById('listaParticipantes');
+            const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
 
-            liWidget.innerHTML = `
-                <div class="rank-icon">${rango}</div>
-                <div class="user-info">
-                    <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
-                    <span class="username">${p.usuario}</span>
-                </div>
-                <span class="coins">${p.cantidad} 🪙</span>
-            `;
-            listaWidgetEl.appendChild(liWidget);
+            // 2. Limpiamos ambas listas
+            if (listaDashboardEl) listaDashboardEl.innerHTML = "";
+            if (listaWidgetEl) listaWidgetEl.innerHTML = "";
+            
+            let totalDiamantes = 0;
+            const topN = participantes.slice(0, 5); // Tomamos el Top 5 para el widget
+
+            participantes.forEach((p, index) => {
+                const liDashboard = document.createElement("li");
+                
+                // Formato de Dashboard
+                liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
+                if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
+
+                // Formato de Widget (Solo el Top 5)
+                if (index < 5 && listaWidgetEl) {
+                    const liWidget = document.createElement("li");
+                    const rango = index + 1;
+                    
+                    const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A'; 
+
+                    liWidget.innerHTML = `
+                        <div class="rank-icon">${rango}</div>
+                        <div class="user-info">
+                            <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
+                            <span class="username">${p.usuario}</span>
+                        </div>
+                        <span class="coins">${p.cantidad} 🪙</span>
+                    `;
+                    listaWidgetEl.appendChild(liWidget);
+                }
+                
+                totalDiamantes += p.cantidad;
+            });
+            
+            if (!isWidgetMode) {
+                 document.querySelector('#totalParticipantes').textContent = participantes.length;
+                 document.querySelector('#totalDiamantes').textContent = totalDiamantes;
+            }
         }
-        
-        totalDiamantes += p.cantidad;
-    });
-    
-    if (!isWidgetMode) {
-         document.querySelector('#totalParticipantes').textContent = participantes.length;
-         document.querySelector('#totalDiamantes').textContent = totalDiamantes;
-    }
-}
         function obtenerGanador() {
     if (participantes.length === 0) return null;
     return participantes.reduce((max, p) => (p.coins > max.coins ? p : max));
@@ -442,43 +405,35 @@
     }
 }
 function conectarDashboard() {
-    // 1. Lee el ID único del streamer (para el widget)
+    // 1. Lee ÚNICAMENTE el input ID Único
     const idUnicoEl = document.getElementById('idUnico');
-    const streamerIdActual = idUnicoEl ? idUnicoEl.value.trim() : "";
+    let streamerIdActual = idUnicoEl ? idUnicoEl.value : "";
 
-    // 2. Lee el username de TikTok desde un input adicional
-    const tiktokUserEl = document.getElementById('tiktokUser');
-    const tiktokUserActual = tiktokUserEl ? tiktokUserEl.value.trim() : "";
-
-    // 3. Validaciones
     if (!streamerIdActual) {
-        alert("❌ Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
-        isConnectedValid = false;
-        return;
+        alert("ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
+        isConnectedValid = false; // ❌ Asegura que sea falso si falta el ID
+        return; 
     }
+    
+    // 🆕 AÑADE ESTA LÍNEA CLAVE 🆕
+    // ASUMIMOS que el ID será válido. SOLO el evento 'id_invalido' la pondrá en 'false'.
+    isConnectedValid = true; 
 
-    if (!tiktokUserActual) {
-        alert("⚠️ Debes escribir tu nombre de usuario de TikTok (sin @).");
-        isConnectedValid = false;
-        return;
-    }
-
-    // 4. Marcar la conexión como válida (hasta que el servidor diga lo contrario)
-    isConnectedValid = true;
-
-    // 5. Emitir el evento de unión a la sala
+    // 2. Establecer el TikTok User
+    let tiktokUserActual = "No Requerido";
+    
+    // 3. Emitir el evento de conexión
     socket.emit("join_room", { 
         streamerId: streamerIdActual, 
         tiktokUser: tiktokUserActual 
-    });
+    }); 
+    
+    // 4. Actualizar las variables globales
+    streamerId = streamerIdActual; 
+    tiktokUser = tiktokUserActual; 
 
-    // 6. Guardar variables globales
-    streamerId = streamerIdActual;
-    tiktokUser = tiktokUserActual;
-
-    console.log(`✅ DASHBOARD conectado a sala: ${streamerIdActual} (usuario TikTok: ${tiktokUserActual})`);
+    console.log(`DASHBOARD intentando unirse a sala: ${streamerIdActual}`);
 }
-
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
     if (!document.body.classList.contains('widget-mode')) { 
@@ -656,11 +611,12 @@ function conectarDashboard() {
             // 4. Emitir al servidor el *NUEVO TOTAL*
             // (El servidor lo retransmitirá, y socket.on("new_gift") lo reemplazará)
             socket.emit("nuevo_regalo", {
-  usuario: randomUser,
-  cantidad: nuevoTotal,
-  regalo: giftName,
-  avatar_url: profilePictureUrl || "https://via.placeholder.com/40/555/FFFFFF?text=U"
-});
+                usuario: randomUser,
+                cantidad: nuevoTotal,
+                regalo: giftName,
+                // 👇 AÑADE ESTA LÍNEA 👇
+                avatar_url: `https://via.placeholder.com/30/555/FFFFFF?text=${randomUser.charAt(0)}`
+            });
         }
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
@@ -692,119 +648,246 @@ function conectarDashboard() {
                 subtextElWidget.textContent = "Tiempo por delay de live"; 
             }
         
-            } else {
-                
-                // 1. Desactiva la clase (vuelve al AMARILLO original si no está en Snipe)
-                document.body.classList.remove('snipe-alert');
-                
-                // 2. Restaura el texto original del subtítulo (si la subasta aún no ha terminado, es el texto por defecto)
-                if (subtextElWidget) {
-                    subtextElWidget.textContent = "El sorteo/subasta termina en"; 
-                }
+        } else {
+            
+            // 1. Desactiva la clase (vuelve al AMARILLO original si no está en Snipe)
+            document.body.classList.remove('snipe-alert');
+            
+            // 2. Restaura el texto original del subtítulo (si la subasta aún no ha terminado, es el texto por defecto)
+            if (subtextElWidget) {
+                subtextElWidget.textContent = "El sorteo/subasta termina en"; 
             }
         }
-    });
+    }
+});
 
-    // --- DETECCIÓN DE WIDGET O DASHBOARD ---
+        // --- LÓGICA DE DETECCIÓN DE WIDGET Y CONEXIÓN TIKFINITY ---
+// ...
 const urlParams = new URLSearchParams(window.location.search);
+const isWidgetMode = urlParams.get('mode') === 'widget'; // Variable global (ya existe)
 
-// Detecta si la URL es /widget O si tiene ?mode=widget
-const currentPath = window.location.pathname || "";
-const isWidgetMode = window.location.search.includes("mode=widget") || currentPath.includes("/widget");
 
-// Variables globales (se llenarán dependiendo del modo)
-let streamerId = "";
-let tiktokUser = "";
+// 1. Obtener los valores de los inputs
+let streamerId = "ID_POR_DEFECTO"; // ⬅️ IMPORTANTE: ESTO DEBE CAMBIAR
+let tiktokUser = "USUARIO_POR_DEFECTO"; // ⬅️ ESTO DEBE CAMBIAR
+const idUnicoEl = document.getElementById('idUnico');
+const tiktokUserEl = document.getElementById('tiktokUser');
+
+if (idUnicoEl) {
+    streamerId = idUnicoEl.value; // Lee el valor
+}
+if (tiktokUserEl) {
+    tiktokUser = tiktokUserEl.value; // Lee el valor
+}
+// ...
 
 if (isWidgetMode) {
     // ===============================
-    // 🏃 MODO WIDGET
+    // 🏃 MODO WIDGET (ESCLAVO)
     // ===============================
-    console.log("🟣 Modo Widget activado.");
-
-    // 1. APLICA LA CLASE (Tu CSS se encargará de los estilos)
-    document.body.classList.add("widget-mode");
-
-    // 2. OCULTA EL DASHBOARD (Tu CSS ya lo hace, pero forzamos)
-    const mainDashboardContent = document.getElementById("main-dashboard-content");
-    if (mainDashboardContent) mainDashboardContent.style.display = "none";
-
-    // 3. MUESTRA EL CONTENEDOR DEL WIDGET (El que SÍ existe en tu HTML)
-    const widgetContainer = document.getElementById("widget-container");
-    if (widgetContainer) {
-        widgetContainer.style.display = 'flex'; // O 'block', según tu diseño
-    } else {
-        console.error("CRÍTICO: No se encontró #widget-container en el HTML.");
-    }
-
-    // 4. LEE EL ID DE LA URL Y CONECTA
-    streamerId = urlParams.get("streamerId"); // Asegúrate que tu Step 2 envía 'streamerId'
+    document.body.classList.add('widget-mode');
+    
+    // Si estamos en widget, el streamerId debe venir de la URL
+    streamerId = urlParams.get('id'); 
+    
+    // Ocultamos el dashboard principal y mostramos el contenedor del widget
+    document.getElementById('main-dashboard-content').style.display = 'none';
+    document.getElementById('widget-container').style.display = 'flex';
+    
     if (streamerId) {
-        socket.emit("join_room", { streamerId, tiktokUser: "WidgetCliente" });
-        console.log(`✅ WIDGET unido a la sala de ${streamerId}`);
-    } else {
-        console.error("⚠️ El Widget no recibió el streamerId en la URL");
+        // El Widget se une a la sala
+        socket.emit("join_room", { streamerId: streamerId, tiktokUser: "WidgetCliente" }); // El Widget se identifica como tal
+        console.log(`WIDGET unido a la sala: ${streamerId} (WidgetCliente)`);
     }
 
 } else {
     // ===============================
-    // 🖥️ MODO DASHBOARD
+    // 🖥️ MODO DASHBOARD (MAESTRO)
     // ===============================
-    console.log("🎛️ Dashboard normal");
-
-    // Oculta el contenedor del widget (por si acaso)
-    const widgetContainer = document.getElementById("widget-container");
-    if (widgetContainer) widgetContainer.style.display = "none";
-
-    // 5. LÓGICA DEL DASHBOARD (Lee los inputs)
-    const idUnicoEl = document.getElementById('idUnico');
-    const tiktokUserEl = document.getElementById('tiktokUser');
+    document.getElementById('widget-container').style.display = 'none';
     
-    // (Tu lógica para leer los inputs y conectar a TikTok va aquí)
-    // ...
-}
-    // ===============================
-    // 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
-    // (Esto corre en AMBOS: Dashboard y Widget)
-// ===============================
-socket.on("new_gift", (giftData) => {
-    console.log("💎 Nuevo regalo recibido del servidor:", giftData);
+    if (streamerId) { // Si hay ID Único ingresado
+        // El Dashboard se une a la sala
+        console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
 
-    const userId = giftData.userId || giftData.user_id;
-    const nickname = giftData.nickname || giftData.username || "Desconocido";
-    const profilePictureUrl = giftData.profilePictureUrl || giftData.avatar_url;
-    const giftName = giftData.giftName || giftData.gift_name || "Regalo";
-    const cantidadDelRegalo = parseInt(
-        giftData.diamondCount || giftData.diamond_count || giftData.diamonds || giftData.amount || 0
-    );
-
-    let existente = participantes.find(p => p.userId === userId || p.usuario === nickname);
-
-    if (existente) {
-        existente.cantidad = parseInt(existente.cantidad) + cantidadDelRegalo;
-        existente.avatar_url = profilePictureUrl;
+        // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- TU CÓDIGO COMIENZA AQUÍ
+        // ... (El resto de tu lógica de conexión a TikFinity) ...
     } else {
-        participantes.push({
-            userId,
-            usuario: nickname,
-            cantidad: cantidadDelRegalo,
-            regalo: giftName,
-            avatar_url: profilePictureUrl || `https://via.placeholder.com/40/555/FFFFFF?text=${nickname.charAt(0)}`
-        });
+        console.error("ID Único no ingresado. Por favor, complete el campo 'ID Único (para Widget)'.");
     }
+}
 
-    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+             // ===============================
+             // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
+             // ===============================
+             try {
+                 const tiktokWS = new WebSocket("ws://localhost:21213/");
 
-    socket.emit("sync_participantes", participantes);
-    actualizarParticipantesUI();
+                 tiktokWS.onopen = () => {
+                     console.log("✅ Conectado a TikFinity Event API");
+                     // Asegurarse de que logDonacionesEl exista antes de usarlo
+                     if (logDonacionesEl) {
+                         logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
+                     }
+                 };
+
+                 tiktokWS.onmessage = (event) => {
+                     // Asegurarse de que logDonacionesEl exista antes de usarlo
+                     if (!logDonacionesEl) return; 
+                     if (!subastaActiva) {
+                        return; // Ignora todo si la subasta no está activa
+         }
+
+                     try {
+                         const msg = JSON.parse(event.data);
+                         if (!msg.event) return;
+
+                         switch (msg.event) {
+                             case "gift": { // 🌟 INICIO DE LA CORRECCIÓN FINAL 🌟
+                                 const gift = msg.data;
+                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
+
+                                 // 1️⃣ ID ÚNICO del evento
+                                 const giftEventId = gift.msgId;   
+                                 if (!giftEventId) {
+                                     console.log("Ignorando evento gift sin msgId");
+                                     break; // No podemos procesar sin ID de evento
+                                 }
+
+                                 // 2️⃣ Ignorar duplicados (por seguridad)
+                                 if (processedGiftIds.has(giftEventId)) {
+                                     console.log(`Regalo ya procesado: ${giftEventId}`);
+                                     break;
+                                 }
+
+                                 // 3️⃣ Filtro inteligente:
+                                 // - Si tiene repeatEnd: procesamos solo el final
+                                 // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
+                                 if (gift.repeatEnd === false) { 
+                                 
+                                 // 🛑 Excepción clave: Si el regalo vale 100 o más, lo procesamos.
+                                 if (gift.diamondCount >= 100) {
+                                     console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
+                                 } else {
+                                     console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
+                                     break;
+                                 }
+                             }
+                                 
+                                 // (Si repeatEnd es 'true' o 'undefined', el código continúa)
+
+                                 // 4️⃣ Marcamos el ID como procesado
+                                 processedGiftIds.add(giftEventId);
+
+                                 // 5️⃣ Calculamos el total de diamantes correctamente
+                                 const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+                                 
+                                 // 5.1 No procesar regalos sin valor (por si acaso)
+                                 if (totalDiamonds === 0) {
+                                     console.log("Ignorando regalo con 0 diamantes.");
+                                     break;
+                                 }
+
+                                 // 6️⃣ Mostramos en pantalla y enviamos al servidor
+                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
+                                 
+                                 socket.emit("nuevo_regalo", {
+    usuario: gift.uniqueId,
+    cantidad: totalDiamonds,
+    regalo: gift.giftName,
+    avatar_url: gift.profilePictureUrl, // ⬅️ ¡AGREGA ESTA COMA!
+    streamerId: streamerId // CRÍTICO: ANADE ESTA LINEA
 });
+
+                                 break; // ✅ Fin del case
+                             }
+
+                             case "chat":
+                                 const chat = msg.data;
+                                 logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
+                                 break;
+
+                             case "like":
+                                 const like = msg.data;
+                                 logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
+                                 break;
+
+                             case "follow":
+                                 const follow = msg.data;
+                                 logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
+                                 break;
+                         }
+
+                         // Mantenemos el log visible siempre abajo
+                         logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+
+                     } catch (e) {
+                         console.error("Error al procesar mensaje TikFinity:", e);
+                         logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
+                     }
+                 };
+
+                 tiktokWS.onclose = () => {
+                      // Asegurarse de que logDonacionesEl exista antes de usarlo
+                     if (logDonacionesEl) {
+                         logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
+                     }
+                 };
+
+             } catch (err) {
+                 console.error("Error al conectar con TikFinity:", err);
+                  // Asegurarse de que logDonacionesEl exista antes de usarlo
+                 if (logDonacionesEl) {
+                     logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
+                 }
+             }
+
+        // ===============================
+// 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
+// (Esto corre en AMBOS: Dashboard y Widget)
+// ===============================
+socket.on("new_gift", (gift) => {
+            console.log("💎 Nuevo regalo recibido del servidor:", gift);
+
+            const existente = participantes.find(p => p.usuario === gift.usuario);
+            // Tomamos la cantidad del regalo que nos envían (ej: 1 rosa, 100 leones)
+            const cantidadDelRegalo = parseInt(gift.cantidad) || 0; 
+
+            if (existente) {
+                // 🛑 CORRECCIÓN CRÍTICA: Sumamos la cantidad nueva a la cantidad existente
+                existente.cantidad = parseInt(existente.cantidad) + cantidadDelRegalo; 
+                existente.avatar_url = gift.avatar_url;
+            } else {
+                // 💡 Es un usuario nuevo
+                participantes.push({
+                    usuario: gift.usuario,
+                    cantidad: cantidadDelRegalo, 
+                    regalo: gift.regalo,
+                    avatar_url: gift.avatar_url
+                });
+            }
+
+            // 💡 Ordena la lista CADA VEZ que llegue un regalo.
+            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+
+            // 🛑 LÓGICA DE SNIPE: Reiniciar el contador si la subasta está en modo snipe
+            if (!document.body.classList.contains('widget-mode') && snipeActivado && cantidadDelRegalo > 0) {
+                const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
+                
+                // Si el tiempo está bajo o en 0 (esperando el final)
+                if (tiempoActual <= tiempoSnipe) {
+                    tiempoActual = tiempoSnipe;
+                    socket.emit('sync_time', tiempoActual); 
+                    logDonacionesEl.innerHTML += `<p style="color: red;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
+                }
+            }
 // 📢 ¡AQUÍ VA LA LÍNEA DE SINCRONIZACIÓN!
             // Ahora la variable 'participantes' está finalizada, sumada y ordenada.
             socket.emit('sync_participantes', participantes); // <-- ¡MOVER AQUÍ!
 
             // Ahora sí, actualiza la UI con la lista ya ordenada
             actualizarParticipantesUI();
-        ;
+        });
 socket.on('id_invalido', (data) => {
     // 🛑 1. Establecer la bandera como inválida
     isConnectedValid = false; 
@@ -842,19 +925,17 @@ function actualizarParticipantesUI() {
 
     participantes.forEach((p, index) => {
         const itemHTML = `
-            <li class="participante-item">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span class="rank">${index + 1}.</span>
-            <img src="${p.avatar_url || 'https://via.placeholder.com/40/000/fff?text=U'}"
-                alt="${p.usuario || 'Usuario'}" 
-                style="width:40px; height:40px; border-radius:50%;"> 
-            
-            <span class="username" title="${p.usuario}"> ${p.usuario}
-            </span>
-        </div>
-        <div class="coins">${p.cantidad} 💎</div>
-    </li>
-`;
+            <li>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span>${index + 1}.</span>
+                    <img src="${p.avatar_url || 'https://via.placeholder.com/40/000/fff?text=?'}"
+                         alt="avatar"
+                         style="width:40px; height:40px; border-radius:50%;">
+                    <span>${p.usuario}</span>
+                </div>
+                <div class="coins">${p.cantidad} 💎</div>
+            </li>
+        `;
 
         if (listaDashboard && !document.body.classList.contains('widget-mode')) {
             listaDashboard.innerHTML += itemHTML;
@@ -866,26 +947,13 @@ function actualizarParticipantesUI() {
     });
 }
 
+/* ================================== */
+/* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
+/* ================================== */
 function abrirWidget() {
-    // 1. Lee el ID del input (id="idUnico")
-    const streamerIdInput = document.getElementById('idUnico'); 
-    const streamerId = streamerIdInput ? streamerIdInput.value.trim() : '';
-    
-    if (!streamerId) {
-        alert('Por favor, introduce el ID del Streamer primero.');
-        return;
-    }
-    
-    // 2. 🛑 CRÍTICO: USA LA URL COMPLETA DE TU SERVIDOR DE RENDER
-    // Reemplaza esto con tu URL real si es diferente
-    const baseUrl = "https://tiktok-servidor2.onrender.com"; 
-    
-    const widgetURL = `${baseUrl}/widget?streamerId=${streamerId}`; 
-    
-    // 3. Abre la nueva ventana
-    console.log("Abriendo Widget en:", widgetURL); // Revisa la consola del Dashboard
-    window.open(widgetURL, 'WidgetSubasta', 'width=360,height=580'); 
+    window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
 }
+
 /* ================================================== */
 /* 👑 BLOQUE ÚNICO PARA MOSTRAR GANADOR (Dashboard + Widget) 👑 */
 /* ================================================== */
@@ -1007,17 +1075,6 @@ socket.on('finalizar_subasta', () => {
     document.body.classList.remove('snipe-alert');
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
-});
-document.addEventListener("DOMContentLoaded", () => {
-    const params = new URLSearchParams(window.location.search);
-    
-    if (params.has("streamerId")) {
-        // 🟡 Modo widget activado
-        document.body.classList.add("widget-mode");
-        console.log("🟡 Widget mode activo — solo se mostrará el overlay.");
-    } else {
-        console.log("🟢 Dashboard normal.");
-    }
 });
     </script>
 </body>
