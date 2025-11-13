@@ -292,7 +292,90 @@
         let subastaActiva = false;
         let isSnipeModeVisual = false;
         let isConnectedValid = false;
+// ===============================
+// 🚀 LÓGICA DE INICIALIZACIÓN (CRÍTICA PARA EL WIDGET)
+// ===============================
 
+// Función para actualizar la UI del tiempo en ambos modos (Dashboard y Widget)
+function actualizarTiempoUI() {
+    const minutos = Math.floor(tiempoActual / 60);
+    const segundos = tiempoActual % 60;
+    const tiempoFormateado = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+    
+    // Actualiza el Dashboard
+    tiempoRestanteEl.textContent = tiempoFormateado;
+    
+    // Actualiza el Widget (Si está visible)
+    const tiempoRestanteWidgetEl = document.getElementById('tiempoRestante-widget');
+    if (tiempoRestanteWidgetEl) {
+        tiempoRestanteWidgetEl.textContent = tiempoFormateado;
+
+        // Lógica visual del Snipe (alerta roja)
+        const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
+        const widgetContainer = document.getElementById('widget-container');
+        
+        if (tiempoActual <= tiempoSnipe && tiempoActual > 0) {
+            if (!isSnipeModeVisual) {
+                widgetContainer.classList.add('snipe-alert');
+                isSnipeModeVisual = true;
+            }
+        } else {
+            if (isSnipeModeVisual) {
+                widgetContainer.classList.remove('snipe-alert');
+                isSnipeModeVisual = false;
+            }
+        }
+        if (tiempoActual <= 0 && tiempoActual > -60) { // Mostrar "Finalizando" por un momento
+            document.getElementById('subtext-widget').textContent = '¡Tiempo de la subasta terminado!';
+        } else {
+            document.getElementById('subtext-widget').textContent = 'El sorteo/subasta termina en';
+        }
+
+    }
+}
+
+// Función que se encarga de mostrar u ocultar el widget vs. el dashboard
+function inicializarModo() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const widgetContainer = document.getElementById('widget-container');
+    const mainDashboardContent = document.getElementById('main-dashboard-content');
+
+    // 🚨 DETECCIÓN DE MODO WIDGET
+    if (urlParams.has('streamerId') || urlParams.get('mode') === 'widget') {
+        
+        // Modo Widget activado
+        document.body.classList.add('widget-mode'); 
+        
+        if (widgetContainer) {
+             widgetContainer.style.display = 'flex'; // HACER VISIBLE EL WIDGET
+        }
+        if (mainDashboardContent) {
+             mainDashboardContent.style.display = 'none'; // OCULTAR EL DASHBOARD
+        }
+
+        // Si estamos en modo widget, intentamos conectarnos al streamerId
+        const streamerId = urlParams.get('streamerId');
+        if (streamerId) {
+            socket.emit('set_streamer_id', streamerId);
+            document.title = `Widget - ${streamerId}`;
+            console.log(`Conectado como Widget al ID: ${streamerId}`);
+            isConnectedValid = true; // Para prevenir lógica de Dashboard si no es válido
+        }
+
+    } else {
+        // Modo Dashboard
+        document.body.classList.remove('widget-mode');
+        // Aquí podrías inicializar el ID si tienes una lógica de guardado de sesión
+        // ...
+        isConnectedValid = true; 
+    }
+}
+document.addEventListener('DOMContentLoaded', inicializarModo);
+// Llama a esta función para sincronizar el tiempo al inicio
+socket.on('sync_time', (time) => {
+    tiempoActual = time;
+    actualizarTiempoUI();
+});
         // 👇 INICIO: AÑADIDO BLOQUE (PROTECCIÓN ANTI-DUPLICADOS) 👇
         const processedGiftIds = new Set();
         setInterval(() => {
