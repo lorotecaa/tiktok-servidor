@@ -5,7 +5,22 @@
     <title>Subasta en Vivo</title>
     <style>
         /* ESTILOS BASE DEL DASHBOARD (INTACTO) */
-        body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; margin:0; padding:0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        body { 
+        font-family: Arial, sans-serif; 
+        color: white; 
+        text-align: center; 
+        margin:0; 
+        padding:0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: flex-start; 
+        min-height: 100vh; 
+    }
+    
+    /* 🚨 CORRECCIÓN CLAVE: Aplicar fondo oscuro SOLO en modo Dashboard */
+    body:not(.widget-mode) { 
+        background: #111; 
+    }
         h1 { margin:20px 0; }
         ul { list-style: none; padding: 0; }
         li { margin: 5px 0; font-size: 18px; }
