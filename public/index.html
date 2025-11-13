@@ -1080,10 +1080,11 @@ socket.on("anunciar_ganador", (ganador) => {
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes popIn {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+ 0% { transform: scale(0.8); opacity: 0; }
+ 100% { transform: scale(1); opacity: 1; }
 }`;
 document.head.appendChild(style);
+
 // Widget (Cliente) - Recepción de eventos del Dashboard
 socket.on("activar_alerta_snipe_visual", () => {
     // Cuando el Dashboard dice que el Snipe comenzó, activamos la bandera visual
@@ -1098,6 +1099,48 @@ socket.on('finalizar_subasta', () => {
     document.body.classList.remove('snipe-alert');
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
+});
+
+// =======================================================
+// 🚨 CRÍTICO: LÓGICA DE INICIALIZACIÓN DEL WIDGET Y DASHBOARD
+// (Esto garantiza que la clase 'widget-mode' se aplique correctamente)
+// =======================================================
+document.addEventListener('DOMContentLoaded', (event) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Detectar el modo Widget
+    if (urlParams.has('streamerId') || urlParams.get('mode') === 'widget') {
+        
+        // 🚨 AQUÍ ESTÁ LA CORRECCIÓN DEL FONDO NEGRO/TRANSPARENTE
+        document.body.classList.add('widget-mode'); 
+        
+        const widgetContainer = document.getElementById('widget-container');
+        const mainDashboardContent = document.getElementById('main-dashboard-content');
+
+        if (widgetContainer) {
+             widgetContainer.style.display = 'flex'; 
+        }
+        if (mainDashboardContent) {
+             mainDashboardContent.style.display = 'none';
+        }
+
+        const streamerId = urlParams.get('streamerId') || urlParams.get('id');
+        
+        if (streamerId) {
+            socket.emit("join_room", { 
+                streamerId: streamerId, 
+                tiktokUser: "Widget-Viewer" 
+            }); 
+            console.log(`WIDGET: Se unió a la sala: ${streamerId}`);
+        } else {
+            console.error("WIDGET: No se encontró streamerId en la URL.");
+        }
+
+    } else {
+        // MODO DASHBOARD
+        document.getElementById('widget-container').style.display = 'none';
+        console.log("Modo Dashboard activado. Listo para iniciar.");
+    }
 });
     </script>
 </body>
