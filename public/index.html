@@ -842,52 +842,6 @@ if (isWidgetMode) {
                  }
              }
 
-        // ===============================
-// 🎁 ESCUCHAR REGALOS EN TIEMPO REAL DESDE EL SERVIDOR
-// (Esto corre en AMBOS: Dashboard y Widget)
-// ===============================
-socket.on("new_gift", (gift) => {
-            console.log("💎 Nuevo regalo recibido del servidor:", gift);
-
-            const existente = participantes.find(p => p.usuario === gift.usuario);
-            // Tomamos la cantidad del regalo que nos envían (ej: 1 rosa, 100 leones)
-            const cantidadDelRegalo = parseInt(gift.cantidad) || 0; 
-
-            if (existente) {
-                // 🛑 CORRECCIÓN CRÍTICA: Sumamos la cantidad nueva a la cantidad existente
-                existente.cantidad = parseInt(existente.cantidad) + cantidadDelRegalo; 
-                existente.avatar_url = gift.avatar_url;
-            } else {
-                // 💡 Es un usuario nuevo
-                participantes.push({
-                    usuario: gift.usuario,
-                    cantidad: cantidadDelRegalo, 
-                    regalo: gift.regalo,
-                    avatar_url: gift.avatar_url
-                });
-            }
-
-            // 💡 Ordena la lista CADA VEZ que llegue un regalo.
-            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
-
-            // 🛑 LÓGICA DE SNIPE: Reiniciar el contador si la subasta está en modo snipe
-            if (!document.body.classList.contains('widget-mode') && snipeActivado && cantidadDelRegalo > 0) {
-                const tiempoSnipe = parseInt(document.getElementById("tiempoSnipe").value) || 0;
-                
-                // Si el tiempo está bajo o en 0 (esperando el final)
-                if (tiempoActual <= tiempoSnipe) {
-                    tiempoActual = tiempoSnipe;
-                    socket.emit('sync_time', tiempoActual); 
-                    logDonacionesEl.innerHTML += `<p style="color: red;">⏰ SNIPE: Tiempo restablecido a ${tiempoSnipe}s!</p>`;
-                }
-            }
-// 📢 ¡AQUÍ VA LA LÍNEA DE SINCRONIZACIÓN!
-            // Ahora la variable 'participantes' está finalizada, sumada y ordenada.
-            socket.emit('sync_participantes', participantes); // <-- ¡MOVER AQUÍ!
-
-            // Ahora sí, actualiza la UI con la lista ya ordenada
-            actualizarParticipantesUI();
-        });
 socket.on('id_invalido', (data) => {
     // 🛑 1. Establecer la bandera como inválida
     isConnectedValid = false; 
