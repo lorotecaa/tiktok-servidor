@@ -35,9 +35,9 @@ app.get("/", (req, res) => {
 // **IMPORTANTE: Debes cambiar estos valores por los IDs que autorices.**
 const VALID_STREAMER_IDS = [
     "@yosoytoniu",  
-    "lorotecayt",   
-    "otro_usuario_autorizado" 
+    "lorotecayt", 
     "Andersson_4k",
+    "otro_usuario_autorizado" 
 ];
 // INICIO DEL BLOQUE io.on("connection") - TODOS LOS SOCKET.ON DEBEN IR AQUÍ DENTRO
 io.on("connection", (socket) => { 
@@ -117,6 +117,7 @@ io.on("connection", (socket) => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
+
 
 
 
