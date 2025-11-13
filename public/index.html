@@ -1074,11 +1074,19 @@ function actualizarParticipantesUI() {
     });
 }
 
-/* ================================== */
-/* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
-/* ================================== */
 function abrirWidget() {
-    window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
+    // 🚨 Esta función usa IPC para hablar con el main.js
+    const streamerId = document.getElementById('idUnico').value.trim();
+    if (!streamerId) {
+        alert("Por favor, ingresa tu ID Único para abrir el widget.");
+        return;
+    }
+    
+    const urlWidget = `index.html?mode=widget&streamerId=${streamerId}`;
+    
+    // CRÍTICO: Envía la señal al proceso principal de Electron a través de la API expuesta por preload.js
+    // Si esta línea está mal, la ventana no se abrirá.
+    window.electronAPI.abrirWidget(urlWidget); // <-- ¿Tienes esta API en tu preload.js?
 }
 
 /* ================================================== */
