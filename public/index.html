@@ -53,7 +53,13 @@
         #tiempoBox { background: #e67e22; width: 300px; height: 120px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:20px; font-weight:bold; border-radius: 10px; }
 
         /* WIDGET MODE (ESTILOS FINALES PARA EL OVERLAY) (INTACTO) */
-        .widget-mode body { background: transparent; min-height: 0; display: block; overflow: hidden; }
+        .widget-mode body { 
+    background-color: transparent !important; /* CRÍTICO: Forzar transparencia */
+    background: transparent !important;       /* Doble chequeo */
+    min-height: 0; 
+    display: block; 
+    overflow: hidden; 
+}
         
         /* OCULTAR TODO LO QUE NO SEA EL WIDGET (INTACTO) */
         .widget-mode #main-dashboard-content { display: none !important; }
