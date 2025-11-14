@@ -244,6 +244,9 @@
         const listaGanadoresEl = document.getElementById('listaGanadores');
         const tiempoRestanteEl = document.getElementById('tiempoRestante');
         const logDonacionesEl = document.getElementById('logDonaciones');
+        // Referencias a elementos HTML (DEBEN existir en tu index.html)
+const tablaParticipantesEl = document.getElementById('tablaParticipantes'); 
+const totalParticipantesEl = document.getElementById('totalParticipantes');
         
         let tiempoActual = 0;
         let intervalo = null;
@@ -875,8 +878,41 @@ function abrirWidget() {
         console.log("Widget abierto en nueva pestaña (Modo Web).");
     }
 }
+/**
+ * Recibe la lista de participantes ordenada desde el servidor y actualiza la tabla del Dashboard.
+ * @param {Array<{usuario: string, cantidad: number, avatar_url: string}>} participantes 
+ */
 function actualizarTablaParticipantes(participantes) {
-    // ... Lógica para limpiar y rellenar la tabla HTML
+    if (!tablaParticipantesEl) {
+        console.error("Elemento HTML con ID 'tablaParticipantes' no encontrado.");
+        return;
+    }
+
+    tablaParticipantesEl.innerHTML = '';
+    
+    participantes.forEach((p, index) => {
+        const fila = document.createElement('tr');
+        
+        let colorFondo = '';
+        if (index === 0) colorFondo = 'style="background-color: #ffd70033; font-weight: bold;"';
+        else if (index === 1) colorFondo = 'style="background-color: #c0c0c033;"';
+        else if (index === 2) colorFondo = 'style="background-color: #cd7f3233;"';
+
+        fila.innerHTML = `
+            <td ${colorFondo} class="ranking-cell">${index + 1}</td>
+            <td ${colorFondo} class="avatar-cell">
+                <img src="${p.avatar_url}" alt="Avatar" class="participant-avatar" onerror="this.src=''"/>
+            </td>
+            <td ${colorFondo} class="user-cell">${p.usuario}</td>
+            <td ${colorFondo} class="points-cell">${p.cantidad} 💎</td>
+        `;
+        
+        tablaParticipantesEl.appendChild(fila);
+    });
+
+    if (totalParticipantesEl) {
+        totalParticipantesEl.textContent = participantes.length;
+    }
 }
 /* ================================================== */
 /* 👑 BLOQUE ÚNICO PARA MOSTRAR GANADOR (Dashboard + Widget) 👑 */
