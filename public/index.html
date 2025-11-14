@@ -372,32 +372,33 @@
         function iniciar() {
     if (!document.body.classList.contains('widget-mode')) { 
         
-        // 🛑 VALIDACIÓN 1: Verificar si el ID está en el input
         const idUnicoEl = document.getElementById('idUnico');
         const streamerIdActual = idUnicoEl ? idUnicoEl.value.trim() : "";
         
         if (!streamerIdActual) {
             alert("⚠️ ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
             logDonacionesEl.innerHTML += `<p style="color: red;">🛑 ERROR: ID Único no especificado. No se puede iniciar la subasta.</p>`;
-            return; // Detiene la función aquí
+            return;
         }
-        
-        // Llama a la conexión. La lógica de inicio debe ir DESPUÉS de la conexión.
-        conectarDashboard(); 
 
-        // 🛑 VALIDACIÓN 2: CRÍTICA. SOLO INICIAR SI EL ID ES VÁLIDO EN EL SERVIDOR
-        if (!isConnectedValid) {
-            alert("⚠️ ERROR: El ID no ha sido validado por el servidor. Revisa si hay un mensaje de error.");
-            return; // Detiene la función si el servidor ya marcó el ID como inválido
-        }
+        // 🎯 MEJORA: Asegurar que la variable GLOBAL 'streamerId' tenga el valor actual
+        streamerId = streamerIdActual;
         
-        // --- Lógica de inicio (SOLO se ejecuta si isConnectedValid es true) ---
+        // Leer la configuración del Snipe
+        const tiempoSnipeConfig = parseInt(document.getElementById("tiempoSnipe").value) || 0;
+        
+        // Asumimos que la conexión ya se hizo o se hará.
+        
         snipeActivado = false; 
         subastaActiva = true; 
-        logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda...</p>`;
+        logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda con Snipe: ${tiempoSnipeConfig}s...</p>`;
         
-        // Si el servidor valida el ID y llegamos aquí, entonces enviamos el evento
-        socket.emit("iniciar_subasta"); 
+        // 🔑 CORRECCIÓN CLAVE: Enviar la configuración al servidor
+        socket.emit("iniciar_subasta", {
+            streamerId: streamerIdActual,
+            tiempoSnipe: tiempoSnipeConfig,
+            snipeActivado: false // Siempre empieza desactivado
+        }); 
         
         isPaused = false; 
         tiempoActual = 0; 
@@ -706,17 +707,43 @@ if (isWidgetMode) {
     // ===============================
     document.getElementById('widget-container').style.display = 'none';
     
-    if (streamerId) { // Si hay ID Único ingresado
-        // El Dashboard se une a la sala
-        console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
+    // 🔑 Obtener el ID del campo de texto principal
+    const idUnicoEl = document.getElementById('idUnico');
+    
+    // 1. Definir la función que intenta la conexión a la sala y a TikFinity
+    function conectarDashboardAlId() {
+        // Actualizar la variable global 'streamerId' con el valor actual del input
+        streamerId = idUnicoEl.value.trim(); 
 
-        // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- TU CÓDIGO COMIENZA AQUÍ
-        // ... (El resto de tu lógica de conexión a TikFinity) ...
-    } else {
-        console.error("ID Único no ingresado. Por favor, complete el campo 'ID Único (para Widget)'.");
+        if (streamerId) { // Si hay ID Único ingresado
+            // El Dashboard se une a la sala de Socket.IO
+            socket.emit("join_room", { streamerId: streamerId, tiktokUser: tiktokUser });
+            console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
+
+            // Aquí se reinicia la conexión a TikFinity (solo si el Dashboard no está ya conectado)
+            // (La lógica completa de TikFinity que me diste en la Parte 2 va AQUÍ, o debe ser llamada desde aquí).
+            // Por claridad, asumo que llamas a una función para iniciar TikFinity, por ejemplo:
+            // iniciarConexionTikFinity(); 
+
+        } else {
+            console.error("ID Único no ingresado. Por favor, complete el campo 'ID Único (para Widget)'.");
+        }
     }
-}
 
+    // 2. Establecer el manejador de eventos para la conexión
+    function setupDashboardConnection() {
+        if (!idUnicoEl) return;
+        
+        // 🎯 Acción A: Intenta conectar inmediatamente al cargar si ya hay un valor
+        conectarDashboardAlId();
+        
+        // 🎯 Acción B: Intenta conectar cada vez que el valor del input cambie y se pierda el foco
+        idUnicoEl.addEventListener('change', conectarDashboardAlId);
+    }
+    
+    // Iniciar el proceso de conexión
+    setupDashboardConnection();
+}
              // ===============================
              // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
              // ===============================
@@ -744,63 +771,59 @@ if (isWidgetMode) {
 
                          switch (msg.event) {
                              case "gift": { // 🌟 INICIO DE LA CORRECCIÓN FINAL 🌟
-                                 const gift = msg.data;
-                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
+                                 const gift = msg.data;
+                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
 
-                                 // 1️⃣ ID ÚNICO del evento
-                                 const giftEventId = gift.msgId;   
-                                 if (!giftEventId) {
-                                     console.log("Ignorando evento gift sin msgId");
-                                     break; // No podemos procesar sin ID de evento
-                                 }
+                                 // 1️⃣ ID ÚNICO del evento
+                                 const giftEventId = gift.msgId;   
+                                 if (!giftEventId) {
+                                     console.log("Ignorando evento gift sin msgId");
+                                     break; 
+                                 }
 
-                                 // 2️⃣ Ignorar duplicados (por seguridad)
-                                 if (processedGiftIds.has(giftEventId)) {
-                                     console.log(`Regalo ya procesado: ${giftEventId}`);
-                                     break;
-                                 }
+                                 // 2️⃣ Ignorar duplicados (por seguridad)
+                                 if (processedGiftIds.has(giftEventId)) {
+                                     console.log(`Regalo ya procesado: ${giftEventId}`);
+                                     break;
+                                 }
 
-                                 // 3️⃣ Filtro inteligente:
-                                 // - Si tiene repeatEnd: procesamos solo el final
-                                 // - Si NO tiene repeatEnd: lo procesamos igual (regalos grandes o únicos)
-                                 if (gift.repeatEnd === false) { 
-                                 
-                                 // 🛑 Excepción clave: Si el regalo vale 100 o más, lo procesamos.
-                                 if (gift.diamondCount >= 100) {
-                                     console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
-                                 } else {
-                                     console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
-                                     break;
-                                 }
+                                 // 3️⃣ Filtro inteligente: Solo procesar el final del combo o regalos grandes
+                                 if (gift.repeatEnd === false) { 
+                                     if (gift.diamondCount >= 100) {
+                                         console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
+                                     } else {
+                                         console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
+                                         break;
+                                     }
                              }
-                                 
-                                 // (Si repeatEnd es 'true' o 'undefined', el código continúa)
+                                 
+                                 // 4️⃣ Marcamos el ID como procesado
+                                 processedGiftIds.add(giftEventId);
 
-                                 // 4️⃣ Marcamos el ID como procesado
-                                 processedGiftIds.add(giftEventId);
+                                 // 5️⃣ Calculamos el total de diamantes correctamente
+                                 const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+                                 
+                                 // 5.1 No procesar regalos sin valor (por si acaso)
+                                 if (totalDiamonds === 0) {
+                                     console.log("Ignorando regalo con 0 diamantes.");
+                                     break;
+                                 }
 
-                                 // 5️⃣ Calculamos el total de diamantes correctamente
-                                 const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
-                                 
-                                 // 5.1 No procesar regalos sin valor (por si acaso)
-                                 if (totalDiamonds === 0) {
-                                     console.log("Ignorando regalo con 0 diamantes.");
-                                     break;
-                                 }
+                                 // 6️⃣ Mostramos en pantalla y enviamos al servidor
+                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
+                                 
+                                 socket.emit("nuevo_regalo", {
+                                    usuario: gift.uniqueId,
+                                    cantidad: totalDiamonds,
+                                    regalo: gift.giftName,
+                                    avatar_url: gift.profilePictureUrl, 
+                                    streamerId: streamerId
+                                 });
 
-                                 // 6️⃣ Mostramos en pantalla y enviamos al servidor
-                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
-                                 
-                                 socket.emit("nuevo_regalo", {
-    usuario: gift.uniqueId,
-    cantidad: totalDiamonds,
-    regalo: gift.giftName,
-    avatar_url: gift.profilePictureUrl, // ⬅️ ¡AGREGA ESTA COMA!
-    streamerId: streamerId // CRÍTICO: ANADE ESTA LINEA
-});
-
-                                 break; // ✅ Fin del case
-                             }
+                                 // 🛑 CRÍTICO: NO SE EMITE NINGÚN EVENTO DE 'EXTENDER_TIEMPO' AQUÍ.
+                                 
+                                 break; // ✅ Fin del case
+                             }
 
                              case "chat":
                                  const chat = msg.data;
@@ -854,6 +877,7 @@ socket.on('id_invalido', (data) => {
     // Muestra la alerta (como ya lo tienes)
     alert(`❌ ERROR: El ID '${data.streamerId}' no está en la lista autorizada. Por favor, comunícate con el administrador.`);
 });
+
 // 🛑 FIN DEL BLOQUE A AÑADIR 🛑
 // ===============================
 // 🧹 Limpiar listas cuando el servidor lo indique
@@ -876,31 +900,42 @@ function actualizarParticipantesUI() {
     const listaWidget = document.getElementById("listaParticipantes-widget");
     if (listaDashboard) listaDashboard.innerHTML = "";
     if (listaWidget) listaWidget.innerHTML = "";
-
+    
+    // 🔑 CORRECCIÓN CLAVE: Iterar sobre todos para el Dashboard y solo los Top 5 para el Widget
     participantes.forEach((p, index) => {
+        const rango = index + 1; // 1, 2, 3...
+        
+        // Formato para el ranking (Usado en Dashboard y Widget)
         const itemHTML = `
             <li>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span>${index + 1}.</span>
-                    <img src="${p.avatar_url || 'https://via.placeholder.com/40/000/fff?text=?'}"
-                         alt="avatar"
-                         style="width:40px; height:40px; border-radius:50%;">
-                    <span>${p.usuario}</span>
+                <div class="user-info">
+                    <div class="rank-icon">${rango}</div>
+                    <div class="user-avatar"><img src="${p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A'}" alt="Avatar"></div>
+                    <span class="username">${p.usuario}</span>
                 </div>
-                <div class="coins">${p.cantidad} 💎</div>
+                <span class="coins">${p.cantidad} 🪙</span>
             </li>
         `;
 
+        // Llenar Dashboard (Si estamos en modo Dashboard)
         if (listaDashboard && !document.body.classList.contains('widget-mode')) {
-            listaDashboard.innerHTML += itemHTML;
+             // El Dashboard utiliza el formato de Widget para mejor visualización
+             listaDashboard.innerHTML += itemHTML;
         }
 
-        if (listaWidget && document.body.classList.contains('widget-mode')) {
+        // Llenar Widget (Solo el Top 5)
+        if (listaWidget && document.body.classList.contains('widget-mode') && rango <= 5) {
             listaWidget.innerHTML += itemHTML;
         }
     });
-}
 
+    // Actualizar Totales del Dashboard
+    if (listaDashboard && !document.body.classList.contains('widget-mode')) {
+        const totalDiamantes = participantes.reduce((sum, p) => sum + p.cantidad, 0); // Sumar todos los diamantes
+        document.querySelector('#totalParticipantes').textContent = participantes.length;
+        document.querySelector('#totalDiamantes').textContent = totalDiamantes;
+    }
+}
 /* ================================== */
 /* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
 /* ================================== */
