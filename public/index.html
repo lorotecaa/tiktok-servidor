@@ -875,7 +875,9 @@ function abrirWidget() {
         console.log("Widget abierto en nueva pestaña (Modo Web).");
     }
 }
-
+function actualizarTablaParticipantes(participantes) {
+    // ... Lógica para limpiar y rellenar la tabla HTML
+}
 /* ================================================== */
 /* 👑 BLOQUE ÚNICO PARA MOSTRAR GANADOR (Dashboard + Widget) 👑 */
 /* ================================================== */
@@ -998,6 +1000,21 @@ socket.on('finalizar_subasta', () => {
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
 });
+socket.on('sync_participantes', (participantes) => {
+    console.log("Recibida lista de participantes actualizada:", participantes);
+    
+    // 1. Actualiza la tabla principal del Dashboard
+    actualizarTablaParticipantes(participantes); 
+    
+    // 2. Si es el Widget, actualiza la lista del Widget
+    if (document.body.classList.contains('widget-mode')) {
+        actualizarWidgetLista(participantes);
+    }
+});
+
+// ... y aquí irían otros como:
+socket.on('tiempo_reiniciado_por_snipe', (data) => { /* ... */ });
+socket.on('limpiar_listas_clientes', () => { /* ... */ });
     </script>
 </body>
 </html>
