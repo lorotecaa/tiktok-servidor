@@ -849,11 +849,22 @@ function actualizarParticipantesUI() {
         document.querySelector('#totalDiamantes').textContent = totalDiamantes;
     }
 }
-/* ================================== */
-/* 👆 FIN DEL BLOQUE PARA PEGAR 👆 */
-/* ================================== */
 function abrirWidget() {
-    window.electronAPI.abrirWidgetVentana("https://tiktok-servidor.onrender.com/?mode=widget");
+    // La URL del widget debe obtener el ID Único actual del input
+    const idUnicoEl = document.getElementById('idUnico');
+    const streamerIdActual = idUnicoEl ? idUnicoEl.value.trim() : "ID_FALTANTE";
+    
+    const widgetURL = `https://tiktok-servidor.onrender.com/?mode=widget&id=${streamerIdActual}`;
+    
+    if (window.electronAPI && window.electronAPI.abrirWidgetVentana) {
+        // Opción 1: Estás en Electron y puedes abrir la ventana con la API
+        window.electronAPI.abrirWidgetVentana(widgetURL);
+        console.log("Widget abierto mediante ElectronAPI.");
+    } else {
+        // Opción 2: Estás en un navegador normal, usa window.open
+        window.open(widgetURL, '_blank');
+        console.log("Widget abierto en nueva pestaña (Modo Web).");
+    }
 }
 
 /* ================================================== */
