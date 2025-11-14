@@ -338,37 +338,40 @@
         
         // --- LÓGICA DEL TEMPORIZADOR ---
         function iniciarTimerLogic() {
-            let tiempoInput = document.getElementById("tiempo");
-            // Solo resetea si el tiempo es 0 o indefinido (inicio)
-            if (tiempoActual <= 0) {
-                 tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); // Usar 200 como default si no hay input
-            }
+    let tiempoInput = document.getElementById("tiempo");
+    // Solo resetea si el tiempo es 0 o indefinido (inicio)
+    // 💡 NOTA: Asumimos que tiempoActual ya fue inicializado al inicio del script/función iniciar()
+    if (tiempoActual <= 0) { 
+        tiempoActual = parseInt(tiempoInput ? tiempoInput.value : 200); // Usar 200 como default si no hay input
+    }
 
 
-            if (intervalo) clearInterval(intervalo);
+    if (intervalo) clearInterval(intervalo);
+    
+    intervalo = setInterval(() => {
+        if (!isPaused && tiempoActual > 0) {
+            tiempoActual--;
+            const formattedTime = formatTime(tiempoActual);
             
-            intervalo = setInterval(() => {
-                if (!isPaused && tiempoActual > 0) {
-                    tiempoActual--;
-                    const formattedTime = formatTime(tiempoActual);
-                    
-                    // 1. DASHBOARD EMITE LA HORA AL SERVIDOR (MAESTRO)
-                    if (!document.body.classList.contains('widget-mode')) {
-                        socket.emit('sync_time', tiempoActual); 
-                    }
-                    
-                    // 2. Actualizamos el display LOCAL del dashboard
-                    if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
+            // 🔑 CORRECCIÓN CLAVE: Enviar la actualización del tiempo a la sala del streamer
+            if (!document.body.classList.contains('widget-mode')) {
+                socket.emit("actualizar_tiempo", { 
+                    streamerId: streamerId, 
+                    tiempo: tiempoActual 
+                });
+            }
+            
+            // 2. Actualizamos el display LOCAL del dashboard
+            if (document.getElementById('tiempoRestante')) document.getElementById('tiempoRestante').textContent = formattedTime;
 
-                } else if (tiempoActual <= 0) {
-                     // Solo el dashboard detiene el tiempo
-                    if (!document.body.classList.contains('widget-mode')) {
-                        terminarTiempo();
-                    }
-                }
-            }, 1000);
+        } else if (tiempoActual <= 0) {
+            // Solo el dashboard detiene el tiempo
+            if (!document.body.classList.contains('widget-mode')) {
+                terminarTiempo();
+            }
         }
-
+    }, 1000);
+}
         // --- FUNCIONES DE CONTROL ---
         function iniciar() {
     if (!document.body.classList.contains('widget-mode')) { 
@@ -689,8 +692,14 @@
         // 👆 FIN DE LA FUNCIÓN NUEVA 👆
 
         // --- EVENTOS DE SINCRONIZACIÓN (El Widget recibe la hora) ---
-        socket.on('update_time', (time) => {
+        // Antes: socket.on('update_time', (time) => { ...
+// Ahora debe coincidir con lo que emite el Dashboard
+socket.on('actualizar_tiempo', (data) => { 
     
+    // 💡 NOTA: El Dashboard ahora envía un objeto { streamerId, tiempo }
+    // Por lo tanto, debes acceder al tiempo usando data.tiempo
+    const time = data.tiempo;
+
     if (document.body.classList.contains('widget-mode')) {
         
         // ... (Tu lógica existente para subastaActiva) ...
