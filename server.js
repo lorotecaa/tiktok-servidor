@@ -36,6 +36,7 @@ app.get("/", (req, res) => {
 const VALID_STREAMER_IDS = [
     "@yosoytoniu",  
     "lorotecayt",   
+    "giovani94.1", 
     "otro_usuario_autorizado" 
 ];
 
@@ -220,6 +221,7 @@ socket.on("limpiar_listas", () => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
+
 
 
 
