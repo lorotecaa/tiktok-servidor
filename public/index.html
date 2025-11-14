@@ -1003,17 +1003,15 @@ socket.on('finalizar_subasta', () => {
     const subtextElWidget = document.getElementById('subtext-widget');
     if (subtextElWidget) subtextElWidget.textContent = "El sorteo/subasta termina en";
 });
-socket.on('sync_participantes', (participantes) => {
-    console.log("Recibida lista de participantes actualizada:", participantes);
+socket.on('sync_participantes', (data) => {
+    console.log("Recibida lista de participantes actualizada:", data);
     
-    // 🔑 CLAVE: Al recibir los datos del servidor, se actualiza la variable global 'participantes'
-    // y luego se llama a la función de UI para que pinte todo (Dashboard y Widget).
-    this.participantes = participantes; 
+    // 🔑 CORRECCIÓN CLAVE: Reemplazar la variable global 'participantes'
+    // con la lista que viene del servidor.
+    participantes = data; 
     
     // 1. Llama a la función unificada que maneja la UI de ambos modos.
     actualizarParticipantesUI(); 
-    
-    // NOTA: Ya NO se llama a 'actualizarWidgetLista' ni a 'actualizarTablaParticipantes'.
 });
 
 // ... y aquí irían otros como:
