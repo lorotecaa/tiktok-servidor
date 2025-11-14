@@ -381,19 +381,17 @@
             return;
         }
 
-        // 🎯 MEJORA: Asegurar que la variable GLOBAL 'streamerId' tenga el valor actual
+        // 🎯 1. Asegurar que la variable GLOBAL 'streamerId' tenga el valor actual
         streamerId = streamerIdActual;
         
-        // Leer la configuración del Snipe
+        // 🎯 2. Leer la configuración del Snipe
         const tiempoSnipeConfig = parseInt(document.getElementById("tiempoSnipe").value) || 0;
-        
-        // Asumimos que la conexión ya se hizo o se hará.
         
         snipeActivado = false; 
         subastaActiva = true; 
         logDonacionesEl.innerHTML += `<p style="color: yellow;">▶️ Iniciando ronda con Snipe: ${tiempoSnipeConfig}s...</p>`;
         
-        // 🔑 CORRECCIÓN CLAVE: Enviar la configuración al servidor
+        // 🔑 3. CORRECCIÓN CLAVE: Enviar la configuración al servidor
         socket.emit("iniciar_subasta", {
             streamerId: streamerIdActual,
             tiempoSnipe: tiempoSnipeConfig,
@@ -403,37 +401,105 @@
         isPaused = false; 
         tiempoActual = 0; 
         iniciarTimerLogic(); // Inicia el reloj maestro en el dashboard
+
+        
+        // 🛑 4. INICIAR CONEXIÓN CON TIKFINITY SOLO AHORA 🛑
+        if (tiktokWS && tiktokWS.readyState === WebSocket.OPEN) {
+            console.log("TikFinity ya estaba conectado. Reutilizando.");
+        } else {
+            // ===============================
+            // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD)
+            // ===============================
+            try {
+                // Si ya existe una conexión, la cerramos antes de abrir una nueva
+                if (tiktokWS) tiktokWS.close(); 
+                
+                tiktokWS = new WebSocket("ws://localhost:21213/");
+
+                tiktokWS.onopen = () => {
+                    console.log("✅ Conectado a TikFinity Event API");
+                    if (logDonacionesEl) {
+                        logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
+                    }
+                };
+
+                tiktokWS.onmessage = (event) => {
+                    if (!logDonacionesEl) return;
+                    if (!subastaActiva) {
+                        return; // Ignora todo si la subasta no está activa
+                    }
+
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (!msg.event) return;
+
+                        switch (msg.event) {
+                            case "gift": { 
+                                const gift = msg.data;
+                                const giftEventId = gift.msgId;
+                                
+                                if (!giftEventId) break;
+                                if (processedGiftIds.has(giftEventId)) break; // Ignorar duplicados
+                                
+                                // Filtro de Combo: solo procesar el final (o regalos grandes)
+                                if (gift.repeatEnd === false && gift.diamondCount < 100) {
+                                    break; 
+                                }
+
+                                processedGiftIds.add(giftEventId); // Marcar como procesado
+
+                                const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
+                                if (totalDiamonds === 0) break;
+
+                                logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
+                                
+                                // Envía el regalo al servidor Socket.IO
+                                socket.emit("nuevo_regalo", {
+                                    usuario: gift.uniqueId,
+                                    cantidad: totalDiamonds,
+                                    regalo: gift.giftName,
+                                    avatar_url: gift.profilePictureUrl,
+                                    streamerId: streamerId // Usa la variable global 'streamerId'
+                                });
+
+                                break;
+                            }
+                            case "chat":
+                                const chat = msg.data;
+                                logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
+                                break;
+                            case "like":
+                                const like = msg.data;
+                                logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
+                                break;
+                            case "follow":
+                                const follow = msg.data;
+                                logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
+                                break;
+                        }
+
+                        logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
+
+                    } catch (e) {
+                        console.error("Error al procesar mensaje TikFinity:", e);
+                        logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
+                    }
+                };
+
+                tiktokWS.onclose = () => {
+                    if (logDonacionesEl) {
+                        logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
+                    }
+                };
+                
+            } catch (err) {
+                console.error("Error al conectar con TikFinity:", err);
+                if (logDonacionesEl) {
+                    logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity. Asegúrate que TikFinity está activo y escuchando en el puerto 21213.</p>`;
+                }
+            }
+        }
     }
-}
-function conectarDashboard() {
-    // 1. Lee ÚNICAMENTE el input ID Único
-    const idUnicoEl = document.getElementById('idUnico');
-    let streamerIdActual = idUnicoEl ? idUnicoEl.value : "";
-
-    if (!streamerIdActual) {
-        alert("ERROR: Debes escribir el ID Único (para Widget) antes de iniciar la subasta.");
-        isConnectedValid = false; // ❌ Asegura que sea falso si falta el ID
-        return; 
-    }
-    
-    // 🆕 AÑADE ESTA LÍNEA CLAVE 🆕
-    // ASUMIMOS que el ID será válido. SOLO el evento 'id_invalido' la pondrá en 'false'.
-    isConnectedValid = true; 
-
-    // 2. Establecer el TikTok User
-    let tiktokUserActual = "No Requerido";
-    
-    // 3. Emitir el evento de conexión
-    socket.emit("join_room", { 
-        streamerId: streamerIdActual, 
-        tiktokUser: tiktokUserActual 
-    }); 
-    
-    // 4. Actualizar las variables globales
-    streamerId = streamerIdActual; 
-    tiktokUser = tiktokUserActual; 
-
-    console.log(`DASHBOARD intentando unirse a sala: ${streamerIdActual}`);
 }
         function terminarTiempo() {
     // 1. Esta función solo debe correr en el Dashboard (el "Maestro")
@@ -682,189 +748,35 @@ if (tiktokUserEl) {
 }
 // ...
 
-if (isWidgetMode) {
-    // ===============================
-    // 🏃 MODO WIDGET (ESCLAVO)
-    // ===============================
-    document.body.classList.add('widget-mode');
+    if (isWidgetMode) {
+        // ===============================
+        // 🏃 MODO WIDGET (ESCLAVO)
+        // ===============================
+        document.body.classList.add('widget-mode');
+        
+        // Si estamos en widget, el streamerId debe venir de la URL
+        streamerId = urlParams.get('id'); 
+        
+        // Ocultamos el dashboard principal y mostramos el contenedor del widget
+        document.getElementById('main-dashboard-content').style.display = 'none';
+        document.getElementById('widget-container').style.display = 'flex';
+        
+        if (streamerId) {
+            // El Widget se une a la sala
+            socket.emit("join_room", { streamerId: streamerId, tiktokUser: "WidgetCliente" }); // El Widget se identifica como tal
+            console.log(`WIDGET unido a la sala: ${streamerId} (WidgetCliente)`);
+        }
+
+    } else { // <--- ¡AQUÍ ESTABA LA CLAVE! Cierre del IF
+        // ===============================
+        // 🖥️ MODO DASHBOARD (MAESTRO)
+        // ===============================
+        document.getElementById('widget-container').style.display = 'none'; // Asegura que se oculte el contenedor del widget
+
+        // 🎯 NOTA: El Dashboard NO necesita hacer socket.emit("join_room") aquí.
+        // Lo hará la función 'iniciar()' cuando se presione el botón.
+    }
     
-    // Si estamos en widget, el streamerId debe venir de la URL
-    streamerId = urlParams.get('id'); 
-    
-    // Ocultamos el dashboard principal y mostramos el contenedor del widget
-    document.getElementById('main-dashboard-content').style.display = 'none';
-    document.getElementById('widget-container').style.display = 'flex';
-    
-    if (streamerId) {
-        // El Widget se une a la sala
-        socket.emit("join_room", { streamerId: streamerId, tiktokUser: "WidgetCliente" }); // El Widget se identifica como tal
-        console.log(`WIDGET unido a la sala: ${streamerId} (WidgetCliente)`);
-    }
-
-} else {
-    // ===============================
-    // 🖥️ MODO DASHBOARD (MAESTRO)
-    // ===============================
-    document.getElementById('widget-container').style.display = 'none';
-    
-    // 🔑 Obtener el ID del campo de texto principal
-    const idUnicoEl = document.getElementById('idUnico');
-    
-    // 1. Definir la función que intenta la conexión a la sala y a TikFinity
-    function conectarDashboardAlId() {
-        // Actualizar la variable global 'streamerId' con el valor actual del input
-        streamerId = idUnicoEl.value.trim(); 
-
-        if (streamerId) { // Si hay ID Único ingresado
-            // El Dashboard se une a la sala de Socket.IO
-            socket.emit("join_room", { streamerId: streamerId, tiktokUser: tiktokUser });
-            console.log(`DASHBOARD unido a la sala: ${streamerId} (${tiktokUser})`);
-
-            // Aquí se reinicia la conexión a TikFinity (solo si el Dashboard no está ya conectado)
-            // (La lógica completa de TikFinity que me diste en la Parte 2 va AQUÍ, o debe ser llamada desde aquí).
-            // Por claridad, asumo que llamas a una función para iniciar TikFinity, por ejemplo:
-            // iniciarConexionTikFinity(); 
-
-        } else {
-            console.error("ID Único no ingresado. Por favor, complete el campo 'ID Único (para Widget)'.");
-        }
-    }
-
-    // 2. Establecer el manejador de eventos para la conexión
-    function setupDashboardConnection() {
-        if (!idUnicoEl) return;
-        
-        // 🎯 Acción A: Intenta conectar inmediatamente al cargar si ya hay un valor
-        conectarDashboardAlId();
-        
-        // 🎯 Acción B: Intenta conectar cada vez que el valor del input cambie y se pierda el foco
-        idUnicoEl.addEventListener('change', conectarDashboardAlId);
-    }
-    
-    // Iniciar el proceso de conexión
-    setupDashboardConnection();
-}
-             // ===============================
-             // 🎁 CONEXIÓN CON TIKFINITY EVENT API (SOLO DASHBOARD) <--- MOVIDO AQUÍ
-             // ===============================
-             try {
-                 const tiktokWS = new WebSocket("ws://localhost:21213/");
-
-                 tiktokWS.onopen = () => {
-                     console.log("✅ Conectado a TikFinity Event API");
-                     // Asegurarse de que logDonacionesEl exista antes de usarlo
-                     if (logDonacionesEl) {
-                         logDonacionesEl.innerHTML += `<p style="color: cyan;">✅ Conectado a TikFinity Event API</p>`;
-                     }
-                 };
-
-                 tiktokWS.onmessage = (event) => {
-                     // Asegurarse de que logDonacionesEl exista antes de usarlo
-                     if (!logDonacionesEl) return; 
-                     if (!subastaActiva) {
-                        return; // Ignora todo si la subasta no está activa
-         }
-
-                     try {
-                         const msg = JSON.parse(event.data);
-                         if (!msg.event) return;
-
-                         switch (msg.event) {
-                             case "gift": { // 🌟 INICIO DE LA CORRECCIÓN FINAL 🌟
-                                 const gift = msg.data;
-                                 console.log("DATOS COMPLETOS REGALO:", JSON.stringify(gift, null, 2));  
-
-                                 // 1️⃣ ID ÚNICO del evento
-                                 const giftEventId = gift.msgId;   
-                                 if (!giftEventId) {
-                                     console.log("Ignorando evento gift sin msgId");
-                                     break; 
-                                 }
-
-                                 // 2️⃣ Ignorar duplicados (por seguridad)
-                                 if (processedGiftIds.has(giftEventId)) {
-                                     console.log(`Regalo ya procesado: ${giftEventId}`);
-                                     break;
-                                 }
-
-                                 // 3️⃣ Filtro inteligente: Solo procesar el final del combo o regalos grandes
-                                 if (gift.repeatEnd === false) { 
-                                     if (gift.diamondCount >= 100) {
-                                         console.log(`💎 Regalo grande (>=100) detectado: Procesando a pesar de repeatEnd: false.`);
-                                     } else {
-                                         console.log(`Ignorando evento intermedio (repeatEnd: false). Esperando el final del combo.`);
-                                         break;
-                                     }
-                             }
-                                 
-                                 // 4️⃣ Marcamos el ID como procesado
-                                 processedGiftIds.add(giftEventId);
-
-                                 // 5️⃣ Calculamos el total de diamantes correctamente
-                                 const totalDiamonds = (gift.diamondCount || 0) * (gift.repeatCount || 1);
-                                 
-                                 // 5.1 No procesar regalos sin valor (por si acaso)
-                                 if (totalDiamonds === 0) {
-                                     console.log("Ignorando regalo con 0 diamantes.");
-                                     break;
-                                 }
-
-                                 // 6️⃣ Mostramos en pantalla y enviamos al servidor
-                                 logDonacionesEl.innerHTML += `<p style="color: gold;">🎁 ${gift.uniqueId} envió ${gift.giftName} (${totalDiamonds}💎)</p>`;
-                                 
-                                 socket.emit("nuevo_regalo", {
-                                    usuario: gift.uniqueId,
-                                    cantidad: totalDiamonds,
-                                    regalo: gift.giftName,
-                                    avatar_url: gift.profilePictureUrl, 
-                                    streamerId: streamerId
-                                 });
-
-                                 // 🛑 CRÍTICO: NO SE EMITE NINGÚN EVENTO DE 'EXTENDER_TIEMPO' AQUÍ.
-                                 
-                                 break; // ✅ Fin del case
-                             }
-
-                             case "chat":
-                                 const chat = msg.data;
-                                 logDonacionesEl.innerHTML += `<p style="color: lightgreen;">💬 ${chat.uniqueId}: ${chat.comment}</p>`;
-                                 break;
-
-                             case "like":
-                                 const like = msg.data;
-                                 logDonacionesEl.innerHTML += `<p style="color: pink;">❤️ ${like.uniqueId} dio like</p>`;
-                                 break;
-
-                             case "follow":
-                                 const follow = msg.data;
-                                 logDonacionesEl.innerHTML += `<p style="color: orange;">⭐ ${follow.uniqueId} empezó a seguirte</p>`;
-                                 break;
-                         }
-
-                         // Mantenemos el log visible siempre abajo
-                         logDonacionesEl.scrollTop = logDonacionesEl.scrollHeight;
-
-                     } catch (e) {
-                         console.error("Error al procesar mensaje TikFinity:", e);
-                         logDonacionesEl.innerHTML += `<p style="color: red;">⚠️ Error procesando evento TikFinity.</p>`;
-                     }
-                 };
-
-                 tiktokWS.onclose = () => {
-                      // Asegurarse de que logDonacionesEl exista antes de usarlo
-                     if (logDonacionesEl) {
-                         logDonacionesEl.innerHTML += `<p style="color: red;">❌ Desconectado de TikFinity Event API</p>`;
-                     }
-                 };
-
-             } catch (err) {
-                 console.error("Error al conectar con TikFinity:", err);
-                  // Asegurarse de que logDonacionesEl exista antes de usarlo
-                 if (logDonacionesEl) {
-                     logDonacionesEl.innerHTML += `<p style="color: red;">❌ Error al conectar con TikFinity.</p>`;
-                 }
-             }
-
 socket.on('id_invalido', (data) => {
     // 🛑 1. Establecer la bandera como inválida
     isConnectedValid = false; 
