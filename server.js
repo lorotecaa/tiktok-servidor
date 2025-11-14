@@ -34,8 +34,7 @@ app.get("/", (req, res) => {
 // 1. 🔑 DEFINE TU LISTA BLANCA DE IDS AQUÍ
 const VALID_STREAMER_IDS = [
     "@yosoytoniu",  
-    "lorotecayt", 
-    "doctorbayter",
+    "lorotecayt",   
     "otro_usuario_autorizado" 
 ];
 
@@ -182,7 +181,6 @@ socket.on('nuevo_regalo', (data) => {
     // ===================================
     io.to(streamerId).emit('sync_participantes', participantes);
 });
-
 // 5. EVENTO FINALIZAR_SUBASTA
  socket.on("finalizar_subasta", () => {
     const streamerId = socket.streamerId;
@@ -237,4 +235,3 @@ socket.on("limpiar_listas", () => {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
-
