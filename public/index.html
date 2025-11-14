@@ -275,54 +275,57 @@ const totalParticipantesEl = document.getElementById('totalParticipantes');
         }
         
         function actualizarParticipantesUI() {
-            participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
-            
-            const isWidgetMode = document.body.classList.contains('widget-mode');
-            
-            // 1. Apuntamos a las listas correctas
-            const listaDashboardEl = document.getElementById('listaParticipantes');
-            const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
+    // 1. Ordenar (buena práctica, aunque el servidor ya lo hace)
+    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+    
+    // 2. Apuntamos a las listas y definimos el modo
+    const listaDashboardEl = document.getElementById('listaParticipantes');
+    const listaWidgetEl = document.getElementById('listaParticipantes-widget'); 
+    const isWidgetMode = document.body.classList.contains('widget-mode');
 
-            // 2. Limpiamos ambas listas
-            if (listaDashboardEl) listaDashboardEl.innerHTML = "";
-            if (listaWidgetEl) listaWidgetEl.innerHTML = "";
-            
-            let totalDiamantes = 0;
-            const topN = participantes.slice(0, 5); // Tomamos el Top 5 para el widget
+    // 3. Limpiamos ambas listas
+    if (listaDashboardEl) listaDashboardEl.innerHTML = "";
+    if (listaWidgetEl) listaWidgetEl.innerHTML = "";
+    
+    let totalDiamantes = 0;
 
-            participantes.forEach((p, index) => {
-                const liDashboard = document.createElement("li");
-                
-                // Formato de Dashboard
-                liDashboard.textContent = `${p.usuario} - ${p.cantidad} 💎`;
-                if (listaDashboardEl) listaDashboardEl.appendChild(liDashboard);
+    // 4. Iterar y construir el ranking (Mismo formato para ambos)
+    participantes.forEach((p, index) => {
+        const rango = index + 1;
+        totalDiamantes += p.cantidad;
 
-                // Formato de Widget (Solo el Top 5)
-                if (index < 5 && listaWidgetEl) {
-                    const liWidget = document.createElement("li");
-                    const rango = index + 1;
-                    
-                    const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A'; 
+        // URL del Avatar con fallback
+        const avatarUrl = p.avatar_url || 'https://via.placeholder.com/30/555/FFFFFF?text=A'; 
 
-                    liWidget.innerHTML = `
-                        <div class="rank-icon">${rango}</div>
-                        <div class="user-info">
-                            <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar"></div>
-                            <span class="username">${p.usuario}</span>
-                        </div>
-                        <span class="coins">${p.cantidad} 🪙</span>
-                    `;
-                    listaWidgetEl.appendChild(liWidget);
-                }
-                
-                totalDiamantes += p.cantidad;
-            });
-            
-            if (!isWidgetMode) {
-                 document.querySelector('#totalParticipantes').textContent = participantes.length;
-                 document.querySelector('#totalDiamantes').textContent = totalDiamantes;
-            }
+        // El HTML del elemento de la lista (formato complejo de ranking)
+        const itemHTML = `
+            <li ${rango <= 3 ? 'style="border: 2px solid gold;"' : ''}>
+                <div class="rank-icon">${rango}</div>
+                <div class="user-info">
+                    <div class="user-avatar"><img src="${avatarUrl}" alt="Avatar" onerror="this.src='https://via.placeholder.com/30/555/FFFFFF?text=A'"></div>
+                    <span class="username">${p.usuario}</span>
+                </div>
+                <span class="coins">${p.cantidad} 🪙</span>
+            </li>
+        `;
+        
+        // A. PINTAR EL DASHBOARD (Si no estamos en modo Widget)
+        if (listaDashboardEl && !isWidgetMode) {
+            listaDashboardEl.innerHTML += itemHTML;
         }
+
+        // B. PINTAR EL WIDGET (Solo el Top 5, si estamos en modo Widget)
+        if (listaWidgetEl && isWidgetMode && rango <= 5) {
+             listaWidgetEl.innerHTML += itemHTML;
+        }
+    });
+    
+    // 5. Actualizar Totales (Solo para el Dashboard)
+    if (!isWidgetMode) {
+        document.querySelector('#totalParticipantes').textContent = participantes.length;
+        document.querySelector('#totalDiamantes').textContent = totalDiamantes;
+    }
+}
         function obtenerGanador() {
     if (participantes.length === 0) return null;
     return participantes.reduce((max, p) => (p.coins > max.coins ? p : max));
@@ -878,42 +881,6 @@ function abrirWidget() {
         console.log("Widget abierto en nueva pestaña (Modo Web).");
     }
 }
-/**
- * Recibe la lista de participantes ordenada desde el servidor y actualiza la tabla del Dashboard.
- * @param {Array<{usuario: string, cantidad: number, avatar_url: string}>} participantes 
- */
-function actualizarTablaParticipantes(participantes) {
-    if (!tablaParticipantesEl) {
-        console.error("Elemento HTML con ID 'tablaParticipantes' no encontrado.");
-        return;
-    }
-
-    tablaParticipantesEl.innerHTML = '';
-    
-    participantes.forEach((p, index) => {
-        const fila = document.createElement('tr');
-        
-        let colorFondo = '';
-        if (index === 0) colorFondo = 'style="background-color: #ffd70033; font-weight: bold;"';
-        else if (index === 1) colorFondo = 'style="background-color: #c0c0c033;"';
-        else if (index === 2) colorFondo = 'style="background-color: #cd7f3233;"';
-
-        fila.innerHTML = `
-            <td ${colorFondo} class="ranking-cell">${index + 1}</td>
-            <td ${colorFondo} class="avatar-cell">
-                <img src="${p.avatar_url}" alt="Avatar" class="participant-avatar" onerror="this.src=''"/>
-            </td>
-            <td ${colorFondo} class="user-cell">${p.usuario}</td>
-            <td ${colorFondo} class="points-cell">${p.cantidad} 💎</td>
-        `;
-        
-        tablaParticipantesEl.appendChild(fila);
-    });
-
-    if (totalParticipantesEl) {
-        totalParticipantesEl.textContent = participantes.length;
-    }
-}
 /* ================================================== */
 /* 👑 BLOQUE ÚNICO PARA MOSTRAR GANADOR (Dashboard + Widget) 👑 */
 /* ================================================== */
@@ -1039,13 +1006,14 @@ socket.on('finalizar_subasta', () => {
 socket.on('sync_participantes', (participantes) => {
     console.log("Recibida lista de participantes actualizada:", participantes);
     
-    // 1. Actualiza la tabla principal del Dashboard
-    actualizarTablaParticipantes(participantes); 
+    // 🔑 CLAVE: Al recibir los datos del servidor, se actualiza la variable global 'participantes'
+    // y luego se llama a la función de UI para que pinte todo (Dashboard y Widget).
+    this.participantes = participantes; 
     
-    // 2. Si es el Widget, actualiza la lista del Widget
-    if (document.body.classList.contains('widget-mode')) {
-        actualizarWidgetLista(participantes);
-    }
+    // 1. Llama a la función unificada que maneja la UI de ambos modos.
+    actualizarParticipantesUI(); 
+    
+    // NOTA: Ya NO se llama a 'actualizarWidgetLista' ni a 'actualizarTablaParticipantes'.
 });
 
 // ... y aquí irían otros como:
