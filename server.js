@@ -154,41 +154,18 @@ socket.on('nuevo_regalo', (data) => {
     }
 
     // 💡 Ordena la lista
-    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
+    participantes.sort((a, b) => parseInt(b.cantidad) - parseInt(a.cantidad));
 
 
-    // ===================================
-    // 2. LÓGICA DE SNIPE (El Servidor decide el tiempo)
-    // ===================================
-    // Asumo que en el servidor tienes las variables: 
-    // subasta.snipeActivado y subasta.tiempoSnipeConfig (el valor del input)
-    
-    // Si la subasta está activa, el snipe está activado, y se recibió un regalo con valor:
-    if (subasta.subastaActiva && subasta.snipeActivado && cantidadDelRegalo > 0) {
-        
-        const tiempoSnipe = subasta.tiempoSnipeConfig; // Usar el valor que tienes guardado
-        
-        // Si el tiempo actual del servidor está bajo el umbral de snipe:
-        if (subasta.tiempoActual <= tiempoSnipe) {
-            
-            subasta.tiempoActual = tiempoSnipe; // Resetear el tiempo en el SERVIDOR
-            
-            // 🛑 El servidor EMITE la orden para que el cronómetro se reinicie en los clientes
-            io.to(streamerId).emit('update_time', subasta.tiempoActual); 
-            
-            // Opcional: El servidor envía la alerta visual a todos los clientes
-            io.to(streamerId).emit("activar_alerta_snipe_visual");
-            
-            console.log(`⏰ SNIPE activado para ${streamerId}. Tiempo restablecido a ${tiempoSnipe}s.`);
-        }
-    }
+    // ===================================
+    // 2. LÓGICA DE SNIPE (ELIMINADO) ❌
+    // ===================================
 
 
-    // ===================================
-    // 3. SINCRONIZACIÓN (El Servidor envía el estado final)
-    // ===================================
-    // El servidor sincroniza la lista de participantes (limpia y sumada)
-    io.to(streamerId).emit('sync_participantes', participantes); 
+    // ===================================
+    // 3. SINCRONIZACIÓN (El Servidor envía el estado final) - CONSERVAR
+    // ===================================
+    io.to(streamerId).emit('sync_participantes', participantes); 
 });
  socket.on("finalizar_subasta", () => {
     const streamerId = socket.streamerId;
